@@ -1,0 +1,53 @@
+---
+# AWS specific configuration options:
+aws:
+  region: ${AWS_REGION}
+  # S3 configuration options:
+  s3:
+    bucket: ${AWS_S3_BUCKET_NAME}
+  # DynamoDB configuration options:
+  dynamodb:
+    service-metadata-table: ${AWS_DYNAMODB_SERVICE_METADATA_TABLE_NAME}
+    block-batch-table: ${AWS_DYNAMODB_BLOCK_BATCH_TABLE_NAME}
+    block-metadata-table: ${AWS_DYNAMODB_BLOCK_METADATA_TABLE_NAME}
+
+# Event stream-specific configuration options:
+event-stream:
+  # Configuration of the Tendermint API:
+  websocket:
+    uri: ${EVENT_STREAM_WEBSOCKET_URI}
+    throttle-duration-ms: 0
+  rpc:
+    uri: ${EVENT_STREAM_RPC_URI}
+  batch:
+    # Controls the maximum number of blocks that will be bundled into a batch for processing.
+    size: 16
+    # Controls the timeout for a batch. If a batch is incomplete and a new block has not been received within
+    # `timeout` milliseconds, the batch will be emitted, despite the fact it has less the `size` blocks.
+    # timeout-ms: 10000
+  filter:
+    # A listing of transaction events to filter by. If no events are provided, filtering by transactions will be
+    # disabled.
+    #tx-events:
+    #  - provenance.attribute.v1.EventAttributeAdd
+    #  - provenance.attribute.v1.EventAttributeUpdate
+    #  - provenance.attribute.v1.EventAttributeDelete
+    #  - provenance.attribute.v1.EventAttributeDistinctDelete
+    #  - provenance.marker.v1.EventMarkerActivate
+    #  - provenance.marker.v1.EventMarkerAdd
+    #  - provenance.marker.v1.EventMarkerBurn
+    #  - provenance.marker.v1.EventMarkerCancel
+    #  - provenance.marker.v1.EventMarkerDelete
+    #  - provenance.marker.v1.EventMarkerFinalize
+    #  - provenance.marker.v1.EventMarkerMint
+    #  - provenance.marker.v1.EventMarkerSetDenomMetadata
+    #  - provenance.marker.v1.EventMarkerTransfer
+    #  - provenance.marker.v1.EventMarkerWithdraw
+    #  - transfer
+
+    # A listing of block events to filter by. If no events are provided, filtering by blocks will be
+    # disabled.
+    # block-events:
+    # - event1
+    # - event2
+    # ...

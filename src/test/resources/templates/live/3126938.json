@@ -1,0 +1,428 @@
+{
+    "jsonrpc": "2.0",
+    "id": -1,
+    "result":
+    {
+        "data":
+        {
+            "type": "tendermint/event/NewBlock",
+            "value":
+            {
+                "result_begin_block":
+                {
+                    "events":
+                    []
+                },
+                "block":
+                {
+                    "header":
+                    {
+                        "version":
+                        {
+                            "block": "11"
+                        },
+                        "chain_id": "pio-testnet-1",
+                        "height": 3126938,
+                        "time": "2021-08-30T17:55:12.445812375Z",
+                        "last_block_id":
+                        {
+                            "hash": "254DC00631645969B9C1357B830FB7645C57E4CD93E61AD658775FA852D4CE3E",
+                            "parts":
+                            {
+                                "total": 1,
+                                "hash": "F316D9D710296DCC5C7A07A723D7FC31E87364A2E1785A77FF2B9D2E10860CAA"
+                            }
+                        },
+                        "last_commit_hash": "6F63AF18570A2C9C74F1EAC23D0C8783050A3DB6F753E25E2B46A02A6E064F5C",
+                        "data_hash": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+                        "validators_hash": "1EF3558687DA45929024B645755C7282A9D7FD81E2AA0DE612FA48C842D1DE27",
+                        "next_validators_hash": "1EF3558687DA45929024B645755C7282A9D7FD81E2AA0DE612FA48C842D1DE27",
+                        "consensus_hash": "048091BC7DDC283F77BFBF91D73C44DA58C3DF8A9CBC867405D8B7F3DAADA22F",
+                        "app_hash": "AF5DC51F97079E99660343FB1A77783A8E85461C6EC9D449F0986FDD5ECC17FB",
+                        "last_results_hash": "4240D2DC1EDBEB4953486586B71F36F22819FA6B3F7AD64FD573165FBDB8DDE0",
+                        "evidence_hash": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+                        "proposer_address": "7100D18B251B4AB281A26BF64C81B20BABD77390"
+                    },
+                    "data":
+                    {
+                        "txs":
+                        []
+                    },
+                    "evidence":
+                    {
+                        "evidence":
+                        []
+                    },
+                    "last_commit":
+                    {
+                        "height": 3126937,
+                        "round": 0,
+                        "block_id":
+                        {
+                            "hash": "254DC00631645969B9C1357B830FB7645C57E4CD93E61AD658775FA852D4CE3E",
+                            "parts":
+                            {
+                                "total": 1,
+                                "hash": "F316D9D710296DCC5C7A07A723D7FC31E87364A2E1785A77FF2B9D2E10860CAA"
+                            }
+                        },
+                        "signatures":
+                        [
+                            {
+                                "block_id_flag": 2,
+                                "timestamp": "2021-08-30T17:55:12.445812375Z",
+                                "validator_address": "E354428AB16927EBBC3AC4036D8D25B59A47495B",
+                                "signature": "vVWbHNpaeG7v0s09mgAioCDXTWFW9+lZWKWhwM+JpZQWUqo6Zj94czSpI03nkRMxjO7/mZ0O7QKE6qlYYw2LCw=="
+                            },
+                            {
+                                "block_id_flag": 2,
+                                "timestamp": "2021-08-30T17:55:12.441630216Z",
+                                "validator_address": "CF53B691AFA2EB28C3D2AE118EF8F88FC48459BC",
+                                "signature": "YL+D1ohzEuGL5n1CMot8+tw39xvnJfUcZat0PNg5fvQ2E1p3p0tSs4xzKAj+2woCvMN/MbwVoxhSsWNuqNfNAg=="
+                            },
+                            {
+                                "block_id_flag": 2,
+                                "timestamp": "2021-08-30T17:55:12.437694197Z",
+                                "validator_address": "4CC7186D6C520A9EF696A6A0D6802564593D7380",
+                                "signature": "Br0i29qbfD3toy7A06WoKMH1m69JFz+f4gvL+98vjYojO/x9K62LPSs4E91io8Z405kHYtwlUHMd8acBj8oTAQ=="
+                            },
+                            {
+                                "block_id_flag": 2,
+                                "timestamp": "2021-08-30T17:55:12.449536187Z",
+                                "validator_address": "7100D18B251B4AB281A26BF64C81B20BABD77390",
+                                "signature": "zBHND8wN6cP3q0625ns71XksMgFTxm2YFR3BWye58ix28Mh9E1f8iZr5jmZSejg6xsnafhE5hceOy4rNnM/rDg=="
+                            },
+                            {
+                                "block_id_flag": 2,
+                                "timestamp": "2021-08-30T17:55:12.71569Z",
+                                "validator_address": "B7F42C3F3AB75C5C49B96F49484B81D566BD129B",
+                                "signature": "11z/CQuY+JkEMCFqUcLyUvpTLKL4ZrSzfd1NljBX6Dudg9SzNRJHE6KsDuLnj3CzDRBpKbsQ5VVTydpw1YsXAQ=="
+                            }
+                        ]
+                    }
+                },
+                "blockEvents":
+                [
+                    {
+                        "height": 3126938,
+                        "eventType": "transfer",
+                        "attributes":
+                        [
+                            {
+                                "key": "cmVjaXBpZW50",
+                                "value": "dHAxN3hwZnZha20yYW1nOTYyeWxzNmY4NHoza2VsbDhjNWwydWRmeXQ=",
+                                "index": false
+                            },
+                            {
+                                "key": "c2VuZGVy",
+                                "value": "dHAxbTNoMzB3bHZzZjhsbHJ1eHRwdWtkdnN5MGttMmt1bThqNWYzZ2s=",
+                                "index": false
+                            },
+                            {
+                                "key": "YW1vdW50",
+                                "index": false
+                            }
+                        ]
+                    },
+                    {
+                        "height": 3126938,
+                        "eventType": "message",
+                        "attributes":
+                        [
+                            {
+                                "key": "c2VuZGVy",
+                                "value": "dHAxbTNoMzB3bHZzZjhsbHJ1eHRwdWtkdnN5MGttMmt1bThqNWYzZ2s=",
+                                "index": true
+                            }
+                        ]
+                    },
+                    {
+                        "height": 3126938,
+                        "eventType": "mint",
+                        "attributes":
+                        [
+                            {
+                                "key": "Ym9uZGVkX3JhdGlv",
+                                "value": "MC4wNjc4NzIyNTAyMDUzMDUwNzg=",
+                                "index": false
+                            },
+                            {
+                                "key": "aW5mbGF0aW9u",
+                                "value": "MC4wMDAwMDAwMDAwMDAwMDAwMDA=",
+                                "index": false
+                            },
+                            {
+                                "key": "YW5udWFsX3Byb3Zpc2lvbnM=",
+                                "value": "MC4wMDAwMDAwMDAwMDAwMDAwMDA=",
+                                "index": false
+                            },
+                            {
+                                "key": "YW1vdW50",
+                                "value": "MA==",
+                                "index": false
+                            }
+                        ]
+                    },
+                    {
+                        "height": 3126938,
+                        "eventType": "transfer",
+                        "attributes":
+                        [
+                            {
+                                "key": "cmVjaXBpZW50",
+                                "value": "dHAxanY2NXMzZ3JxZjZ2NmpsM2RwNHQ2Yzl0OXJrOTljZDhhNjI0eGY=",
+                                "index": false
+                            },
+                            {
+                                "key": "c2VuZGVy",
+                                "value": "dHAxN3hwZnZha20yYW1nOTYyeWxzNmY4NHoza2VsbDhjNWwydWRmeXQ=",
+                                "index": false
+                            },
+                            {
+                                "key": "YW1vdW50",
+                                "value": "NTAzNTA0ODM1bmhhc2g=",
+                                "index": false
+                            }
+                        ]
+                    },
+                    {
+                        "height": 3126938,
+                        "eventType": "message",
+                        "attributes":
+                        [
+                            {
+                                "key": "c2VuZGVy",
+                                "value": "dHAxN3hwZnZha20yYW1nOTYyeWxzNmY4NHoza2VsbDhjNWwydWRmeXQ=",
+                                "index": true
+                            }
+                        ]
+                    },
+                    {
+                        "height": 3126938,
+                        "eventType": "proposer_reward",
+                        "attributes":
+                        [
+                            {
+                                "key": "YW1vdW50",
+                                "value": "MjUxNzUyNDEuNzUwMDAwMDAwMDAwMDAwMDAwbmhhc2g=",
+                                "index": false
+                            },
+                            {
+                                "key": "dmFsaWRhdG9y",
+                                "value": "dHB2YWxvcGVyMXRncTZjcHU2aG1zcnZrdmR1ODJqOTl0c3h4dzdxcWFqbjg0M2Zl",
+                                "index": false
+                            }
+                        ]
+                    },
+                    {
+                        "height": 3126938,
+                        "eventType": "commission",
+                        "attributes":
+                        [
+                            {
+                                "key": "YW1vdW50",
+                                "value": "MjUxNzUyNDEuNzUwMDAwMDAwMDAwMDAwMDAwbmhhc2g=",
+                                "index": false
+                            },
+                            {
+                                "key": "dmFsaWRhdG9y",
+                                "value": "dHB2YWxvcGVyMXRncTZjcHU2aG1zcnZrdmR1ODJqOTl0c3h4dzdxcWFqbjg0M2Zl",
+                                "index": false
+                            }
+                        ]
+                    },
+                    {
+                        "height": 3126938,
+                        "eventType": "rewards",
+                        "attributes":
+                        [
+                            {
+                                "key": "YW1vdW50",
+                                "value": "MjUxNzUyNDEuNzUwMDAwMDAwMDAwMDAwMDAwbmhhc2g=",
+                                "index": false
+                            },
+                            {
+                                "key": "dmFsaWRhdG9y",
+                                "value": "dHB2YWxvcGVyMXRncTZjcHU2aG1zcnZrdmR1ODJqOTl0c3h4dzdxcWFqbjg0M2Zl",
+                                "index": false
+                            }
+                        ]
+                    },
+                    {
+                        "height": 3126938,
+                        "eventType": "commission",
+                        "attributes":
+                        [
+                            {
+                                "key": "YW1vdW50",
+                                "value": "MTUyNTA1NTIzLjA3MjcwOTA4MTk1ODg1NDkyMG5oYXNo",
+                                "index": false
+                            },
+                            {
+                                "key": "dmFsaWRhdG9y",
+                                "value": "dHB2YWxvcGVyMXRncTZjcHU2aG1zcnZrdmR1ODJqOTl0c3h4dzdxcWFqbjg0M2Zl",
+                                "index": false
+                            }
+                        ]
+                    },
+                    {
+                        "height": 3126938,
+                        "eventType": "rewards",
+                        "attributes":
+                        [
+                            {
+                                "key": "YW1vdW50",
+                                "value": "MTUyNTA1NTIzLjA3MjcwOTA4MTk1ODg1NDkyMG5oYXNo",
+                                "index": false
+                            },
+                            {
+                                "key": "dmFsaWRhdG9y",
+                                "value": "dHB2YWxvcGVyMXRncTZjcHU2aG1zcnZrdmR1ODJqOTl0c3h4dzdxcWFqbjg0M2Zl",
+                                "index": false
+                            }
+                        ]
+                    },
+                    {
+                        "height": 3126938,
+                        "eventType": "commission",
+                        "attributes":
+                        [
+                            {
+                                "key": "YW1vdW50",
+                                "value": "ODM0Nzk1NjguMTUwOTQ4MjE4OTk0MTIyODk3bmhhc2g=",
+                                "index": false
+                            },
+                            {
+                                "key": "dmFsaWRhdG9y",
+                                "value": "dHB2YWxvcGVyMXgyOTltNzJoNm44OHNzd2cycDlmcDhsdmtocnRxc3Z2djNyeHNk",
+                                "index": false
+                            }
+                        ]
+                    },
+                    {
+                        "height": 3126938,
+                        "eventType": "rewards",
+                        "attributes":
+                        [
+                            {
+                                "key": "YW1vdW50",
+                                "value": "ODM0Nzk1NjguMTUwOTQ4MjE4OTk0MTIyODk3bmhhc2g=",
+                                "index": false
+                            },
+                            {
+                                "key": "dmFsaWRhdG9y",
+                                "value": "dHB2YWxvcGVyMXgyOTltNzJoNm44OHNzd2cycDlmcDhsdmtocnRxc3Z2djNyeHNk",
+                                "index": false
+                            }
+                        ]
+                    },
+                    {
+                        "height": 3126938,
+                        "eventType": "commission",
+                        "attributes":
+                        [
+                            {
+                                "key": "YW1vdW50",
+                                "value": "ODMzNDE1NjUuODA3MDA5MzA1NDYyNzQyNTMxbmhhc2g=",
+                                "index": false
+                            },
+                            {
+                                "key": "dmFsaWRhdG9y",
+                                "value": "dHB2YWxvcGVyMTZoeXJ2dzI5MDVma3lqcDY2dDQ2aHVhNnRoY3R1NWQ1MjVkd3gz",
+                                "index": false
+                            }
+                        ]
+                    },
+                    {
+                        "height": 3126938,
+                        "eventType": "rewards",
+                        "attributes":
+                        [
+                            {
+                                "key": "YW1vdW50",
+                                "value": "ODMzNDE1NjUuODA3MDA5MzA1NDYyNzQyNTMxbmhhc2g=",
+                                "index": false
+                            },
+                            {
+                                "key": "dmFsaWRhdG9y",
+                                "value": "dHB2YWxvcGVyMTZoeXJ2dzI5MDVma3lqcDY2dDQ2aHVhNnRoY3R1NWQ1MjVkd3gz",
+                                "index": false
+                            }
+                        ]
+                    },
+                    {
+                        "height": 3126938,
+                        "eventType": "commission",
+                        "attributes":
+                        [
+                            {
+                                "key": "YW1vdW50",
+                                "value": "ODI2Nzk4MS44NTQ3Mzg3MDU2ODYwNjg1NjBuaGFzaA==",
+                                "index": false
+                            },
+                            {
+                                "key": "dmFsaWRhdG9y",
+                                "value": "dHB2YWxvcGVyMXM5YzJhc3F0cDRmNnI1azRqc2c5N3A1eWVrcWM2cmhxbDlyY3Jw",
+                                "index": false
+                            }
+                        ]
+                    },
+                    {
+                        "height": 3126938,
+                        "eventType": "rewards",
+                        "attributes":
+                        [
+                            {
+                                "key": "YW1vdW50",
+                                "value": "ODI2Nzk4MTguNTQ3Mzg3MDU2ODYwNjg1NTk5bmhhc2g=",
+                                "index": false
+                            },
+                            {
+                                "key": "dmFsaWRhdG9y",
+                                "value": "dHB2YWxvcGVyMXM5YzJhc3F0cDRmNnI1azRqc2c5N3A1eWVrcWM2cmhxbDlyY3Jw",
+                                "index": false
+                            }
+                        ]
+                    },
+                    {
+                        "height": 3126938,
+                        "eventType": "commission",
+                        "attributes":
+                        [
+                            {
+                                "key": "YW1vdW50",
+                                "value": "Mzk3NTE4MTIuNTgzMTY3ODAxNDcyMjQ1MDM1bmhhc2g=",
+                                "index": false
+                            },
+                            {
+                                "key": "dmFsaWRhdG9y",
+                                "value": "dHB2YWxvcGVyMXB5bDczazhhangzM3gzN203cDJyejMzNzhlcXE2dGFjcjkyMHBt",
+                                "index": false
+                            }
+                        ]
+                    },
+                    {
+                        "height": 3126938,
+                        "eventType": "rewards",
+                        "attributes":
+                        [
+                            {
+                                "key": "YW1vdW50",
+                                "value": "NjYyNTMwMjAuOTcxOTQ2MzM1Nzg3MDc1MDU4bmhhc2g=",
+                                "index": false
+                            },
+                            {
+                                "key": "dmFsaWRhdG9y",
+                                "value": "dHB2YWxvcGVyMXB5bDczazhhangzM3gzN203cDJyejMzNzhlcXE2dGFjcjkyMHBt",
+                                "index": false
+                            }
+                        ]
+                    }
+                ],
+                "txEvents":
+                [],
+                "historical": false
+            }
+        }
+    }
+}
