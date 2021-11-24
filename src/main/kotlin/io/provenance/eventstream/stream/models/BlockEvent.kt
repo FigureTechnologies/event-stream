@@ -1,6 +1,7 @@
 package io.provenance.eventstream.stream.models
 
 import com.squareup.moshi.JsonClass
+import io.provenance.eventstream.stream.EncodedBlockchainEvent
 import java.time.OffsetDateTime
 
 /**

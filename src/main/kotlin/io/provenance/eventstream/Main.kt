@@ -1,9 +1,6 @@
 package io.provenance.eventstream
 
-import com.sksamuel.hoplite.ConfigLoader
-import com.sksamuel.hoplite.EnvironmentVariablesPropertySource
-import com.sksamuel.hoplite.PropertySource
-import com.sksamuel.hoplite.preprocessor.PropsPreprocessor
+import com.sksamuel.hoplite.*
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import com.tinder.scarlet.Scarlet
@@ -14,14 +11,19 @@ import io.provenance.eventstream.adapter.json.JSONObjectAdapter
 import io.provenance.eventstream.extensions.repeatDecodeBase64
 import io.provenance.eventstream.stream.EventStream
 import io.provenance.eventstream.stream.clients.TendermintServiceOpenApiClient
-import io.provenance.eventstream.stream.consumers.EventStreamViewer
+import io.provenance.eventstream.stream.consumers.BlockSink
+//import io.provenance.eventstream.stream.consumers.EventStreamViewer
+import io.provenance.eventstream.stream.consumers.blockSink
 import io.provenance.eventstream.stream.models.StreamBlock
 import io.provenance.eventstream.stream.models.extensions.dateTime
 import kotlinx.cli.ArgParser
 import kotlinx.cli.ArgType
 import kotlinx.cli.default
 import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.*
 import okhttp3.OkHttpClient
+import org.json.JSONObject
+import java.io.File
 import java.net.URI
 import java.util.concurrent.TimeUnit
 
@@ -51,13 +53,7 @@ fun main(args: Array<String>) {
      *
      * @see https://github.com/sksamuel/hoplite#environmentvariablespropertysource
      */
-    val parser = ArgParser("provenance-event-stream")
-    val envFlag by parser.option(
-        ArgType.Choice<Environment>(),
-        shortName = "e",
-        fullName = "env",
-        description = "Specify the application environment. If not present, fall back to the `\$ENVIRONMENT` envvar",
-    )
+    val parser = ArgParser("provenance-event-stream", skipExtraArguments = true)
     val fromHeight by parser.option(
         ArgType.Int,
         fullName = "from",
@@ -66,130 +62,114 @@ fun main(args: Array<String>) {
     val toHeight by parser.option(
         ArgType.Int, fullName = "to", description = "Fetch blocks up to height, inclusive"
     )
-    val observe by parser.option(
-        ArgType.Boolean, fullName = "observe", description = "Observe blocks instead of upload"
-    ).default(true)
-    val restart by parser.option(
-        ArgType.Boolean,
-        fullName = "restart",
-        description = "Restart processing blocks from the last maximum historical block height recorded"
-    ).default(false)
     val verbose by parser.option(
         ArgType.Boolean, shortName = "v", fullName = "verbose", description = "Enables verbose output"
     ).default(false)
-    val skipIfEmpty by parser.option(
-        ArgType.Choice(listOf(false, true), { it.toBooleanStrict() }),
-        fullName = "skip-if-empty",
-        description = "Skip blocks that have no transactions"
-    ).default(true)
 
     parser.parse(args)
 
-    val environment: Environment =
-        envFlag ?: runCatching { Environment.valueOf(System.getenv("ENVIRONMENT")) }
-            .getOrElse {
-                error("Not a valid environment: ${System.getenv("ENVIRONMENT")}")
-            }
-
     val config: Config = ConfigLoader.Builder()
+        .addCommandLineSource(args)
         .addSource(EnvironmentVariablesPropertySource(useUnderscoresAsSeparator = true, allowUppercaseNames = true))
-        .apply {
-            // If in the local environment, override the ${...} envvar values in `application.properties` with
-            // the values provided in the local-specific `local.env.properties` property file:
-            if (environment.isLocal()) {
-                addPreprocessor(PropsPreprocessor("/local.env.properties"))
-            }
-        }
         .addSource(PropertySource.resource("/application.yml"))
         .build()
         .loadConfigOrThrow()
 
+    val outputs = Outputs.outputs()
+
     val log = "main".logger()
 
     val moshi: Moshi = Moshi.Builder()
-        .add(KotlinJsonAdapterFactory())
+        .addLast(KotlinJsonAdapterFactory())
         .add(JSONObjectAdapter())
         .build()
     val wsStreamBuilder = configureEventStreamBuilder(config.eventStream.websocket.uri)
     val tendermintService = TendermintServiceOpenApiClient(config.eventStream.rpc.uri)
 
+    val options = EventStream.Options
+        .builder()
+        .batchSize(config.eventStream.batch.size)
+        .fromHeight(fromHeight?.toLong())
+        .toHeight(toHeight?.toLong())
+        .apply {
+            if (config.eventStream.filter.txEvents.isNotEmpty()) {
+                matchTxEvent { it in config.eventStream.filter.txEvents }
+            }
+        }
+        .apply {
+            if (config.eventStream.filter.blockEvents.isNotEmpty()) {
+                matchBlockEvent { it in config.eventStream.filter.blockEvents }
+            }
+        }
+        .also {
+            if (config.eventStream.filter.txEvents.isNotEmpty()) {
+                log.info("Listening for tx events:")
+                for (event in config.eventStream.filter.txEvents) {
+                    log.info(" - $event")
+                }
+            }
+            if (config.eventStream.filter.blockEvents.isNotEmpty()) {
+                log.info("Listening for block events:")
+                for (event in config.eventStream.filter.blockEvents) {
+                    log.info(" - $event")
+                }
+            }
+        }
+        .build()
+
+    val stream = EventStream.Factory(config, moshi, wsStreamBuilder, tendermintService).create(options)
+
     runBlocking(Dispatchers.IO) {
+        log.info("opts:$options")
 
-        log.info(
-            """
-            |run options => {
-            |    restart = $restart
-            |    from-height = $fromHeight 
-            |    to-height = $toHeight
-            |    skip-if-empty = $skipIfEmpty
-            |}
-            """.trimMargin("|")
-        )
+        stream.streamBlocks()
+            .buffer()
+            .catch { log.error("", it) }
+            .observe(observeBlock(verbose))
+            .observe(writeJsonBlock("./data"))
+            .collect()
+    }
+}
 
-        val options = EventStream.Options
-            .builder()
-            .batchSize(config.eventStream.batch.size)
-            .fromHeight(fromHeight?.toLong())
-            .toHeight(toHeight?.toLong())
-            .skipIfEmpty(skipIfEmpty)
-            .apply {
-                if (config.eventStream.filter.txEvents.isNotEmpty()) {
-                    matchTxEvent { it in config.eventStream.filter.txEvents }
-                }
-            }
-            .apply {
-                if (config.eventStream.filter.blockEvents.isNotEmpty()) {
-                    matchBlockEvent { it in config.eventStream.filter.blockEvents }
-                }
-            }
-            .also {
-                if (config.eventStream.filter.txEvents.isNotEmpty()) {
-                    log.info("Listening for tx events:")
-                    for (event in config.eventStream.filter.txEvents) {
-                        log.info(" - $event")
-                    }
-                }
-                if (config.eventStream.filter.blockEvents.isNotEmpty()) {
-                    log.info("Listening for block events:")
-                    for (event in config.eventStream.filter.blockEvents) {
-                        log.info(" - $event")
-                    }
-                }
-            }
-            .build()
+private fun <T> Flow<T>.observe(block: (T) -> Unit) = onEach { block(it) }
 
-        if (observe) {
-            log.info("*** Observing blocks and events. No action will be taken. ***")
-            EventStreamViewer(
-                EventStream.Factory(config, moshi, wsStreamBuilder, tendermintService),
-                options
-            )
-                .consume { b: StreamBlock ->
-                    val text = "Block: ${b.block.header?.height ?: "--"}:${b.block.header?.dateTime()?.toLocalDate()} ${b.block.header?.lastBlockId?.hash}" +
-                            "; ${b.txEvents.size} tx event(s)"
-                    println(
-                        if (b.historical) {
-                            text
-                        } else {
-                            green(text)
-                        }
-                    )
-                    if (verbose) {
-                        for (event in b.blockEvents) {
-                            println("  Block-Event: ${event.eventType}")
-                            for (attr in event.attributes) {
-                                println("    ${attr.key?.repeatDecodeBase64()}: ${attr.value?.repeatDecodeBase64()}")
-                            }
-                        }
-                        for (event in b.txEvents) {
-                            println("  Tx-Event: ${event.eventType}")
-                            for (attr in event.attributes) {
-                                println("    ${attr.key?.repeatDecodeBase64()}: ${attr.value?.repeatDecodeBase64()}")
-                            }
-                        }
-                    }
-                    println()
-                }
+fun writeJsonBlock(dir: String): BlockSink {
+    val d = File(dir)
+    if (!d.exists()) {
+        d.mkdirs()
+    }
+
+    return blockSink {
+        val filename = "$dir/${it.height}.json"
+        val file = File(filename)
+        if (!file.exists()) {
+            file.writeText(org.json.JSONWriter.valueToString(it))
+            println("wrote block data to $filename")
+        } else {
+            println("skipping block data for $filename: exists")
+            // file exists
         }
     }
+}
+
+fun observeBlock(verbose: Boolean) = blockSink {
+    val text = "Block: ${it.block.header?.height ?: "--"}:${it.block.header?.dateTime()?.toLocalDate()} ${it.block.header?.lastBlockId?.hash}" +
+            "; ${it.txEvents.size} tx event(s)"
+    println(if (it.historical) text else green(text))
+
+    if (verbose) {
+        for (event in it.blockEvents) {
+            println("  Block-Event: ${event.eventType}")
+            for (attr in event.attributes) {
+                println("    ${attr.key?.repeatDecodeBase64()}: ${attr.value?.repeatDecodeBase64()}")
+            }
+        }
+        for (event in it.txEvents) {
+            println("  Tx-Event: ${event.eventType}")
+            for (attr in event.attributes) {
+                println("    ${attr.key?.repeatDecodeBase64()}: ${attr.value?.repeatDecodeBase64()}")
+            }
+        }
+    }
+    println()
 }

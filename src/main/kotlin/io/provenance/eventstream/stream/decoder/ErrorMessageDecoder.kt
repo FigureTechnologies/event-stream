@@ -1,9 +1,9 @@
-package io.provenance.eventstream.stream.models.rpc.response.decoder
+package io.provenance.eventstream.stream.decoder
 
 import com.squareup.moshi.*
-import io.provenance.eventstream.stream.models.rpc.response.MessageType
-import io.provenance.eventstream.stream.models.rpc.response.RpcError
-import io.provenance.eventstream.stream.models.rpc.response.RpcResponse
+import io.provenance.eventstream.stream.models.MessageType
+import io.provenance.eventstream.stream.models.RpcError
+import io.provenance.eventstream.stream.models.RpcResponse
 import org.json.JSONObject
 
 class ErrorMessageDecoder(moshi: Moshi) : Decoder(moshi) {

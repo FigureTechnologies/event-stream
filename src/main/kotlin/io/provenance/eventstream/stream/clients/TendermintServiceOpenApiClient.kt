@@ -1,6 +1,5 @@
 package io.provenance.eventstream.stream.clients
 
-import io.provenance.eventstream.stream.TendermintServiceClient
 import io.provenance.eventstream.stream.apis.ABCIApi
 import io.provenance.eventstream.stream.apis.InfoApi
 import io.provenance.eventstream.stream.models.ABCIInfoResponse

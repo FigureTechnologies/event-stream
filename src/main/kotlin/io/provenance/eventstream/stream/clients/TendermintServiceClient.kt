@@ -1,4 +1,4 @@
-package io.provenance.eventstream.stream
+package io.provenance.eventstream.stream.clients
 
 import io.provenance.eventstream.stream.models.ABCIInfoResponse
 import io.provenance.eventstream.stream.models.BlockResponse

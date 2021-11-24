@@ -3,10 +3,10 @@ package io.provenance.eventstream.test
 import com.squareup.moshi.JsonEncodingException
 import com.tinder.scarlet.Message
 import com.tinder.scarlet.WebSocket
-import io.provenance.eventstream.stream.TendermintServiceClient
+import io.provenance.eventstream.stream.clients.TendermintServiceClient
 import io.provenance.eventstream.stream.models.*
 import io.provenance.eventstream.stream.models.extensions.toDecodedMap
-import io.provenance.eventstream.stream.models.rpc.response.MessageType
+import io.provenance.eventstream.stream.models.MessageType
 import io.provenance.eventstream.test.base.TestBase
 import io.provenance.eventstream.test.mocks.*
 import io.provenance.eventstream.test.utils.*

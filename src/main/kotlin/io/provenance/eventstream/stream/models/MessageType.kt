@@ -1,10 +1,10 @@
-package io.provenance.eventstream.stream.models.rpc.response
+package io.provenance.eventstream.stream.models
 
 import com.squareup.moshi.JsonDataException
 import com.squareup.moshi.Moshi
 import io.provenance.eventstream.stream.NewBlockResult
 import kotlin.reflect.full.primaryConstructor
-import io.provenance.eventstream.stream.models.rpc.response.decoder.Decoder as TDecoder
+import io.provenance.eventstream.stream.decoder.Decoder as TDecoder
 
 /**
  * A sealed class family which defines the results of decoding a Tendermint websocket/RPC API response.

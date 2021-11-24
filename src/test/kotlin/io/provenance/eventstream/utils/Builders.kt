@@ -4,7 +4,7 @@ import com.squareup.moshi.Moshi
 import io.provenance.eventstream.DispatcherProvider
 import io.provenance.eventstream.stream.EventStream
 import io.provenance.eventstream.stream.EventStreamService
-import io.provenance.eventstream.stream.TendermintServiceClient
+import io.provenance.eventstream.stream.clients.TendermintServiceClient
 import io.provenance.eventstream.stream.models.ABCIInfoResponse
 import io.provenance.eventstream.stream.models.BlockResponse
 import io.provenance.eventstream.stream.models.BlockResultsResponse

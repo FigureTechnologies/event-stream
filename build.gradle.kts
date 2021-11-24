@@ -26,9 +26,9 @@ object Version {
 
 plugins {
     kotlin("jvm")
-    id("org.jetbrains.kotlin.kapt")
-    id("com.google.protobuf") version "0.8.17"
-    id("org.openapi.generator") version "5.2.1"
+    kotlin("kapt")
+    id("com.google.protobuf") version("0.8.17")
+    id("org.openapi.generator") version("5.2.1")
     application
     idea
 }
@@ -80,8 +80,9 @@ dependencies {
     implementation("ch.qos.logback.contrib", "logback-json-core", Version.Logback)
     implementation("ch.qos.logback.contrib", "logback-json-classic", Version.Logback)
 
-    implementation("com.squareup.moshi", "moshi-kotlin-codegen", Version.Moshi)
-    kapt("com.squareup.moshi:moshi-kotlin-codegen:${Version.Moshi}")
+    implementation("com.squareup.moshi", "moshi", Version.Moshi)
+    implementation("com.squareup.moshi", "moshi-kotlin", Version.Moshi)
+    kapt("com.squareup.moshi", "moshi-kotlin-codegen", Version.Moshi)
 
     implementation("com.sksamuel.hoplite", "hoplite-core", Version.Hoplite)
     implementation("com.sksamuel.hoplite", "hoplite-yaml", Version.Hoplite)
@@ -94,7 +95,8 @@ sourceSets {
         java {
             srcDirs(
                 "$projectDir/src/main/kotlin",
-                "$buildDir/generated/src/main/kotlin"
+                "$buildDir/generated/src/main/kotlin",
+                "$buildDir/generated/ksp/src/main/kotlin",
             )
         }
     }

@@ -1,5 +1,6 @@
-package io.provenance.eventstream.stream.models
+package io.provenance.eventstream.stream
 
+import io.provenance.eventstream.stream.models.Event
 import io.provenance.eventstream.stream.models.extensions.toDecodedMap
 
 /**

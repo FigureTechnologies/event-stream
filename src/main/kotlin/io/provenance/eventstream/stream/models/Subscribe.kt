@@ -1,4 +1,4 @@
-package io.provenance.eventstream.stream.models.rpc.request
+package io.provenance.eventstream.stream.models
 
 import com.squareup.moshi.JsonClass
 

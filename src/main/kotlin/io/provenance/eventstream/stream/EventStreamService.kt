@@ -8,7 +8,7 @@ import com.tinder.scarlet.ws.Receive
 import com.tinder.scarlet.ws.Send
 import io.provenance.eventstream.stream.models.Block
 import io.provenance.eventstream.stream.models.BlockResultsResponseResultEvents
-import io.provenance.eventstream.stream.models.rpc.request.Subscribe
+import io.provenance.eventstream.stream.models.Subscribe
 import kotlinx.coroutines.channels.ReceiveChannel
 
 /**

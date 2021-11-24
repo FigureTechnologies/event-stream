@@ -7,7 +7,7 @@ import com.tinder.scarlet.WebSocket
 import io.provenance.eventstream.DispatcherProvider
 import io.provenance.eventstream.logger
 import io.provenance.eventstream.stream.EventStreamService
-import io.provenance.eventstream.stream.models.rpc.request.Subscribe
+import io.provenance.eventstream.stream.models.Subscribe
 import io.provenance.eventstream.test.utils.Defaults
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.Channel

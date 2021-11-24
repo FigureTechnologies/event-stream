@@ -1,6 +1,6 @@
 package io.provenance.eventstream.test.mocks
 
-import io.provenance.eventstream.stream.TendermintServiceClient
+import io.provenance.eventstream.stream.clients.TendermintServiceClient
 import io.provenance.eventstream.stream.models.*
 
 class MockTendermintServiceClient(mocker: ServiceMock) : TendermintServiceClient, ServiceMock by mocker {

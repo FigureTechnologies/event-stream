@@ -11,16 +11,18 @@ import io.provenance.eventstream.Config
 import io.provenance.eventstream.DefaultDispatcherProvider
 import io.provenance.eventstream.DispatcherProvider
 import io.provenance.eventstream.logger
+import io.provenance.eventstream.stream.clients.TendermintServiceClient
 import io.provenance.eventstream.stream.models.*
 import io.provenance.eventstream.stream.models.extensions.blockEvents
 import io.provenance.eventstream.stream.models.extensions.dateTime
 import io.provenance.eventstream.stream.models.extensions.txEvents
 import io.provenance.eventstream.stream.models.extensions.txHash
-import io.provenance.eventstream.stream.models.rpc.request.Subscribe
-import io.provenance.eventstream.stream.models.rpc.response.MessageType
+import io.provenance.eventstream.stream.models.Subscribe
+import io.provenance.eventstream.stream.models.MessageType
 import io.provenance.eventstream.utils.backoff
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
+import org.slf4j.LoggerFactory
 import java.io.EOFException
 import java.net.ConnectException
 import java.net.SocketException
@@ -83,7 +85,7 @@ class EventStream(
             private var batchSize: Int = DEFAULT_BATCH_SIZE
             private var fromHeight: Long? = null
             private var toHeight: Long? = null
-            private var skipIfEmpty: Boolean = true
+            private var skipIfEmpty: Boolean = false
             private var blockEventPredicate: ((event: String) -> Boolean)? = null
             private var txEventPredicate: ((event: String) -> Boolean)? = null
 
@@ -167,6 +169,7 @@ class EventStream(
         private val dispatchers: DispatcherProvider = DefaultDispatcherProvider(),
     ) {
         private fun noop(_options: Options.Builder) {}
+        private val log = LoggerFactory.getLogger(javaClass)
 
         fun create(setOptions: (options: Options.Builder) -> Unit = ::noop): EventStream {
             val optionsBuilder = Options.Builder()
@@ -177,9 +180,10 @@ class EventStream(
         }
 
         fun create(options: Options): EventStream {
+            log.info("Connecting stream instance to ${config.eventStream.websocket.uri}")
             val lifecycle = LifecycleRegistry(config.eventStream.websocket.throttleDurationMs)
             val scarlet: Scarlet = eventStreamBuilder.lifecycle(lifecycle).build()
-            val tendermintRpc: TendermintRPCStream = scarlet.create()
+            val tendermintRpc: TendermintRPCStream = scarlet.create(TendermintRPCStream::class.java)
             val eventStreamService = TendermintEventStreamService(tendermintRpc, lifecycle)
 
             return EventStream(
@@ -282,8 +286,8 @@ class EventStream(
      * @return True or false if [Options.blockEventPredicate] matches a block-level event associated with a block.
      * If the return value is null, then [Options.blockEventPredicate] was never set.
      */
-    private fun <T : EncodedBlockchainEvent> matchesBlockEvent(blockEvents: Iterable<T>): Boolean? =
-        options.blockEventPredicate?.let { p -> blockEvents.any { p(it.eventType) } }
+    private fun <T : EncodedBlockchainEvent> matchesBlockEvent(blockEvents: List<T>): Boolean? =
+        options.blockEventPredicate?.let { p -> blockEvents.isEmpty() || blockEvents.any { p(it.eventType) } }
 
     /**
      * Test if any transaction events match the supplied predicate.
@@ -291,8 +295,8 @@ class EventStream(
      * @return True or false if [Options.txEventPredicate] matches a transaction-level event associated with a block.
      * If the return value is null, then [Options.txEventPredicate] was never set.
      */
-    private fun <T : EncodedBlockchainEvent> matchesTxEvent(txEvents: Iterable<T>): Boolean? =
-        options.txEventPredicate?.let { p -> txEvents.any { p(it.eventType) } }
+    private fun <T : EncodedBlockchainEvent> matchesTxEvent(txEvents: List<T>): Boolean? =
+        options.txEventPredicate?.let { p -> txEvents.isEmpty() || txEvents.any { p(it.eventType) } }
 
     /**
      * Query a block by height, returning any events associated with the block.
@@ -310,7 +314,7 @@ class EventStream(
             is Either.Right<Block> -> heightOrBlock.value
         }
 
-        if (skipIfNoTxs && block?.data?.txs?.size ?: 0 == 0) {
+        if (skipIfNoTxs && (block?.data?.txs?.size ?: 0) == 0) {
             return null
         }
 
@@ -440,9 +444,8 @@ class EventStream(
                         eventStreamService.subscribe(Subscribe("tm.event='NewBlock'"))
                     }
                     is WebSocket.Event.OnMessageReceived ->
-                        when (event.message) {
+                        when (val message = event.message) {
                             is Message.Text -> {
-                                val message = event.message as Message.Text
                                 when (val type = responseMessageDecoder.decode(message.value)) {
                                     is MessageType.Empty ->
                                         log.info("received empty ACK message => ${message.value}")
@@ -509,15 +512,14 @@ class EventStream(
      */
     fun streamBlocks(): Flow<StreamBlock> = flow {
         val startingHeight: Long? = getStartingHeight()
-        emitAll(
-            if (startingHeight != null) {
-                log.info("Listening for live and historical blocks from height $startingHeight")
-                merge(streamHistoricalBlocks(startingHeight), streamLiveBlocks())
-            } else {
-                log.info("Listening for live blocks only")
-                streamLiveBlocks()
-            }
-        )
+
+        if (startingHeight != null) {
+            log.info("Listening for live and historical blocks from height $startingHeight")
+            emitAll(streamHistoricalBlocks(startingHeight))
+        }
+
+        log.info("Listening for live blocks")
+        emitAll(streamLiveBlocks())
     }
         .cancellable()
         .retryWhen { cause: Throwable, attempt: Long ->

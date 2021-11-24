@@ -40,3 +40,4 @@ out/
 .DS_Store
 
 augment.env
+data/
