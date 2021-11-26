@@ -1,7 +1,10 @@
 package io.provenance.eventstream
 
+//import io.provenance.eventstream.stream.consumers.EventStreamViewer
 import com.sksamuel.hoplite.*
+import com.squareup.moshi.JsonAdapter
 import com.squareup.moshi.Moshi
+import com.squareup.moshi.adapter
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import com.tinder.scarlet.Scarlet
 import com.tinder.scarlet.messageadapter.moshi.MoshiMessageAdapter
@@ -12,18 +15,19 @@ import io.provenance.eventstream.extensions.repeatDecodeBase64
 import io.provenance.eventstream.stream.EventStream
 import io.provenance.eventstream.stream.clients.TendermintServiceOpenApiClient
 import io.provenance.eventstream.stream.consumers.BlockSink
-//import io.provenance.eventstream.stream.consumers.EventStreamViewer
 import io.provenance.eventstream.stream.consumers.blockSink
+import io.provenance.eventstream.stream.infrastructure.Serializer
 import io.provenance.eventstream.stream.models.StreamBlock
 import io.provenance.eventstream.stream.models.extensions.dateTime
+import io.provenance.eventstream.utils.sha256
 import kotlinx.cli.ArgParser
 import kotlinx.cli.ArgType
 import kotlinx.cli.default
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 import okhttp3.OkHttpClient
-import org.json.JSONObject
 import java.io.File
+import java.math.BigInteger
 import java.net.URI
 import java.util.concurrent.TimeUnit
 
@@ -75,11 +79,9 @@ fun main(args: Array<String>) {
         .build()
         .loadConfigOrThrow()
 
-    val outputs = Outputs.outputs()
-
     val log = "main".logger()
 
-    val moshi: Moshi = Moshi.Builder()
+    val moshi: Moshi = Serializer.moshiBuilder
         .addLast(KotlinJsonAdapterFactory())
         .add(JSONObjectAdapter())
         .build()
@@ -125,29 +127,34 @@ fun main(args: Array<String>) {
         stream.streamBlocks()
             .buffer()
             .catch { log.error("", it) }
-            .observe(observeBlock(verbose))
-            .observe(writeJsonBlock("./data"))
+            //.observe(observeBlock(verbose))
+            .observe(writeJsonBlock("./data", moshi))
             .collect()
     }
 }
 
 private fun <T> Flow<T>.observe(block: (T) -> Unit) = onEach { block(it) }
 
-fun writeJsonBlock(dir: String): BlockSink {
-    val d = File(dir)
-    if (!d.exists()) {
-        d.mkdirs()
-    }
+fun ByteArray.toHex(): String {
+    val bi = BigInteger(1, this)
+    return String.format("%0" + (this.size shl 1) + "X", bi)
+}
 
+@OptIn(ExperimentalStdlibApi::class)
+fun writeJsonBlock(dir: String, moshi: Moshi): BlockSink {
+    val adapter: JsonAdapter<StreamBlock> = moshi.adapter()
+    File(dir).mkdirs()
     return blockSink {
-        val filename = "$dir/${it.height}.json"
+        val checksum = sha256(it.height.toString()).toHex()
+        val splay = checksum.take(4)
+        val dirname = "$dir/$splay"
+
+        File(dirname).let { if (!it.exists()) it.mkdirs() }
+
+        val filename = "$dirname/${it.height.toString().padStart(10, '0')}.json"
         val file = File(filename)
         if (!file.exists()) {
-            file.writeText(org.json.JSONWriter.valueToString(it))
-            println("wrote block data to $filename")
-        } else {
-            println("skipping block data for $filename: exists")
-            // file exists
+            file.writeText(adapter.toJson(it))
         }
     }
 }
