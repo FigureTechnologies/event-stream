@@ -1,7 +1,7 @@
 package io.provenance.eventstream.stream.models
 
-import com.squareup.moshi.JsonDataException
-import com.squareup.moshi.Moshi
+import io.provenance.eventstream.adapter.json.decoder.DecoderEngine
+import io.provenance.eventstream.adapter.json.decoder.DecoderException
 import io.provenance.eventstream.stream.NewBlockResult
 import kotlin.reflect.full.primaryConstructor
 import io.provenance.eventstream.stream.decoder.Decoder as TDecoder
@@ -13,10 +13,10 @@ sealed interface MessageType {
     /**
      * Decode the supplied input into one of the variants of [MessageType].
      */
-    class Decoder(val moshi: Moshi) {
+    class Decoder(val engine: DecoderEngine) {
         // Decoders are attempted according to their assigned priority in descending order:
         private val decoders =
-            TDecoder::class.sealedSubclasses.mapNotNull { clazz -> clazz.primaryConstructor?.call(moshi) }
+            TDecoder::class.sealedSubclasses.mapNotNull { clazz -> clazz.primaryConstructor?.call(engine) }
                 .sortedByDescending { it.priority }
 
         fun decode(input: String): MessageType {
@@ -26,7 +26,7 @@ sealed interface MessageType {
                     if (message != null) {
                         return message
                     }
-                } catch (_: JsonDataException) {
+                } catch (_: DecoderException) {
                 }
             }
             return Unknown

@@ -2,14 +2,11 @@ package io.provenance.eventstream.stream
 
 import arrow.core.Either
 import com.squareup.moshi.JsonDataException
-import com.squareup.moshi.Moshi
 import com.tinder.scarlet.Message
-import com.tinder.scarlet.Scarlet
 import com.tinder.scarlet.WebSocket
-import com.tinder.scarlet.lifecycle.LifecycleRegistry
-import io.provenance.eventstream.Config
 import io.provenance.eventstream.DefaultDispatcherProvider
 import io.provenance.eventstream.DispatcherProvider
+import io.provenance.eventstream.adapter.json.decoder.DecoderEngine
 import io.provenance.eventstream.logger
 import io.provenance.eventstream.stream.clients.TendermintServiceClient
 import io.provenance.eventstream.stream.models.*
@@ -17,12 +14,9 @@ import io.provenance.eventstream.stream.models.extensions.blockEvents
 import io.provenance.eventstream.stream.models.extensions.dateTime
 import io.provenance.eventstream.stream.models.extensions.txEvents
 import io.provenance.eventstream.stream.models.extensions.txHash
-import io.provenance.eventstream.stream.models.Subscribe
-import io.provenance.eventstream.stream.models.MessageType
 import io.provenance.eventstream.utils.backoff
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
-import org.slf4j.LoggerFactory
 import java.io.EOFException
 import java.net.ConnectException
 import java.net.SocketException
@@ -38,10 +32,10 @@ import kotlin.time.ExperimentalTime
 class EventStream(
     private val eventStreamService: EventStreamService,
     private val tendermintServiceClient: TendermintServiceClient,
-    private val moshi: Moshi,
+    private val decoder: DecoderEngine,
     private val dispatchers: DispatcherProvider = DefaultDispatcherProvider(),
-    private val options: Options = Options.DEFAULT
-) {
+    private val options: BlockStreamOptions = BlockStreamOptions()
+) : BlockSource {
     companion object {
         /**
          * The default number of blocks that will be contained in a batch.
@@ -56,152 +50,12 @@ class EventStream(
         const val TENDERMINT_MAX_QUERY_RANGE = 20
     }
 
-    data class Options(
-        val concurrency: Int,
-        val batchSize: Int,
-        val fromHeight: Long?,
-        val toHeight: Long?,
-        val skipIfEmpty: Boolean,
-        val blockEventPredicate: ((event: String) -> Boolean)?,
-        val txEventPredicate: ((event: String) -> Boolean)?
-    ) {
-        companion object {
-            val DEFAULT: Options = Builder().build()
-            fun builder() = Builder()
-        }
-
-        fun withConcurrency(concurrency: Int) = this.copy(concurrency = concurrency)
-        fun withBatchSize(size: Int) = this.copy(batchSize = size)
-        fun withFromHeight(height: Long?) = this.copy(fromHeight = height)
-        fun withToHeight(height: Long?) = this.copy(toHeight = height)
-        fun withSkipIfEmpty(value: Boolean) = this.copy(skipIfEmpty = value)
-        fun withBlockEventPredicate(predicate: ((event: String) -> Boolean)?) =
-            this.copy(blockEventPredicate = predicate)
-
-        fun withTxEventPredicate(predicate: ((event: String) -> Boolean)?) = this.copy(txEventPredicate = predicate)
-
-        class Builder {
-            private var concurrency: Int = DEFAULT_CONCURRENCY
-            private var batchSize: Int = DEFAULT_BATCH_SIZE
-            private var fromHeight: Long? = null
-            private var toHeight: Long? = null
-            private var skipIfEmpty: Boolean = false
-            private var blockEventPredicate: ((event: String) -> Boolean)? = null
-            private var txEventPredicate: ((event: String) -> Boolean)? = null
-
-            /**
-             * Sets the concurrency level when merging disparate streams of block data.
-             *
-             * @property level The concurrency level.
-             */
-            fun concurrency(level: Int) = apply { concurrency = level }
-
-            /**
-             * Sets the maximum number of blocks that will be fetched and processed concurrently.
-             *
-             * @property size The batch size.
-             */
-            fun batchSize(size: Int) = apply { batchSize = size }
-
-            /**
-             * Sets the lowest height to fetch historical blocks from.
-             *
-             * If no minimum height is provided, only live blocks will be streamed.
-             *
-             * @property height The minimum height to fetch blocks from.
-             */
-            fun fromHeight(height: Long?) = apply { fromHeight = height }
-            fun fromHeight(height: Long) = apply { fromHeight = height }
-
-            /**
-             * Sets the highest height to fetch historical blocks to. If no maximum height is provided, blocks will
-             * be fetched up to the latest height, as resulted by the ABCIInfo endpoint.
-             *
-             * @property height The maximum height to fetch blocks to.
-             */
-            fun toHeight(height: Long?) = apply { toHeight = height }
-            fun toHeight(height: Long) = apply { toHeight = height }
-
-            /**
-             * Toggles skipping blocks that contain no transaction data.
-             *
-             * @property value If true, blocks that contain no transaction data will not be processed.
-             */
-            fun skipIfEmpty(value: Boolean) = apply { skipIfEmpty = value }
-
-            /**
-             * Filter blocks by one or more specific block events (case-insensitive).
-             * Only blocks possessing the specified block event(s) will be streamed.
-             *
-             * @property predicate If evaluates to true will include the given block for processing.
-             */
-            fun matchBlockEvent(predicate: (event: String) -> Boolean) =
-                apply { blockEventPredicate = predicate }
-
-            /**
-             * Filter blocks by one or more specific transaction events (case-insensitive).
-             * Only blocks possessing the specified transaction event(s) will be streamed.
-             *
-             * @property predicate If evaluated to true will include the given block for processing.
-             */
-            fun matchTxEvent(predicate: (event: String) -> Boolean) = apply { txEventPredicate = predicate }
-
-            /**
-             * @return An Options instance used to construct an event stream
-             */
-            fun build(): Options = Options(
-                concurrency = concurrency,
-                batchSize = batchSize,
-                fromHeight = fromHeight,
-                toHeight = toHeight,
-                skipIfEmpty = skipIfEmpty,
-                blockEventPredicate = blockEventPredicate,
-                txEventPredicate = txEventPredicate
-            )
-        }
-    }
-
-    class Factory(
-        private val config: Config,
-        private val moshi: Moshi,
-        private val eventStreamBuilder: Scarlet.Builder,
-        private val tendermintServiceClient: TendermintServiceClient,
-        private val dispatchers: DispatcherProvider = DefaultDispatcherProvider(),
-    ) {
-        private fun noop(_options: Options.Builder) {}
-        private val log = LoggerFactory.getLogger(javaClass)
-
-        fun create(setOptions: (options: Options.Builder) -> Unit = ::noop): EventStream {
-            val optionsBuilder = Options.Builder()
-                .batchSize(config.eventStream.batch.size)
-                .skipIfEmpty(true)
-            setOptions(optionsBuilder)
-            return create(optionsBuilder.build())
-        }
-
-        fun create(options: Options): EventStream {
-            log.info("Connecting stream instance to ${config.eventStream.websocket.uri}")
-            val lifecycle = LifecycleRegistry(config.eventStream.websocket.throttleDurationMs)
-            val scarlet: Scarlet = eventStreamBuilder.lifecycle(lifecycle).build()
-            val tendermintRpc: TendermintRPCStream = scarlet.create(TendermintRPCStream::class.java)
-            val eventStreamService = TendermintEventStreamService(tendermintRpc, lifecycle)
-
-            return EventStream(
-                eventStreamService,
-                tendermintServiceClient,
-                moshi,
-                options = options,
-                dispatchers = dispatchers
-            )
-        }
-    }
-
     private val log = logger()
 
     /**
      * A decoder for Tendermint RPC API messages.
      */
-    private val responseMessageDecoder: MessageType.Decoder = MessageType.Decoder(moshi)
+    private val responseMessageDecoder: MessageType.Decoder = MessageType.Decoder(decoder)
 
     /**
      * A serializer function that converts a [StreamBlock] instance to a JSON string.
@@ -209,7 +63,7 @@ class EventStream(
      * @return (StreamBlock) -> String
      */
     val serializer: (StreamBlock) -> String =
-        { block: StreamBlock -> moshi.adapter(StreamBlock::class.java).toJson(block) }
+        { block: StreamBlock -> decoder.adapter(StreamBlock::class).toJson(block) }
 
     /**
      * Computes and returns the starting height (if it can be determined) to be used when streaming historical blocks.
@@ -270,7 +124,7 @@ class EventStream(
             .result
             ?.blockMetas
             .let {
-                if (options.skipIfEmpty) {
+                if (options.skipEmptyBlocks) {
                     it?.filter { it.numTxs ?: 0 > 0 }
                 } else {
                     it
@@ -286,8 +140,8 @@ class EventStream(
      * @return True or false if [Options.blockEventPredicate] matches a block-level event associated with a block.
      * If the return value is null, then [Options.blockEventPredicate] was never set.
      */
-    private fun <T : EncodedBlockchainEvent> matchesBlockEvent(blockEvents: List<T>): Boolean? =
-        options.blockEventPredicate?.let { p -> blockEvents.isEmpty() || blockEvents.any { p(it.eventType) } }
+    private fun <T : EncodedBlockchainEvent> matchesBlockEvent(blockEvents: List<T>): Boolean =
+        blockEvents.isEmpty() || blockEvents.any { it.eventType in options.blockEvents }
 
     /**
      * Test if any transaction events match the supplied predicate.
@@ -295,8 +149,8 @@ class EventStream(
      * @return True or false if [Options.txEventPredicate] matches a transaction-level event associated with a block.
      * If the return value is null, then [Options.txEventPredicate] was never set.
      */
-    private fun <T : EncodedBlockchainEvent> matchesTxEvent(txEvents: List<T>): Boolean? =
-        options.txEventPredicate?.let { p -> txEvents.isEmpty() || txEvents.any { p(it.eventType) } }
+    private fun <T : EncodedBlockchainEvent> matchesTxEvent(txEvents: List<T>): Boolean =
+        txEvents.isEmpty() || txEvents.any { it.eventType in options.txEvents }
 
     /**
      * Query a block by height, returning any events associated with the block.
@@ -307,7 +161,7 @@ class EventStream(
      */
     private suspend fun queryBlock(
         heightOrBlock: Either<Long, Block>,
-        skipIfNoTxs: Boolean = true
+        skipIfNoTxs: Boolean = options.skipEmptyBlocks,
     ): StreamBlock? {
         val block: Block? = when (heightOrBlock) {
             is Either.Left<Long> -> tendermintServiceClient.block(heightOrBlock.value).result?.block
@@ -326,12 +180,8 @@ class EventStream(
             val streamBlock = StreamBlock(this, blockEvents, txEvents)
             val matchBlock = matchesBlockEvent(blockEvents)
             val matchTx = matchesTxEvent(txEvents)
-            // ugly:
-            if ((matchBlock == null && matchTx == null)
-                || (matchBlock == null && matchTx != null && matchTx)
-                || (matchBlock != null && matchBlock && matchTx == null)
-                || (matchBlock != null && matchBlock && matchTx != null && matchTx)
-            ) {
+
+            if (matchBlock || matchTx) {
                 streamBlock
             } else {
                 null
@@ -357,7 +207,7 @@ class EventStream(
                     coroutineScope {
                         // Concurrently process <batch-size> blocks at a time:
                         chunkOfHeights.map { height ->
-                            async { queryBlock(Either.Left(height), skipIfNoTxs = options.skipIfEmpty) }
+                            async { queryBlock(Either.Left(height), skipIfNoTxs = options.skipEmptyBlocks) }
                         }
                             .awaitAll()
                             .filterNotNull()
@@ -510,7 +360,7 @@ class EventStream(
      *
      * @return A Flow of live and historical blocks, plus associated event data.
      */
-    fun streamBlocks(): Flow<StreamBlock> = flow {
+    override suspend fun streamBlocks(): Flow<StreamBlock> = flow {
         val startingHeight: Long? = getStartingHeight()
 
         if (startingHeight != null) {

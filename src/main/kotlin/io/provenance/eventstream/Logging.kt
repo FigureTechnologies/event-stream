@@ -5,6 +5,10 @@ import org.slf4j.LoggerFactory
 
 fun String.logger(): Logger = LoggerFactory.getLogger(this)
 
+fun Logger.info(block: () -> String) { if (isInfoEnabled) info(block()) }
+fun Logger.debug(block: () -> String) { if (isDebugEnabled) debug(block()) }
+fun Logger.trace(block: () -> String) { if (isTraceEnabled) trace(block()) }
+
 fun <T : Any> T.logger(): Logger = LoggerFactory.getLogger(this::class.java)
 
 fun <T> withMdc(vararg items: Pair<String, Any?>, fn: () -> T): T {

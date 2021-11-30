@@ -1,19 +1,19 @@
 package io.provenance.eventstream.stream.decoder
 
-import com.squareup.moshi.*
+import io.provenance.eventstream.adapter.json.decoder.Adapter
+import io.provenance.eventstream.adapter.json.decoder.DecoderEngine
 import io.provenance.eventstream.stream.models.MessageType
 import io.provenance.eventstream.stream.models.RpcError
 import io.provenance.eventstream.stream.models.RpcResponse
 import org.json.JSONObject
 
-class ErrorMessageDecoder(moshi: Moshi) : Decoder(moshi) {
-
+class ErrorMessageDecoder(decoderEngine: DecoderEngine) : Decoder(decoderEngine) {
     override val priority: Int = 99
 
-    // The response will come come wrapped in a "response" { } property in the event of an error.
+    // The response will come wrapped in a "response" { } property in the event of an error.
 
-    private val adapter: JsonAdapter<RpcResponse<JSONObject>> = moshi.adapter(
-        Types.newParameterizedType(RpcResponse::class.java, JSONObject::class.java)
+    private val adapter: Adapter<RpcResponse<JSONObject>> = decoderEngine.adapter(
+        decoderEngine.parameterizedType<RpcResponse<JSONObject>>(RpcResponse::class.java, JSONObject::class.java)
     )
 
     private fun toError(obj: JSONObject): RpcError? {

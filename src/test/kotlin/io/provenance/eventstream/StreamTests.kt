@@ -10,6 +10,7 @@ import io.provenance.eventstream.stream.models.MessageType
 import io.provenance.eventstream.test.base.TestBase
 import io.provenance.eventstream.test.mocks.*
 import io.provenance.eventstream.test.utils.*
+import io.provenance.eventstream.utils.Builders
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.count
