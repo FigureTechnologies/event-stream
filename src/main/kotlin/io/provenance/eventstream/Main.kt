@@ -7,25 +7,15 @@ import com.tinder.scarlet.messageadapter.moshi.MoshiMessageAdapter
 import com.tinder.scarlet.websocket.okhttp.newWebSocketFactory
 import com.tinder.streamadapter.coroutines.CoroutinesStreamAdapterFactory
 import io.provenance.eventstream.adapter.json.JSONObjectAdapter
-import io.provenance.eventstream.adapter.json.decoder.Adapter
-import io.provenance.eventstream.adapter.json.decoder.DecoderEngine
 import io.provenance.eventstream.adapter.json.decoder.MoshiDecoderEngine
-import io.provenance.eventstream.adapter.json.decoder.adapter
-import io.provenance.eventstream.extensions.repeatDecodeBase64
 import io.provenance.eventstream.stream.*
 import io.provenance.eventstream.stream.clients.TendermintServiceOpenApiClient
-import io.provenance.eventstream.stream.consumers.BlockSink
-import io.provenance.eventstream.stream.consumers.blockSink
 import io.provenance.eventstream.stream.infrastructure.Serializer
-import io.provenance.eventstream.stream.models.StreamBlock
-import io.provenance.eventstream.stream.models.extensions.dateTime
-import io.provenance.eventstream.utils.sha256
+import io.provenance.eventstream.stream.observers.consoleOutput
+import io.provenance.eventstream.stream.observers.fileOutput
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 import okhttp3.OkHttpClient
-import org.slf4j.Logger
-import java.io.File
-import java.math.BigInteger
 import java.net.URI
 import java.util.concurrent.TimeUnit
 
@@ -81,55 +71,10 @@ fun main(args: Array<String>) {
         stream.streamBlocks()
             .buffer()
             .catch { log.error("", it) }
-            .observe(observeBlock(config.verbose, logger()))
-            .observe(writeJsonBlock("./data", decoderEngine))
+            .observe(consoleOutput(config.verbose))
+            .observe(fileOutput("./data", decoderEngine))
             .collect()
     }
 }
 
 private fun <T> Flow<T>.observe(block: (T) -> Unit) = onEach { block(it) }
-
-fun ByteArray.toHex(): String {
-    val bi = BigInteger(1, this)
-    return String.format("%0" + (this.size shl 1) + "X", bi)
-}
-
-@OptIn(ExperimentalStdlibApi::class)
-fun writeJsonBlock(dir: String, decoderEngine: DecoderEngine): BlockSink {
-    val adapter: Adapter<StreamBlock> = decoderEngine.adapter()
-    File(dir).mkdirs()
-    return blockSink {
-        val checksum = sha256(it.height.toString()).toHex()
-        val splay = checksum.take(4)
-        val dirname = "$dir/$splay"
-
-        File(dirname).let { f -> if (!f.exists()) f.mkdirs() }
-
-        val filename = "$dirname/${it.height.toString().padStart(10, '0')}.json"
-        val file = File(filename)
-        if (!file.exists()) {
-            file.writeText(adapter.toJson(it))
-        }
-    }
-}
-
-fun observeBlock(verbose: Boolean, log: Logger) = blockSink {
-    val text = "Block: ${it.block.header?.height ?: "--"}:${it.block.header?.dateTime()?.toLocalDate()} ${it.block.header?.lastBlockId?.hash}" +
-            "; ${it.txEvents.size} tx event(s)"
-    log.info { text }
-
-    if (verbose) {
-        for (event in it.blockEvents) {
-            log.info { "  Block-Event: ${event.eventType}" }
-            for (attr in event.attributes) {
-                log.info { "    ${attr.key?.repeatDecodeBase64()}: ${attr.value?.repeatDecodeBase64()}" }
-            }
-        }
-        for (event in it.txEvents) {
-            log.info { "  Tx-Event: ${event.eventType}" }
-            for (attr in event.attributes) {
-                log.info { "    ${attr.key?.repeatDecodeBase64()}: ${attr.value?.repeatDecodeBase64()}" }
-            }
-        }
-    }
-}
