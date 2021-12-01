@@ -1,4 +1,4 @@
-package io.provenance.eventstream.test.mocks
+package io.provenance.eventstream.mocks
 
 import com.squareup.moshi.JsonAdapter
 import com.squareup.moshi.Moshi

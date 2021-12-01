@@ -2,6 +2,7 @@ package io.provenance.eventstream.utils
 
 import com.squareup.moshi.Moshi
 import io.provenance.eventstream.DispatcherProvider
+import io.provenance.eventstream.adapter.json.decoder.MoshiDecoderEngine
 import io.provenance.eventstream.stream.BlockStreamOptions
 import io.provenance.eventstream.stream.EventStream
 import io.provenance.eventstream.stream.EventStreamService
@@ -10,7 +11,7 @@ import io.provenance.eventstream.stream.models.ABCIInfoResponse
 import io.provenance.eventstream.stream.models.BlockResponse
 import io.provenance.eventstream.stream.models.BlockResultsResponse
 import io.provenance.eventstream.stream.models.BlockchainResponse
-import io.provenance.eventstream.test.mocks.MockEventStreamService
+import io.provenance.eventstream.mocks.MockEventStreamService
 import io.provenance.eventstream.test.mocks.MockTendermintServiceClient
 import io.provenance.eventstream.test.mocks.ServiceMocker
 import io.provenance.eventstream.test.utils.Defaults
@@ -93,7 +94,7 @@ object Builders {
                         .build(),
                 tendermintServiceClient = tendermintServiceClient
                     ?: tendermintService().build(MockTendermintServiceClient::class.java),
-                moshi = moshi ?: Defaults.moshi,
+                decoder = if (moshi != null) MoshiDecoderEngine(moshi!!) else Defaults.decoderEngine(),
                 dispatchers = dispatchers,
                 options = options,
             )

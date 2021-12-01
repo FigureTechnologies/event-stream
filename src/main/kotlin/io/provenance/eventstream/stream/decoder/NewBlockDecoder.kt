@@ -5,7 +5,6 @@ import io.provenance.eventstream.adapter.json.decoder.DecoderEngine
 import io.provenance.eventstream.stream.NewBlockResult
 import io.provenance.eventstream.stream.models.MessageType
 import io.provenance.eventstream.stream.models.RpcResponse
-import org.json.JSONObject
 
 class NewBlockDecoder(decoderEngine: DecoderEngine) : Decoder(decoderEngine) {
     override val priority: Int = 100
@@ -14,7 +13,7 @@ class NewBlockDecoder(decoderEngine: DecoderEngine) : Decoder(decoderEngine) {
     // because it's not possible to do something like `RpcResponse<NewBlockResult>::class.java`:
     // See https://stackoverflow.com/questions/46193355/moshi-generic-type-adapter
     private val adapter: Adapter<RpcResponse<NewBlockResult>> = decoderEngine.adapter(
-        decoderEngine.parameterizedType<RpcResponse<JSONObject>>(RpcResponse::class.java, NewBlockResult::class.java)
+        decoderEngine.parameterizedType(RpcResponse::class.java, NewBlockResult::class.java)
     )
 
     override fun decode(input: String): MessageType.NewBlock? {

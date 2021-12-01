@@ -11,9 +11,8 @@ class ErrorMessageDecoder(decoderEngine: DecoderEngine) : Decoder(decoderEngine)
     override val priority: Int = 99
 
     // The response will come wrapped in a "response" { } property in the event of an error.
-
     private val adapter: Adapter<RpcResponse<JSONObject>> = decoderEngine.adapter(
-        decoderEngine.parameterizedType<RpcResponse<JSONObject>>(RpcResponse::class.java, JSONObject::class.java)
+        decoderEngine.parameterizedType(RpcResponse::class.java, JSONObject::class.java)
     )
 
     private fun toError(obj: JSONObject): RpcError? {

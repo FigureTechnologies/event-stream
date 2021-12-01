@@ -1,7 +1,7 @@
 package io.provenance.eventstream.stream.models
 
+import io.provenance.eventstream.adapter.json.decoder.DecoderDataException
 import io.provenance.eventstream.adapter.json.decoder.DecoderEngine
-import io.provenance.eventstream.adapter.json.decoder.DecoderException
 import io.provenance.eventstream.stream.NewBlockResult
 import kotlin.reflect.full.primaryConstructor
 import io.provenance.eventstream.stream.decoder.Decoder as TDecoder
@@ -26,7 +26,7 @@ sealed interface MessageType {
                     if (message != null) {
                         return message
                     }
-                } catch (_: DecoderException) {
+                } catch (_: DecoderDataException) {
                 }
             }
             return Unknown

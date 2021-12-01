@@ -9,7 +9,7 @@ import kotlinx.coroutines.test.setMain
 @OptIn(ExperimentalCoroutinesApi::class)
 open class TestBase {
 
-    val moshi = Defaults.moshi
+    val decoderEngine = Defaults.decoderEngine()
     val templates = Defaults.templates
 
     val dispatcherProvider = TestDispatcherProvider()

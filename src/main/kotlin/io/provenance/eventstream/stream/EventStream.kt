@@ -134,23 +134,21 @@ class EventStream(
             .sortedWith(naturalOrder<Long>())
     }
 
-    /**
-     * Test if any block events match the supplied predicate.
-     *
-     * @return True or false if [Options.blockEventPredicate] matches a block-level event associated with a block.
-     * If the return value is null, then [Options.blockEventPredicate] was never set.
-     */
-    private fun <T : EncodedBlockchainEvent> matchesBlockEvent(blockEvents: List<T>): Boolean =
-        blockEvents.isEmpty() || blockEvents.any { it.eventType in options.blockEvents }
+    private fun <T : EncodedBlockchainEvent> keepBlock(events: List<T>): Boolean {
+        if (options.txEvents.isEmpty() && options.blockEvents.isEmpty()) {
+            return true
+        }
 
-    /**
-     * Test if any transaction events match the supplied predicate.
-     *
-     * @return True or false if [Options.txEventPredicate] matches a transaction-level event associated with a block.
-     * If the return value is null, then [Options.txEventPredicate] was never set.
-     */
-    private fun <T : EncodedBlockchainEvent> matchesTxEvent(txEvents: List<T>): Boolean =
-        txEvents.isEmpty() || txEvents.any { it.eventType in options.txEvents }
+        if (options.txEvents.isNotEmpty() && events.any { it.eventType in options.txEvents }) {
+            return true
+        }
+
+        if (options.blockEvents.isNotEmpty() && events.any { it.eventType in options.blockEvents }) {
+            return true
+        }
+
+        return false
+    }
 
     /**
      * Query a block by height, returning any events associated with the block.
@@ -175,13 +173,10 @@ class EventStream(
         return block?.run {
             val blockDatetime = header?.dateTime()
             val blockResponse = tendermintServiceClient.blockResults(header?.height).result
-            val blockEvents: List<BlockEvent> = blockResponse.blockEvents(blockDatetime)
-            val txEvents: List<TxEvent> = blockResponse.txEvents(blockDatetime) { index: Int -> txHash(index) ?: "" }
+            val blockEvents = blockResponse.blockEvents(blockDatetime)
+            val txEvents = blockResponse.txEvents(blockDatetime) { index: Int -> txHash(index) ?: "" }
             val streamBlock = StreamBlock(this, blockEvents, txEvents)
-            val matchBlock = matchesBlockEvent(blockEvents)
-            val matchTx = matchesTxEvent(txEvents)
-
-            if (matchBlock || matchTx) {
+            if (keepBlock(txEvents + blockEvents)) {
                 streamBlock
             } else {
                 null

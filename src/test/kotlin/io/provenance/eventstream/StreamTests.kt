@@ -3,6 +3,9 @@ package io.provenance.eventstream.test
 import com.squareup.moshi.JsonEncodingException
 import com.tinder.scarlet.Message
 import com.tinder.scarlet.WebSocket
+import io.provenance.eventstream.adapter.json.decoder.DecoderEncodingException
+import io.provenance.eventstream.adapter.json.decoder.DecoderException
+import io.provenance.eventstream.mocks.MockEventStreamService
 import io.provenance.eventstream.stream.clients.TendermintServiceClient
 import io.provenance.eventstream.stream.models.*
 import io.provenance.eventstream.stream.models.extensions.toDecodedMap
@@ -19,8 +22,7 @@ import org.junit.jupiter.api.*
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class StreamTests : TestBase() {
-
-    val decoder = MessageType.Decoder(moshi)
+    private val decoder = MessageType.Decoder(decoderEngine)
 
     @BeforeAll
     override fun setup() {
@@ -50,7 +52,7 @@ class StreamTests : TestBase() {
 
         @Test
         fun testTryDecodeMalformedMessage() {
-            assertThrows<JsonEncodingException> {
+            assertThrows<DecoderEncodingException> {
                 decoder.decode(templates.read("rpc/responses/malformed.json"))
             }
         }
@@ -271,7 +273,7 @@ class StreamTests : TestBase() {
                     val event = receiver.receive()  // block
                     assert(event is WebSocket.Event.OnMessageReceived)
                     val payload = ((event as WebSocket.Event.OnMessageReceived).message as Message.Text).value
-                    val response: BlockResponse? = moshi.adapter(BlockResponse::class.java).fromJson(payload)
+                    val response: BlockResponse? = decoderEngine.adapter(BlockResponse::class).fromJson(payload)
                     assert(response?.result?.block?.header?.height in heights)
                 }
             }
@@ -287,7 +289,7 @@ class StreamTests : TestBase() {
                 val collectedNoSkip = Builders.eventStream()
                     .dispatchers(dispatcherProvider)
                     .fromHeight(MIN_HISTORICAL_BLOCK_HEIGHT)
-                    .skipIfEmpty(false)
+                    .skipEmptyBlocks(false)
                     .build()
                     .streamHistoricalBlocks()
                     .toList()
@@ -299,6 +301,7 @@ class StreamTests : TestBase() {
                 val collectedSkip = Builders.eventStream()
                     .dispatchers(dispatcherProvider)
                     .fromHeight(MIN_HISTORICAL_BLOCK_HEIGHT)
+                    .skipEmptyBlocks(true)
                     .build()
                     .streamHistoricalBlocks().toList()
                     .toList()
@@ -325,7 +328,7 @@ class StreamTests : TestBase() {
                     .dispatchers(dispatcherProvider)
                     .eventStreamService(eventStreamService)
                     .tendermintService(tendermintService)
-                    .skipIfEmpty(false)
+                    .skipEmptyBlocks(false)
                     .build()
 
                 val collected = eventStream
@@ -358,7 +361,7 @@ class StreamTests : TestBase() {
                     .eventStreamService(eventStreamService)
                     .tendermintService(tendermintService)
                     .fromHeight(MIN_HISTORICAL_BLOCK_HEIGHT)
-                    .skipIfEmpty(true)
+                    .skipEmptyBlocks(true)
                     .build()
 
                 val expectTotal = EXPECTED_NONEMPTY_BLOCKS + eventStreamService.expectedResponseCount()
@@ -393,7 +396,7 @@ class StreamTests : TestBase() {
                         .eventStreamService(eventStreamService)
                         .tendermintService(tendermintService)
                         .fromHeight(MIN_HISTORICAL_BLOCK_HEIGHT)
-                        .skipIfEmpty(true)
+                        .skipEmptyBlocks(true)
                         .build()
 
                     eventStream.streamBlocks().toList()
@@ -424,8 +427,8 @@ class StreamTests : TestBase() {
                     .eventStreamService(eventStreamService)
                     .tendermintService(tendermintService)
                     .fromHeight(MIN_HISTORICAL_BLOCK_HEIGHT)
-                    .skipIfEmpty(true)
-                    .matchTxEvent { it == requireTxEvent }
+                    .skipEmptyBlocks(true)
+                    .matchTxEvents(setOf(requireTxEvent))
                     .build()
 
                 assert(eventStream.streamBlocks().count() == 0)
@@ -451,8 +454,8 @@ class StreamTests : TestBase() {
                     .eventStreamService(eventStreamService)
                     .tendermintService(tendermintService)
                     .fromHeight(MIN_HISTORICAL_BLOCK_HEIGHT)
-                    .skipIfEmpty(true)
-                    .matchTxEvent { it == requireTxEvent }
+                    .skipEmptyBlocks(true)
+                    .matchTxEvents(setOf(requireTxEvent))
                     .build()
 
                 val collected = eventStream
