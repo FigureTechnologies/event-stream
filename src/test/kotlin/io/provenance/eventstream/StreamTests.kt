@@ -285,7 +285,7 @@ class StreamTests : TestBase() {
 
             dispatcherProvider.runBlockingTest {
 
-                // If not skipping empty blocks, we should get 100:
+                // If not skipping empty blocks, we should get EXPECTED_TOTAL_BLOCKS:
                 val collectedNoSkip = Builders.eventStream()
                     .dispatchers(dispatcherProvider)
                     .fromHeight(MIN_HISTORICAL_BLOCK_HEIGHT)
