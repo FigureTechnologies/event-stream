@@ -39,7 +39,7 @@ data class EventStreamConfig(
 )
 
 data class HeightConfig(
-    val from: Long = 0,
+    val from: Long = 1,
     val to: Long? = null,
 )
 

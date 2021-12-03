@@ -160,8 +160,6 @@ tasks.register<org.openapitools.generator.gradle.plugin.tasks.GenerateTask>("gen
             "artifactId" to "tendermint-api",
             "dateLibrary" to "java8",
             "moshiCodeGen" to true.toString(),
-            "modelMutable" to false.toString(),
-            "serializableModel" to true.toString(),
             "serializationLibrary" to "moshi",
             "useCoroutines" to true.toString()
         )

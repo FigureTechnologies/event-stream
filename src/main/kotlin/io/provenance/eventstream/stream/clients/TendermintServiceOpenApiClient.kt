@@ -23,7 +23,4 @@ class TendermintServiceOpenApiClient(rpcUrlBase: String) : TendermintServiceClie
     override suspend fun block(height: Long?): BlockResponse = infoApi.block(height)
 
     override suspend fun blockResults(height: Long?): BlockResultsResponse = infoApi.blockResults(height)
-
-    override suspend fun blockchain(minHeight: Long?, maxHeight: Long?): BlockchainResponse =
-        infoApi.blockchain(minHeight, maxHeight)
 }

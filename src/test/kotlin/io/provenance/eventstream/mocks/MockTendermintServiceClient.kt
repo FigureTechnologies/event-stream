@@ -4,7 +4,6 @@ import io.provenance.eventstream.stream.clients.TendermintServiceClient
 import io.provenance.eventstream.stream.models.*
 
 class MockTendermintServiceClient(mocker: ServiceMock) : TendermintServiceClient, ServiceMock by mocker {
-
     override suspend fun abciInfo() =
         respondWith<ABCIInfoResponse>("abciInfo")
 

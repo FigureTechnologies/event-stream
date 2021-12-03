@@ -51,6 +51,7 @@ class DefaultBlockStreamFactory(
 
         return EventStream(
             eventStreamService,
+            TMBlockFetcher(tendermintServiceClient),
             tendermintServiceClient,
             decoderEngine,
             options = options,

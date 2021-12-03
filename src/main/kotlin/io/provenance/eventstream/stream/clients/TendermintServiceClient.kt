@@ -12,6 +12,12 @@ interface TendermintServiceClient {
     suspend fun abciInfo(): ABCIInfoResponse
     suspend fun block(height: Long?): BlockResponse
     suspend fun blockResults(height: Long?): BlockResultsResponse
-    suspend fun blockchain(minHeight: Long?, maxHeight: Long?): BlockchainResponse
+    //suspend fun blockchain(minHeight: Long?, maxHeight: Long?): BlockchainResponse
 }
 
+/**
+ * The maximum size of the query range for block heights allowed by the Tendermint API.
+ * This means, for a given block height `H`, we can ask for blocks in the range [`H`, `H` + `TENDERMINT_MAX_QUERY_RANGE`].
+ * Requesting a larger range will result in the API emitting an error.
+ */
+const val TENDERMINT_MAX_QUERY_RANGE = 20

@@ -68,7 +68,7 @@ fun main(args: Array<String>) {
     runBlocking(Dispatchers.IO) {
         log.info("config: $config")
 
-        stream.streamBlocks()
+        stream.streamBlocks(config.eventStream.height.from, config.eventStream.height.to)
             .buffer()
             .catch { log.error("", it) }
             .observe(consoleOutput(config.verbose))
