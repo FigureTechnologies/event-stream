@@ -4,17 +4,32 @@ import com.squareup.moshi.JsonEncodingException
 import com.tinder.scarlet.Message
 import com.tinder.scarlet.WebSocket
 import io.provenance.eventstream.stream.TendermintServiceClient
-import io.provenance.eventstream.stream.models.*
+import io.provenance.eventstream.stream.models.ABCIInfoResponse
+import io.provenance.eventstream.stream.models.BlockResponse
+import io.provenance.eventstream.stream.models.BlockResultsResponse
+import io.provenance.eventstream.stream.models.BlockchainResponse
+import io.provenance.eventstream.stream.models.Event
 import io.provenance.eventstream.stream.models.extensions.toDecodedMap
 import io.provenance.eventstream.stream.models.rpc.response.MessageType
 import io.provenance.eventstream.test.base.TestBase
-import io.provenance.eventstream.test.mocks.*
-import io.provenance.eventstream.test.utils.*
+import io.provenance.eventstream.test.mocks.MockEventStreamService
+import io.provenance.eventstream.test.mocks.MockTendermintServiceClient
+import io.provenance.eventstream.test.mocks.ServiceMocker
+import io.provenance.eventstream.test.utils.Builders
+import io.provenance.eventstream.test.utils.EXPECTED_NONEMPTY_BLOCKS
+import io.provenance.eventstream.test.utils.EXPECTED_TOTAL_BLOCKS
+import io.provenance.eventstream.test.utils.MIN_HISTORICAL_BLOCK_HEIGHT
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.count
 import kotlinx.coroutines.flow.toList
-import org.junit.jupiter.api.*
+import org.junit.jupiter.api.AfterAll
+import org.junit.jupiter.api.BeforeAll
+import org.junit.jupiter.api.DisplayName
+import org.junit.jupiter.api.Nested
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.TestInstance
+import org.junit.jupiter.api.assertThrows
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class StreamTests : TestBase() {
@@ -226,7 +241,6 @@ class StreamTests : TestBase() {
                 val heights: Set<Long> = blockMetas?.mapNotNull { b -> b.header?.height }?.toSet() ?: setOf()
 
                 assert((expectedHeights - heights).isEmpty())
-
             }
 
             assertThrows<Throwable> {
@@ -253,12 +267,12 @@ class StreamTests : TestBase() {
                 )
                 val blocks: Array<BlockResponse> =
                     heights
-                        .map { templates.unsafeReadAs(BlockResponse::class.java, "block/${it}.json") }
+                        .map { templates.unsafeReadAs(BlockResponse::class.java, "block/$it.json") }
                         .toTypedArray()
 
                 // set up:
                 val ess = MockEventStreamService
-                    .builder()
+                    .Builder()
                     .dispatchers(dispatcherProvider)
                     .response(BlockResponse::class.java, *blocks)
                     .build()
@@ -267,7 +281,8 @@ class StreamTests : TestBase() {
 
                 // make sure we get the same stuff back out:
                 dispatcherProvider.runBlockingTest {
-                    val event = receiver.receive()  // block
+                    // receive is a blocking call:
+                    val event = receiver.receive()
                     assert(event is WebSocket.Event.OnMessageReceived)
                     val payload = ((event as WebSocket.Event.OnMessageReceived).message as Message.Text).value
                     val response: BlockResponse? = moshi.adapter(BlockResponse::class.java).fromJson(payload)
@@ -458,9 +473,11 @@ class StreamTests : TestBase() {
                     .streamBlocks()
                     .toList()
 
-                assert(collected.all {
-                    requireTxEvent in it.txEvents.map { e -> e.eventType }
-                })
+                assert(
+                    collected.all {
+                        requireTxEvent in it.txEvents.map { e -> e.eventType }
+                    }
+                )
             }
         }
     }

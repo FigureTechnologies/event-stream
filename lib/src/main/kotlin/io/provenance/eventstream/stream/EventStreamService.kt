@@ -84,8 +84,8 @@ interface EventStreamService : TendermintRPCStream {
 /**
  * A service that emits realtime block data from the the Tendermint RPC API websocket.
  *
- * @property rpcStream The Tendermint RPC API websocket stream provider (powered by Scarlet).
- * @property lifecycle The lifecycle responsible for starting and stopping the underlying websocket event stream.
+ * @param rpcStream The Tendermint RPC API websocket stream provider (powered by Scarlet).
+ * @param lifecycle The lifecycle responsible for starting and stopping the underlying websocket event stream.
  */
 class TendermintEventStreamService(rpcStream: TendermintRPCStream, val lifecycle: LifecycleRegistry) :
     TendermintRPCStream by rpcStream, EventStreamService {

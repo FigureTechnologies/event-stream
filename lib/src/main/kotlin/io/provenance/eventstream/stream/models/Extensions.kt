@@ -1,8 +1,18 @@
 package io.provenance.eventstream.stream.models.extensions
 
+import com.google.api.client.util.Base64.decodeBase64
 import io.provenance.eventstream.extensions.decodeBase64
 import io.provenance.eventstream.extensions.hash
-import io.provenance.eventstream.stream.models.*
+import io.provenance.eventstream.stream.models.Block
+import io.provenance.eventstream.stream.models.BlockEvent
+import io.provenance.eventstream.stream.models.BlockHeader
+import io.provenance.eventstream.stream.models.BlockResponse
+import io.provenance.eventstream.stream.models.BlockResultsResponse
+import io.provenance.eventstream.stream.models.BlockResultsResponseResult
+import io.provenance.eventstream.stream.models.BlockResultsResponseResultEvents
+import io.provenance.eventstream.stream.models.BlockResultsResponseResultTxsResults
+import io.provenance.eventstream.stream.models.Event
+import io.provenance.eventstream.stream.models.TxEvent
 import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
 

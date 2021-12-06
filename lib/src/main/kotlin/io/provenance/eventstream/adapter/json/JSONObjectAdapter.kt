@@ -1,13 +1,17 @@
 package io.provenance.eventstream.adapter.json
 
-import com.squareup.moshi.*
+import com.squareup.moshi.FromJson
+import com.squareup.moshi.JsonAdapter
+import com.squareup.moshi.JsonReader
+import com.squareup.moshi.JsonWriter
+import com.squareup.moshi.ToJson
 import okio.Buffer
 import org.json.JSONObject
 
 /**
  * An adapter for [Moshi] to deserialize JSON into [JSONObject] as a target
  *
- * Usage:
+ * Example:
  *
  * ```
  * val moshi: Moshi = Moshi.Builder()

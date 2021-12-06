@@ -42,7 +42,6 @@ fun String.repeatDecodeBase64(): String {
         }
         s = t
         t = t.decodeBase64().stripQuotes()
-
     }
     return s
 }

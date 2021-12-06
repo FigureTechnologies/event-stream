@@ -14,4 +14,3 @@ interface TendermintServiceClient {
     suspend fun blockResults(height: Long?): BlockResultsResponse
     suspend fun blockchain(minHeight: Long?, maxHeight: Long?): BlockchainResponse
 }
-

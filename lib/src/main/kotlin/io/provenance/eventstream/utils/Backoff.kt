@@ -1,6 +1,6 @@
 package io.provenance.eventstream.utils
 
-import java.util.*
+import java.util.Random
 import kotlin.math.pow
 import kotlin.time.Duration
 import kotlin.time.ExperimentalTime

@@ -4,14 +4,14 @@ import arrow.core.Either
 import com.squareup.moshi.JsonDataException
 import com.squareup.moshi.Moshi
 import com.tinder.scarlet.Message
-import com.tinder.scarlet.Scarlet
 import com.tinder.scarlet.WebSocket
-import com.tinder.scarlet.lifecycle.LifecycleRegistry
-import io.provenance.eventstream.Config
-import io.provenance.eventstream.DefaultDispatcherProvider
-import io.provenance.eventstream.DispatcherProvider
-import io.provenance.eventstream.logger
-import io.provenance.eventstream.stream.models.*
+import io.provenance.eventstream.coroutines.DefaultDispatcherProvider
+import io.provenance.eventstream.coroutines.DispatcherProvider
+import io.provenance.eventstream.stream.models.Block
+import io.provenance.eventstream.stream.models.BlockEvent
+import io.provenance.eventstream.stream.models.EncodedBlockchainEvent
+import io.provenance.eventstream.stream.models.StreamBlock
+import io.provenance.eventstream.stream.models.TxEvent
 import io.provenance.eventstream.stream.models.extensions.blockEvents
 import io.provenance.eventstream.stream.models.extensions.dateTime
 import io.provenance.eventstream.stream.models.extensions.txEvents
@@ -19,8 +19,31 @@ import io.provenance.eventstream.stream.models.extensions.txHash
 import io.provenance.eventstream.stream.models.rpc.request.Subscribe
 import io.provenance.eventstream.stream.models.rpc.response.MessageType
 import io.provenance.eventstream.utils.backoff
-import kotlinx.coroutines.*
-import kotlinx.coroutines.flow.*
+import kotlin.time.ExperimentalTime
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.DEFAULT_CONCURRENCY
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.asFlow
+import kotlinx.coroutines.flow.cancellable
+import kotlinx.coroutines.flow.channelFlow
+import kotlinx.coroutines.flow.emitAll
+import kotlinx.coroutines.flow.flatMapMerge
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.mapNotNull
+import kotlinx.coroutines.flow.merge
+import kotlinx.coroutines.flow.onCompletion
+import kotlinx.coroutines.flow.onStart
+import kotlinx.coroutines.flow.retryWhen
+import kotlinx.coroutines.flow.transform
+import mu.KotlinLogging
 import java.io.EOFException
 import java.net.ConnectException
 import java.net.SocketException
@@ -29,7 +52,6 @@ import java.util.concurrent.CompletionException
 import kotlin.math.floor
 import kotlin.math.max
 import kotlin.math.min
-import kotlin.time.ExperimentalTime
 
 @OptIn(FlowPreview::class, ExperimentalTime::class)
 @ExperimentalCoroutinesApi
@@ -65,14 +87,18 @@ class EventStream(
     ) {
         companion object {
             val DEFAULT: Options = Builder().build()
-            fun builder() = Builder()
         }
 
         fun withConcurrency(concurrency: Int) = this.copy(concurrency = concurrency)
+
         fun withBatchSize(size: Int) = this.copy(batchSize = size)
+
         fun withFromHeight(height: Long?) = this.copy(fromHeight = height)
+
         fun withToHeight(height: Long?) = this.copy(toHeight = height)
+
         fun withSkipIfEmpty(value: Boolean) = this.copy(skipIfEmpty = value)
+
         fun withBlockEventPredicate(predicate: ((event: String) -> Boolean)?) =
             this.copy(blockEventPredicate = predicate)
 
@@ -90,14 +116,14 @@ class EventStream(
             /**
              * Sets the concurrency level when merging disparate streams of block data.
              *
-             * @property level The concurrency level.
+             * @param level The concurrency level.
              */
             fun concurrency(level: Int) = apply { concurrency = level }
 
             /**
              * Sets the maximum number of blocks that will be fetched and processed concurrently.
              *
-             * @property size The batch size.
+             * @param size The batch size.
              */
             fun batchSize(size: Int) = apply { batchSize = size }
 
@@ -106,7 +132,7 @@ class EventStream(
              *
              * If no minimum height is provided, only live blocks will be streamed.
              *
-             * @property height The minimum height to fetch blocks from.
+             * @param height The minimum height to fetch blocks from.
              */
             fun fromHeight(height: Long?) = apply { fromHeight = height }
             fun fromHeight(height: Long) = apply { fromHeight = height }
@@ -115,7 +141,7 @@ class EventStream(
              * Sets the highest height to fetch historical blocks to. If no maximum height is provided, blocks will
              * be fetched up to the latest height, as resulted by the ABCIInfo endpoint.
              *
-             * @property height The maximum height to fetch blocks to.
+             * @param height The maximum height to fetch blocks to.
              */
             fun toHeight(height: Long?) = apply { toHeight = height }
             fun toHeight(height: Long) = apply { toHeight = height }
@@ -123,7 +149,7 @@ class EventStream(
             /**
              * Toggles skipping blocks that contain no transaction data.
              *
-             * @property value If true, blocks that contain no transaction data will not be processed.
+             * @param value If true, blocks that contain no transaction data will not be processed.
              */
             fun skipIfEmpty(value: Boolean) = apply { skipIfEmpty = value }
 
@@ -131,16 +157,15 @@ class EventStream(
              * Filter blocks by one or more specific block events (case-insensitive).
              * Only blocks possessing the specified block event(s) will be streamed.
              *
-             * @property predicate If evaluates to true will include the given block for processing.
+             * @param predicate If evaluates to true will include the given block for processing.
              */
-            fun matchBlockEvent(predicate: (event: String) -> Boolean) =
-                apply { blockEventPredicate = predicate }
+            fun matchBlockEvent(predicate: (event: String) -> Boolean) = apply { blockEventPredicate = predicate }
 
             /**
              * Filter blocks by one or more specific transaction events (case-insensitive).
              * Only blocks possessing the specified transaction event(s) will be streamed.
              *
-             * @property predicate If evaluated to true will include the given block for processing.
+             * @param predicate If evaluated to true will include the given block for processing.
              */
             fun matchTxEvent(predicate: (event: String) -> Boolean) = apply { txEventPredicate = predicate }
 
@@ -159,40 +184,7 @@ class EventStream(
         }
     }
 
-    class Factory(
-        private val config: Config,
-        private val moshi: Moshi,
-        private val eventStreamBuilder: Scarlet.Builder,
-        private val tendermintServiceClient: TendermintServiceClient,
-        private val dispatchers: DispatcherProvider = DefaultDispatcherProvider(),
-    ) {
-        private fun noop(_options: Options.Builder) {}
-
-        fun create(setOptions: (options: Options.Builder) -> Unit = ::noop): EventStream {
-            val optionsBuilder = Options.Builder()
-                .batchSize(config.eventStream.batch.size)
-                .skipIfEmpty(true)
-            setOptions(optionsBuilder)
-            return create(optionsBuilder.build())
-        }
-
-        fun create(options: Options): EventStream {
-            val lifecycle = LifecycleRegistry(config.eventStream.websocket.throttleDurationMs)
-            val scarlet: Scarlet = eventStreamBuilder.lifecycle(lifecycle).build()
-            val tendermintRpc: TendermintRPCStream = scarlet.create()
-            val eventStreamService = TendermintEventStreamService(tendermintRpc, lifecycle)
-
-            return EventStream(
-                eventStreamService,
-                tendermintServiceClient,
-                moshi,
-                options = options,
-                dispatchers = dispatchers
-            )
-        }
-    }
-
-    private val log = logger()
+    private val log = KotlinLogging.logger { }
 
     /**
      * A decoder for Tendermint RPC API messages.
@@ -262,18 +254,15 @@ class EventStream(
             "Difference between (minHeight, maxHeight) can be at maximum $TENDERMINT_MAX_QUERY_RANGE"
         }
 
-        return (tendermintServiceClient.blockchain(minHeight, maxHeight)
-            .result
-            ?.blockMetas
-            .let {
-                if (options.skipIfEmpty) {
-                    it?.filter { it.numTxs ?: 0 > 0 }
-                } else {
-                    it
-                }
-            }?.mapNotNull { it.header?.height }
-            ?: emptyList<Long>())
-            .sortedWith(naturalOrder<Long>())
+        val blocks = tendermintServiceClient.blockchain(minHeight, maxHeight).result?.blockMetas.let {
+            if (options.skipIfEmpty) {
+                it?.filter { it.numTxs ?: 0 > 0 }
+            } else {
+                it
+            }
+        }?.mapNotNull { it.header?.height } ?: emptyList()
+
+        return blocks.sortedWith(naturalOrder())
     }
 
     /**
@@ -301,10 +290,7 @@ class EventStream(
      *  @param skipIfNoTxs If [skipIfNoTxs] is true, if the block at the given height has no transactions, null will
      *  be returned in its place.
      */
-    private suspend fun queryBlock(
-        heightOrBlock: Either<Long, Block>,
-        skipIfNoTxs: Boolean = true
-    ): StreamBlock? {
+    private suspend fun queryBlock(heightOrBlock: Either<Long, Block>, skipIfNoTxs: Boolean = true): StreamBlock? {
         val block: Block? = when (heightOrBlock) {
             is Either.Left<Long> -> tendermintServiceClient.block(heightOrBlock.value).result?.block
             is Either.Right<Block> -> heightOrBlock.value
@@ -323,11 +309,7 @@ class EventStream(
             val matchBlock = matchesBlockEvent(blockEvents)
             val matchTx = matchesTxEvent(txEvents)
             // ugly:
-            if ((matchBlock == null && matchTx == null)
-                || (matchBlock == null && matchTx != null && matchTx)
-                || (matchBlock != null && matchBlock && matchTx == null)
-                || (matchBlock != null && matchBlock && matchTx != null && matchTx)
-            ) {
+            if ((matchBlock == null && matchTx == null) || (matchBlock == null && matchTx != null && matchTx) || (matchBlock != null && matchBlock && matchTx == null) || (matchBlock != null && matchBlock && matchTx != null && matchTx)) {
                 streamBlock
             } else {
                 null
@@ -345,22 +327,16 @@ class EventStream(
      * @return A Flow of found historical blocks along with events associated with each block, if any.
      */
     private fun queryBlocks(blockHeights: Iterable<Long>): Flow<StreamBlock> =
-        blockHeights
-            .chunked(options.batchSize)
-            .asFlow()
-            .transform { chunkOfHeights: List<Long> ->
-                emitAll(
-                    coroutineScope {
-                        // Concurrently process <batch-size> blocks at a time:
-                        chunkOfHeights.map { height ->
-                            async { queryBlock(Either.Left(height), skipIfNoTxs = options.skipIfEmpty) }
-                        }
-                            .awaitAll()
-                            .filterNotNull()
-                    }.asFlow()
-                )
-            }
-            .flowOn(dispatchers.io())
+        blockHeights.chunked(options.batchSize).asFlow().transform { chunkOfHeights: List<Long> ->
+            emitAll(
+                coroutineScope {
+                    // Concurrently process <batch-size> blocks at a time:
+                    chunkOfHeights.map { height ->
+                        async { queryBlock(Either.Left(height), skipIfNoTxs = options.skipIfEmpty) }
+                    }.awaitAll().filterNotNull()
+                }.asFlow()
+            )
+        }.flowOn(dispatchers.io())
 
     /**
      * Constructs a Flow of historical blocks and associated events based on a starting height.
@@ -398,22 +374,15 @@ class EventStream(
         val numChunks: Int = floor(max(limit1, limit2) / min(limit1, limit2)).toInt()
 
         emitAll(getBlockHeightQueryRanges(startHeight, endHeight).chunked(numChunks).asFlow())
-    }
-        .map { heightPairChunk: List<Pair<Long, Long>> ->
-            val availableBlocks: List<Long> = coroutineScope {
-                heightPairChunk
-                    .map { (minHeight, maxHeight) -> async { getBlockHeightsInRange(minHeight, maxHeight) } }
-                    .awaitAll()
-                    .flatten()
-            }
-            log.info("historical::${availableBlocks.size} block(s) in [${heightPairChunk.minOf { it.first }}..${heightPairChunk.maxOf { it.second }}]")
-            availableBlocks
+    }.map { heightPairChunk: List<Pair<Long, Long>> ->
+        val availableBlocks: List<Long> = coroutineScope {
+            heightPairChunk.map { (minHeight, maxHeight) -> async { getBlockHeightsInRange(minHeight, maxHeight) } }
+                .awaitAll().flatten()
         }
-        .flowOn(dispatchers.io())
-        .flatMapMerge(options.concurrency) { queryBlocks(it) }
-        .flowOn(dispatchers.io())
-        .map { it.copy(historical = true) }
-        .onCompletion { cause: Throwable? ->
+        log.info("historical::${availableBlocks.size} block(s) in [${heightPairChunk.minOf { it.first }}..${heightPairChunk.maxOf { it.second }}]")
+        availableBlocks
+    }.flowOn(dispatchers.io()).flatMapMerge(options.concurrency) { queryBlocks(it) }.flowOn(dispatchers.io())
+        .map { it.copy(historical = true) }.onCompletion { cause: Throwable? ->
             if (cause == null) {
                 log.info("historical::exhausted historical block stream ok")
             } else {
@@ -439,64 +408,55 @@ class EventStream(
                         log.info("streamLiveBlocks::initializing subscription for tm.event='NewBlock'")
                         eventStreamService.subscribe(Subscribe("tm.event='NewBlock'"))
                     }
-                    is WebSocket.Event.OnMessageReceived ->
-                        when (event.message) {
-                            is Message.Text -> {
-                                val message = event.message as Message.Text
-                                when (val type = responseMessageDecoder.decode(message.value)) {
-                                    is MessageType.Empty ->
-                                        log.info("received empty ACK message => ${message.value}")
-                                    is MessageType.NewBlock -> {
-                                        val block = type.block.data.value.block
-                                        log.info("live::received NewBlock message: #${block.header?.height}")
-                                        send(block)
-                                    }
-                                    is MessageType.Error ->
-                                        log.error("upstream error from RPC endpoint: ${type.error}")
-                                    is MessageType.Panic -> {
-                                        log.error("upstream panic from RPC endpoint: ${type.error}")
-                                        throw CancellationException("RPC endpoint panic: ${type.error}")
-                                    }
-                                    is MessageType.Unknown ->
-                                        log.info("unknown message type; skipping message => ${message.value}")
+                    is WebSocket.Event.OnMessageReceived -> when (event.message) {
+                        is Message.Text -> {
+                            val message = event.message as Message.Text
+                            when (val type = responseMessageDecoder.decode(message.value)) {
+                                is MessageType.Empty -> log.info("received empty ACK message => ${message.value}")
+                                is MessageType.NewBlock -> {
+                                    val block = type.block.data.value.block
+                                    log.info("live::received NewBlock message: #${block.header?.height}")
+                                    send(block)
                                 }
-                            }
-                            is Message.Bytes -> {
-                                // ignore; binary payloads not supported:
-                                log.warn("live::binary message payload not supported")
+                                is MessageType.Error -> log.error("upstream error from RPC endpoint: ${type.error}")
+                                is MessageType.Panic -> {
+                                    log.error("upstream panic from RPC endpoint: ${type.error}")
+                                    throw CancellationException("RPC endpoint panic: ${type.error}")
+                                }
+                                is MessageType.Unknown -> log.info("unknown message type; skipping message => ${message.value}")
                             }
                         }
+                        is Message.Bytes -> {
+                            // ignore; binary payloads not supported:
+                            log.warn("live::binary message payload not supported")
+                        }
+                    }
                     is WebSocket.Event.OnConnectionFailed -> throw event.throwable
                     else -> throw Throwable("live::unexpected event type: $event")
                 }
             }
+        }.flowOn(dispatchers.io()).onStart { log.info("live::starting") }.mapNotNull { block: Block ->
+            val maybeBlock = queryBlock(Either.Right(block), skipIfNoTxs = false)
+            if (maybeBlock != null) {
+                log.info("live::got block #${maybeBlock.height}")
+                maybeBlock
+            } else {
+                log.info("live::skipping block #${block.header?.height}")
+                null
+            }
+        }.onCompletion {
+            log.info("live::stopping event stream")
+            eventStreamService.stopListening()
+        }.retryWhen { cause: Throwable, attempt: Long ->
+            log.warn("live::error; recovering Flow (attempt ${attempt + 1})")
+            when (cause) {
+                is JsonDataException -> {
+                    log.error("streamLiveBlocks::parse error, skipping: $cause")
+                    true
+                }
+                else -> false
+            }
         }
-            .flowOn(dispatchers.io())
-            .onStart { log.info("live::starting") }
-            .mapNotNull { block: Block ->
-                val maybeBlock = queryBlock(Either.Right(block), skipIfNoTxs = false)
-                if (maybeBlock != null) {
-                    log.info("live::got block #${maybeBlock.height}")
-                    maybeBlock
-                } else {
-                    log.info("live::skipping block #${block.header?.height}")
-                    null
-                }
-            }
-            .onCompletion {
-                log.info("live::stopping event stream")
-                eventStreamService.stopListening()
-            }
-            .retryWhen { cause: Throwable, attempt: Long ->
-                log.warn("live::error; recovering Flow (attempt ${attempt + 1})")
-                when (cause) {
-                    is JsonDataException -> {
-                        log.error("streamLiveBlocks::parse error, skipping: $cause")
-                        true
-                    }
-                    else -> false
-                }
-            }
     }
 
     /**
@@ -518,23 +478,16 @@ class EventStream(
                 streamLiveBlocks()
             }
         )
-    }
-        .cancellable()
-        .retryWhen { cause: Throwable, attempt: Long ->
-            log.warn("streamBlocks::error; recovering Flow (attempt ${attempt + 1})")
-            when (cause) {
-                is EOFException,
-                is CompletionException,
-                is ConnectException,
-                is SocketTimeoutException,
-                is SocketException -> {
-                    val duration = backoff(attempt, jitter = false)
-                    log.error("Reconnect attempt #$attempt; waiting ${duration.inWholeSeconds}s before trying again: $cause")
-                    delay(duration)
-                    true
-                }
-                else -> false
+    }.cancellable().retryWhen { cause: Throwable, attempt: Long ->
+        log.warn("streamBlocks::error; recovering Flow (attempt ${attempt + 1})")
+        when (cause) {
+            is EOFException, is CompletionException, is ConnectException, is SocketTimeoutException, is SocketException -> {
+                val duration = backoff(attempt, jitter = false)
+                log.error("Reconnect attempt #$attempt; waiting ${duration.inWholeSeconds}s before trying again: $cause")
+                delay(duration)
+                true
             }
+            else -> false
         }
+    }
 }
-

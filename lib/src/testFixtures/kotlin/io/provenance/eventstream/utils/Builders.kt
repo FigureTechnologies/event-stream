@@ -1,7 +1,7 @@
 package io.provenance.eventstream.test.utils
 
 import com.squareup.moshi.Moshi
-import io.provenance.eventstream.DispatcherProvider
+import io.provenance.eventstream.coroutines.DispatcherProvider
 import io.provenance.eventstream.stream.EventStream
 import io.provenance.eventstream.stream.EventStreamService
 import io.provenance.eventstream.stream.TendermintServiceClient
@@ -46,7 +46,7 @@ object Builders {
      * Create a mock of the Tendermint RPC event stream exposed on Provenance.
      */
     fun eventStreamService(includeLiveBlocks: Boolean = true): MockEventStreamService.Builder {
-        val serviceBuilder = MockEventStreamService.builder()
+        val serviceBuilder = MockEventStreamService.Builder()
         if (includeLiveBlocks) {
             for (liveBlockResponse in Defaults.templates.readAll("live")) {
                 serviceBuilder.response(liveBlockResponse)
@@ -63,7 +63,7 @@ object Builders {
         var eventStreamService: EventStreamService? = null
         var tendermintServiceClient: TendermintServiceClient? = null
         var moshi: Moshi? = null
-        var options: EventStream.Options.Builder = EventStream.Options.builder()
+        var options: EventStream.Options.Builder = EventStream.Options.Builder()
         var includeLiveBlocks: Boolean = true
 
         fun <T : EventStreamService> eventStreamService(value: T) = apply { eventStreamService = value }

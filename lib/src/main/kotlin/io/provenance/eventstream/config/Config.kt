@@ -1,4 +1,4 @@
-package io.provenance.eventstream
+package io.provenance.eventstream.config
 
 import com.sksamuel.hoplite.ConfigAlias
 
@@ -16,7 +16,7 @@ data class StreamEventsFilterConfig(
     @ConfigAlias("block_events") val blockEvents: Set<String> = emptySet()
 ) {
     companion object {
-        fun empty() = StreamEventsFilterConfig()
+        val empty: StreamEventsFilterConfig get() = StreamEventsFilterConfig()
     }
 }
 
@@ -29,18 +29,18 @@ data class EventStreamConfig(
     val websocket: WebsocketStreamConfig,
     val rpc: RpcStreamConfig,
     val batch: BatchConfig,
-    val filter: StreamEventsFilterConfig = StreamEventsFilterConfig.empty()
+    val filter: StreamEventsFilterConfig = StreamEventsFilterConfig.empty
 )
 
 data class UploadConfig(
     val extractors: List<String> = emptyList()
 ) {
     companion object {
-        fun empty() = UploadConfig()
+        val empty: UploadConfig get() = UploadConfig()
     }
 }
 
 data class Config(
     @ConfigAlias("event-stream") val eventStream: EventStreamConfig,
-    val upload: UploadConfig = UploadConfig.empty()
+    val upload: UploadConfig = UploadConfig.empty
 )

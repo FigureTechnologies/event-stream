@@ -4,8 +4,7 @@ import com.squareup.moshi.JsonAdapter
 import com.squareup.moshi.Moshi
 import com.tinder.scarlet.Message
 import com.tinder.scarlet.WebSocket
-import io.provenance.eventstream.DispatcherProvider
-import io.provenance.eventstream.logger
+import io.provenance.eventstream.coroutines.DispatcherProvider
 import io.provenance.eventstream.stream.EventStreamService
 import io.provenance.eventstream.stream.models.rpc.request.Subscribe
 import io.provenance.eventstream.test.utils.Defaults
@@ -14,6 +13,7 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.ChannelIterator
 import kotlinx.coroutines.channels.ReceiveChannel
 import kotlinx.coroutines.runBlocking
+import mu.KotlinLogging
 import java.util.concurrent.atomic.AtomicLong
 
 class MockEventStreamService private constructor(
@@ -23,9 +23,7 @@ class MockEventStreamService private constructor(
     private val dispatchers: DispatcherProvider
 ) : EventStreamService {
 
-    companion object {
-        fun builder() = Builder()
-    }
+    private val log = KotlinLogging.logger { }
 
     class Builder {
         private var dispatchers: DispatcherProvider? = null
@@ -35,7 +33,7 @@ class MockEventStreamService private constructor(
         /**
          * Sets the dispatchers used by this event stream.
          *
-         * @property value The dispatcher provider to use.
+         * @param value The dispatcher provider to use.
          * @return this
          */
         fun dispatchers(value: DispatcherProvider) = apply { dispatchers = value }
@@ -43,7 +41,7 @@ class MockEventStreamService private constructor(
         /**
          * Sets the JSON serializer used by this event stream.
          *
-         * @property value The Moshi serializer instance to use.
+         * @param value The Moshi serializer instance to use.
          * @return this
          */
         fun moshi(value: Moshi) = apply { moshi = value }
@@ -51,7 +49,7 @@ class MockEventStreamService private constructor(
         /**
          * Add a response to be emitted by the event stream.
          *
-         * @property jsonData A JSON formatted string response for the stream to produce upon collection.
+         * @param jsonData A JSON formatted string response for the stream to produce upon collection.
          * @return this
          */
         fun response(vararg jsonData: String): Builder = apply {
@@ -63,8 +61,8 @@ class MockEventStreamService private constructor(
         /**
          * Add a response to be emitted by the event stream.
          *
-         * @property clazz The Class defining the type emitted by the event stream.
-         * @property eventData The actual data to emit.
+         * @param clazz The Class defining the type emitted by the event stream.
+         * @param eventData The actual data to emit.
          * @return this
          */
         fun <T> response(clazz: Class<T>, vararg eventData: T): Builder = apply {
@@ -92,8 +90,6 @@ class MockEventStreamService private constructor(
             )
         }
     }
-
-    private val log = logger()
 
     /**
      * Returns the number of expected responses this event stream is supposed to produce.

@@ -1,4 +1,4 @@
-package io.provenance.eventstream
+package io.provenance.eventstream.coroutines
 
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers

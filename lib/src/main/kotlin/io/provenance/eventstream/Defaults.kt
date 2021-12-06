@@ -1,0 +1,77 @@
+package io.provenance.eventstream
+
+import com.sksamuel.hoplite.ConfigLoader
+import com.sksamuel.hoplite.EnvironmentVariablesPropertySource
+import com.sksamuel.hoplite.PropertySource
+import com.sksamuel.hoplite.preprocessor.PropsPreprocessor
+import com.squareup.moshi.Moshi
+import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
+import com.tinder.scarlet.Scarlet
+import com.tinder.scarlet.messageadapter.moshi.MoshiMessageAdapter
+import com.tinder.scarlet.websocket.okhttp.newWebSocketFactory
+import com.tinder.streamadapter.coroutines.CoroutinesStreamAdapterFactory
+import io.provenance.eventstream.adapter.json.JSONObjectAdapter
+import io.provenance.eventstream.config.Config
+import io.provenance.eventstream.config.Environment
+import io.provenance.eventstream.stream.TendermintServiceClient
+import io.provenance.eventstream.stream.clients.TendermintServiceOpenApiClient
+import okhttp3.OkHttpClient
+import java.net.URI
+import java.util.concurrent.TimeUnit
+
+/**
+ * Create a default configuration to use for the event stream.
+ *
+ * @param environment The environment to generate a configutation with.
+ * @return The configuration
+ */
+fun defaultConfig(environment: Environment): Config = ConfigLoader.Builder()
+    .addSource(EnvironmentVariablesPropertySource(useUnderscoresAsSeparator = true, allowUppercaseNames = true))
+    .apply {
+        // If in the local environment, override the ${...} envvar values in `application.properties` with
+        // the values provided in the local-specific `local.env.properties` property file:
+        if (environment.isLocal()) {
+            addPreprocessor(PropsPreprocessor("/local.env.properties"))
+        }
+    }
+    .addSource(PropertySource.resource("/application.yml"))
+    .build()
+    .loadConfigOrThrow()
+
+/**
+ * Create a default websocket builder for the event stream.
+ *
+ * @param websocketUri The URI the websocket will listen on.
+ */
+fun defaultEventStreamBuilder(websocketUri: String): Scarlet.Builder {
+    val node = URI(websocketUri)
+    return Scarlet.Builder()
+        .webSocketFactory(
+            OkHttpClient.Builder()
+                .pingInterval(10, TimeUnit.SECONDS)
+                .readTimeout(60, TimeUnit.SECONDS)
+                .build()
+                .newWebSocketFactory("${node.scheme}://${node.host}:${node.port}/websocket")
+        )
+        .addMessageAdapterFactory(MoshiMessageAdapter.Factory())
+        .addStreamAdapterFactory(CoroutinesStreamAdapterFactory())
+}
+
+/**
+ * Create the default [Moshi] JSON serializer/deserializer.
+ *
+ * @return The [Moshi] instance to use for the event stream.
+ */
+fun defaultMoshi(): Moshi = Moshi.Builder()
+    .add(KotlinJsonAdapterFactory())
+    .add(JSONObjectAdapter())
+    .build()
+
+/**
+ * Create the default [TendermintServiceClient] to use with the event stream.
+ *
+ * @param rpcUri The URI of the Tendermint RPC service to connect to.
+ * @return The [TendermintServiceClient] instance to use for the event stream.
+ */
+fun defaultTendermintService(rpcUri: String): TendermintServiceClient =
+    TendermintServiceOpenApiClient(rpcUri)

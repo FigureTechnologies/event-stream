@@ -1,11 +1,18 @@
 package io.provenance.eventstream.flow.extensions
 
-import kotlinx.coroutines.*
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.InternalCoroutinesApi
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.FlowCollector
 import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlin.math.max
@@ -20,7 +27,7 @@ import kotlin.time.ExperimentalTime
  *
  * @see https://stackoverflow.com/a/59109105
  *
- * @property signal When an item is received on the channel, the underlying flow will be cancelled.
+ * @param signal When an item is received on the channel, the underlying flow will be cancelled.
  */
 @OptIn(ExperimentalStdlibApi::class, InternalCoroutinesApi::class, FlowPreview::class)
 fun <T> Flow<T>.cancelOnSignal(signal: Channel<Unit>): Flow<T> = flow {
@@ -39,7 +46,7 @@ fun <T> Flow<T>.cancelOnSignal(signal: Channel<Unit>): Flow<T> = flow {
             })
         }
     } catch (e: CancellationException) {
-        //ignore
+        // ignore
     }
 }
 
@@ -49,8 +56,8 @@ fun <T> Flow<T>.cancelOnSignal(signal: Channel<Unit>): Flow<T> = flow {
  * Returns a flow of lists each not exceeding the given [size].
  * The last list in the resulting flow may have less elements than the given [size].
  *
- * @property size the number of elements to take in each list, must be positive and can be greater than the number of elements in this flow.
- * @property timeout If an element is not emitted in the specified duration, the buffer will be emitted downstream if
+ * @param size the number of elements to take in each list, must be positive and can be greater than the number of elements in this flow.
+ * @param timeout If an element is not emitted in the specified duration, the buffer will be emitted downstream if
  *  it is non-empty.
  */
 @OptIn(FlowPreview::class, ExperimentalTime::class)
@@ -67,8 +74,8 @@ fun <T> Flow<T>.chunked(size: Int, timeout: Duration? = null): Flow<List<T>> =
  *
  * This is more efficient, than using flow.chunked(n).map { ... }
  *
- * @property size the number of elements to take in each list, must be positive and can be greater than the number of elements in this flow.
- * @property timeout If an element is not emitted in the specified duration, the buffer will be emitted downstream if
+ * @param size the number of elements to take in each list, must be positive and can be greater than the number of elements in this flow.
+ * @param timeout If an element is not emitted in the specified duration, the buffer will be emitted downstream if
  *  it is non-empty.
  */
 @OptIn(FlowPreview::class, ExperimentalTime::class)
@@ -85,10 +92,10 @@ fun <T, R> Flow<T>.chunked(size: Int, timeout: Duration? = null, transform: susp
  * Several last lists may have less elements than the given [size].
  *
  * Both [size] and [step] must be positive and can be greater than the number of elements in this flow.
- * @property size the number of elements to take in each window
- * @property step the number of elements to move the window forward by on an each step
- * @property partialWindows controls whether or not to keep partial windows in the end if any.
- * @property timeout If an element is not emitted in the specified duration, the buffer will be emitted downstream if
+ * @param size the number of elements to take in each window
+ * @param step the number of elements to move the window forward by on an each step
+ * @param partialWindows controls whether or not to keep partial windows in the end if any.
+ * @param timeout If an element is not emitted in the specified duration, the buffer will be emitted downstream if
  *  it is non-empty.
  */
 @OptIn(FlowPreview::class, ExperimentalTime::class)
@@ -107,10 +114,10 @@ fun <T> Flow<T>.windowed(size: Int, step: Int, partialWindows: Boolean, timeout:
  * This is more efficient, than using flow.windowed(...).map { ... }
  *
  * Both [size] and [step] must be positive and can be greater than the number of elements in this collection.
- * @property size the number of elements to take in each window
- * @property step the number of elements to move the window forward by on an each step.
- * @property partialWindows controls whether or not to keep partial windows in the end if any.
- * @property timeout If an element is not emitted in the specified duration, the buffer will be emitted downstream if
+ * @param size the number of elements to take in each window
+ * @param step the number of elements to move the window forward by on an each step.
+ * @param partialWindows controls whether or not to keep partial windows in the end if any.
+ * @param timeout If an element is not emitted in the specified duration, the buffer will be emitted downstream if
  *  it is non-empty.
  */
 @OptIn(

@@ -13,7 +13,7 @@ import io.provenance.eventstream.stream.models.BlockchainResponse
  *
  * All requests and responses are HTTP+JSON.
  *
- * @property rpcUrlBase The base URL of the Tendermint RPC API to use when making requests.
+ * @param rpcUrlBase The base URL of the Tendermint RPC API to use when making requests.
  */
 class TendermintServiceOpenApiClient(rpcUrlBase: String) : TendermintServiceClient {
     private val abciApi = ABCIApi(rpcUrlBase)

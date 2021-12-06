@@ -1,4 +1,4 @@
-package io.provenance.eventstream
+package io.provenance.eventstream.config
 
 /**
  * An enumeration encoding various runtime environments.

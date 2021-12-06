@@ -1,6 +1,6 @@
 package io.provenance.eventstream.test.base
 
-import io.provenance.eventstream.DispatcherProvider
+import io.provenance.eventstream.coroutines.DispatcherProvider
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.TestCoroutineDispatcher
@@ -23,7 +23,7 @@ class TestDispatcherProvider : DispatcherProvider {
      * the test dispatcher's [runBlockingTest] method
      */
     @OptIn(ExperimentalCoroutinesApi::class)
-    fun runBlockingTest(block: suspend TestCoroutineScope.() -> Unit): Unit {
+    fun runBlockingTest(block: suspend TestCoroutineScope.() -> Unit) {
         val testDispatcher = this.main() as TestCoroutineDispatcher
         return testDispatcher.runBlockingTest(block)
     }
