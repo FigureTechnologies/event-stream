@@ -1,16 +1,15 @@
 package io.provenance.eventstream.stream
 
 import io.provenance.eventstream.stream.clients.TendermintServiceClient
-import kotlinx.coroutines.*
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 
-@OptIn(FlowPreview::class)
 class TMBlockFetcher(private val tmClient: TendermintServiceClient) : BlockFetcher {
-    override suspend fun getBlock(height: Long): BlockData = coroutineScope {
-        val block = async { tmClient.block(height).result?.block }
-        val blockResults = async { tmClient.blockResults(height).result }
-        BlockData(
-            block.await() ?: throw BlockFetchException("unable to fetch block height:$height"),
-            blockResults.await() ?: throw BlockFetchException("unable to fetch block height:$height"),
-        )
+    @OptIn(ExperimentalCoroutinesApi::class)
+    override suspend fun getBlock(height: Long): BlockData {
+        val block = tmClient.block(height).result?.block
+            ?: throw BlockFetchException("failed to fetch height:$height")
+
+        val blockResult = tmClient.blockResults(height).result
+        return BlockData(block, blockResult)
     }
 }

@@ -6,6 +6,7 @@ import com.tinder.scarlet.WebSocket
 import io.provenance.eventstream.DefaultDispatcherProvider
 import io.provenance.eventstream.DispatcherProvider
 import io.provenance.eventstream.adapter.json.decoder.DecoderEngine
+import io.provenance.eventstream.flow.extensions.chunked
 import io.provenance.eventstream.info
 import io.provenance.eventstream.logger
 import io.provenance.eventstream.stream.clients.TendermintServiceClient
@@ -16,13 +17,16 @@ import io.provenance.eventstream.stream.models.extensions.txEvents
 import io.provenance.eventstream.stream.models.extensions.txHash
 import io.provenance.eventstream.utils.backoff
 import kotlinx.coroutines.*
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.*
 import java.io.EOFException
 import java.net.ConnectException
 import java.net.SocketException
 import java.net.SocketTimeoutException
 import java.util.concurrent.CompletionException
+import kotlin.system.measureTimeMillis
 import kotlin.time.ExperimentalTime
+import kotlin.time.measureTimedValue
 
 @OptIn(FlowPreview::class, ExperimentalTime::class)
 @ExperimentalCoroutinesApi
@@ -95,13 +99,16 @@ class EventStream(
      *  @param skipIfNoTxs If [skipIfNoTxs] is true, if the block at the given height has no transactions, null will
      *  be returned in its place.
      */
-    private suspend fun queryBlock(height: Long): StreamBlock {
-        return blockFetcher.getBlock(height).toStreamBlock()
-    }
+    private suspend fun queryBlock(height: Long): StreamBlock =
+        blockFetcher.getBlock(height).toStreamBlock()
 
     private fun StreamBlock.isEmpty() = block.data?.txs?.isEmpty() ?: true
-    private suspend fun Flow<StreamBlock>.filterNonEmptyBlocks(): Flow<StreamBlock> = filter { it.isEmpty() }
 
+    private fun Flow<StreamBlock>.filterNonEmptyIfSet(): Flow<StreamBlock> = filter {
+        if (options.skipEmptyBlocks) !it.isEmpty()
+        else true
+    }
+    
     /**
      *
      */
@@ -112,20 +119,35 @@ class EventStream(
         return StreamBlock(block, blockEvents, txEvents)
     }
 
+    private suspend fun queryBlocks(blockHeights: Iterable<Long>): Flow<StreamBlock> =
+        blockHeights
+            .chunked(options.batchSize)
+            .asFlow()
+            .transform {
+                // Concurrently process <batch-size> blocks at a time:
+                val blocks = coroutineScope { it.map { height -> async { queryBlock(height) } }.awaitAll() }
+                emitAll(blocks.asFlow())
+            }
+            .catch { e -> log.error("", e) }
+            .flowOn(dispatchers.io())
+
     private suspend fun streamHistoricalBlocks(startHeight: Long, endHeight: Long): Flow<StreamBlock> {
         log.info("historical::streaming blocks from $startHeight to $endHeight")
-        return blockFetcher.getBlocksResultsRanged(startHeight..endHeight)
+        return (startHeight..endHeight).asFlow()
+            .chunked(options.batchSize)
+            .flatMapMerge(options.concurrency) { queryBlocks(it).map { b -> b.copy(historical = true) } }
+            .catch { e -> log.error("", e) }
             .flowOn(dispatchers.io())
             .onStart { log.info { "historical::starting" } }
-            .map { it.toStreamBlock() }
-            .filterNonEmptyBlocks()
-            .map { it.copy(historical = true) }
             .onCompletion { cause: Throwable? ->
                 if (cause == null) {
                     log.info("historical::exhausted historical block stream ok")
                 } else {
                     log.error("historical::exhausted block stream with error: ${cause.message}")
                 }
+            }.retryWhen { cause, attempt ->
+                log.error("attempt: $attempt", cause)
+                true
             }
     }
 
@@ -135,6 +157,7 @@ class EventStream(
      * @return A Flow of newly minted blocks and associated events
      */
     suspend fun streamLiveBlocks(): Flow<StreamBlock> {
+        log.info("live::start")
         // Toggle the Lifecycle register start state:
         eventStreamService.startListening()
 
@@ -213,15 +236,29 @@ class EventStream(
      *
      * @return A Flow of live and historical blocks, plus associated event data.
      */
-    override suspend fun streamBlocks(from: Long, toInclusive: Long?): Flow<StreamBlock> {
-        val liveFlow = streamLiveBlocks().buffer().flowOn(dispatchers.io())
+    override suspend fun streamBlocks(from: Long, toInclusive: Long?): Flow<StreamBlock> = coroutineScope {
+        flow {
+            val liveChannel = Channel<StreamBlock>(720)
+            val liveJob = launch {
+                streamLiveBlocks().buffer().flowOn(dispatchers.io()).collect { liveChannel.send(it) }
+            }
 
-        val splitHeight = tendermintServiceClient.abciInfo().result?.response?.lastBlockHeight
-            ?: throw RuntimeException("could not fetch current height")
+            val currentHeight = tendermintServiceClient.abciInfo().result?.response?.lastBlockHeight
+                ?: throw RuntimeException("could not fetch current height")
 
-        return flow {
-            emitAll(streamHistoricalBlocks(from, splitHeight))
-        }.onCompletion { if (it == null) emitAll(liveFlow) }
+            val realTo = toInclusive ?: currentHeight
+            val needLive = toInclusive != null && toInclusive > currentHeight
+
+            log.info("realTo:$realTo need-live:$needLive")
+            emitAll(streamHistoricalBlocks(from, realTo))
+            if (needLive) {
+                emitAll(liveChannel)
+            } else {
+                liveJob.cancel()
+                liveChannel.close()
+            }
+        }
+            .filterNonEmptyIfSet()
             .cancellable()
             .retryWhen { cause: Throwable, attempt: Long ->
                 log.warn("streamBlocks::error; recovering Flow (attempt ${attempt + 1})", cause)
@@ -241,4 +278,3 @@ class EventStream(
             }
     }
 }
-

@@ -72,7 +72,7 @@ fun main(args: Array<String>) {
             .buffer()
             .catch { log.error("", it) }
             .observe(consoleOutput(config.verbose))
-            .observe(fileOutput("./data", decoderEngine))
+            .observe(fileOutput("../pio-testnet-1/json-data", decoderEngine))
             .collect()
     }
 }

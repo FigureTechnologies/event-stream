@@ -16,11 +16,7 @@ data class RpcStreamConfig(val uri: String)
 data class StreamEventsFilterConfig(
     @ConfigAlias("tx_events") val txEvents: Set<String> = emptySet(),
     @ConfigAlias("block_events") val blockEvents: Set<String> = emptySet()
-) {
-    companion object {
-        fun empty() = StreamEventsFilterConfig()
-    }
-}
+)
 
 data class BatchConfig(
     val size: Int,
@@ -32,7 +28,7 @@ data class EventStreamConfig(
     val websocket: WebsocketStreamConfig,
     val rpc: RpcStreamConfig,
     val batch: BatchConfig,
-    val filter: StreamEventsFilterConfig = StreamEventsFilterConfig.empty(),
+    val filter: StreamEventsFilterConfig = StreamEventsFilterConfig(),
     val height: HeightConfig = HeightConfig(),
     val concurrency: Int = DEFAULT_CONCURRENCY,
     @ConfigAlias("skip_empty_blocks") val skipEmptyBlocks: Boolean?,
@@ -45,14 +41,10 @@ data class HeightConfig(
 
 data class UploadConfig(
     val extractors: List<String> = emptyList()
-) {
-    companion object {
-        fun empty() = UploadConfig()
-    }
-}
+)
 
 data class Config(
     val verbose: Boolean = false,
     @ConfigAlias("event-stream") val eventStream: EventStreamConfig,
-    val upload: UploadConfig = UploadConfig.empty()
+    val upload: UploadConfig = UploadConfig()
 )
