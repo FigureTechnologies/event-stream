@@ -6,7 +6,6 @@ import com.tinder.scarlet.WebSocket
 import io.provenance.eventstream.DefaultDispatcherProvider
 import io.provenance.eventstream.DispatcherProvider
 import io.provenance.eventstream.adapter.json.decoder.DecoderEngine
-import io.provenance.eventstream.flow.extensions.chunked
 import io.provenance.eventstream.info
 import io.provenance.eventstream.logger
 import io.provenance.eventstream.stream.clients.TendermintServiceClient
@@ -24,9 +23,7 @@ import java.net.ConnectException
 import java.net.SocketException
 import java.net.SocketTimeoutException
 import java.util.concurrent.CompletionException
-import kotlin.system.measureTimeMillis
 import kotlin.time.ExperimentalTime
-import kotlin.time.measureTimedValue
 
 @OptIn(FlowPreview::class, ExperimentalTime::class)
 @ExperimentalCoroutinesApi
@@ -60,21 +57,6 @@ class EventStream(
     val serializer: (StreamBlock) -> String =
         { block: StreamBlock -> decoder.adapter(StreamBlock::class).toJson(block) }
 
-    /**
-     * Computes and returns the starting height (if it can be determined) to be used when streaming historical blocks.
-     *
-     * @return Long? The starting block height to use, if it exists.
-     */
-    private fun getStartingHeight(): Long? = options.fromHeight
-
-    /**
-     * Computes and returns the ending height (if it can be determined) tobe used when streaming historical blocks.
-     *
-     * @return Long? The ending block height to use, if it exists.
-     */
-    private suspend fun getEndingHeight(): Long? =
-        options.toHeight ?: tendermintServiceClient.abciInfo().result?.response?.lastBlockHeight
-
     private fun <T : EncodedBlockchainEvent> keepBlock(events: List<T>): Boolean {
         if (options.txEvents.isEmpty() && options.blockEvents.isEmpty()) {
             return true
@@ -91,23 +73,13 @@ class EventStream(
         return false
     }
 
-
-    /**
-     * Query a block by height, returning any events associated with the block.
-     *
-     *  @param heightOrBlock Fetch a block, plus its events, by its height or the `Block` model itself.
-     *  @param skipIfNoTxs If [skipIfNoTxs] is true, if the block at the given height has no transactions, null will
-     *  be returned in its place.
-     */
-    private suspend fun queryBlock(height: Long): StreamBlock =
-        blockFetcher.getBlock(height).toStreamBlock()
-
     private fun StreamBlock.isEmpty() = block.data?.txs?.isEmpty() ?: true
 
-    private fun Flow<StreamBlock>.filterNonEmptyIfSet(): Flow<StreamBlock> = filter {
-        if (options.skipEmptyBlocks) !it.isEmpty()
-        else true
-    }
+    private fun Flow<StreamBlock>.filterNonEmptyIfSet(): Flow<StreamBlock> =
+        filter { !(options.skipEmptyBlocks && it.isEmpty()) }
+
+    private fun Flow<StreamBlock>.filterByEvents(): Flow<StreamBlock> =
+        filter { keepBlock(it.txEvents + it.blockEvents) }
     
     /**
      *
@@ -119,36 +91,53 @@ class EventStream(
         return StreamBlock(block, blockEvents, txEvents)
     }
 
-    private suspend fun queryBlocks(blockHeights: Iterable<Long>): Flow<StreamBlock> =
-        blockHeights
-            .chunked(options.batchSize)
-            .asFlow()
-            .transform {
-                // Concurrently process <batch-size> blocks at a time:
-                val blocks = coroutineScope { it.map { height -> async { queryBlock(height) } }.awaitAll() }
+    private suspend fun queryBlocks(blockHeights: List<Long>): Flow<StreamBlock> {
+        return flow {
+            coroutineScope {
+                // Concurrently process
+                log.info("processing query for [${blockHeights.first()..blockHeights.last()}]")
+                val blocks = blockHeights.map {
+                    async { blockFetcher.getBlock(it).toStreamBlock() }
+                }.awaitAll()
                 emitAll(blocks.asFlow())
             }
+        }
             .catch { e -> log.error("", e) }
             .flowOn(dispatchers.io())
+    }
 
-    private suspend fun streamHistoricalBlocks(startHeight: Long, endHeight: Long): Flow<StreamBlock> {
+    suspend fun streamHistoricalBlocks(startHeight: Long, endHeight: Long): Flow<StreamBlock> {
         log.info("historical::streaming blocks from $startHeight to $endHeight")
-        return (startHeight..endHeight).asFlow()
-            .chunked(options.batchSize)
-            .flatMapMerge(options.concurrency) { queryBlocks(it).map { b -> b.copy(historical = true) } }
-            .catch { e -> log.error("", e) }
-            .flowOn(dispatchers.io())
-            .onStart { log.info { "historical::starting" } }
-            .onCompletion { cause: Throwable? ->
-                if (cause == null) {
-                    log.info("historical::exhausted historical block stream ok")
-                } else {
-                    log.error("historical::exhausted block stream with error: ${cause.message}")
-                }
-            }.retryWhen { cause, attempt ->
-                log.error("attempt: $attempt", cause)
-                true
+        suspend fun <T, R> Flow<T>.doFlatmap(transform: suspend (value: T) -> Flow<R>): Flow<R> {
+            return if (options.ordered) {
+                flatMapConcat { transform(it) }
+            } else {
+                flatMapMerge(options.concurrency) { transform(it) }
             }
+        }
+
+        return coroutineScope {
+            (startHeight..endHeight)
+                .chunked(options.batchSize)
+                .asFlow()
+                .doFlatmap { queryBlocks(it).map { b -> b.copy(historical = true) } }
+                .filterNonEmptyIfSet()
+                .filterByEvents()
+                .buffer()
+                .catch { e -> log.error("", e) }
+                .flowOn(dispatchers.io())
+                .onStart { log.info { "historical::starting" } }
+                .onCompletion { cause: Throwable? ->
+                    if (cause == null) {
+                        log.info("historical::exhausted historical block stream ok")
+                    } else {
+                        log.error("historical::exhausted block stream with error", cause)
+                    }
+                }.retryWhen { cause, attempt ->
+                    log.error("attempt: $attempt", cause)
+                    true
+                }
+        }
     }
 
     /**
@@ -203,15 +192,12 @@ class EventStream(
             .flowOn(dispatchers.io())
             .onStart { log.info("live::starting") }
             .mapNotNull { block: Block ->
-                val maybeBlock = queryBlock(block.header?.height!!)
-                if (maybeBlock != null) {
-                    log.info("live::got block #${maybeBlock.height}")
-                    maybeBlock
-                } else {
-                    log.info("live::skipping block #${block.header.height}")
-                    null
+                blockFetcher.getBlock(block.header?.height!!).toStreamBlock().also {
+                    log.info("live::got block #${it.height}")
                 }
             }
+            .filterNonEmptyIfSet()
+            .filterByEvents()
             .onCompletion {
                 log.info("live::stopping event stream")
                 eventStreamService.stopListening()
@@ -245,20 +231,24 @@ class EventStream(
 
             val currentHeight = tendermintServiceClient.abciInfo().result?.response?.lastBlockHeight
                 ?: throw RuntimeException("could not fetch current height")
+            val needLive = toInclusive != null && toInclusive >= currentHeight
 
-            val realTo = toInclusive ?: currentHeight
-            val needLive = toInclusive != null && toInclusive > currentHeight
+            val historyChannel = Channel<StreamBlock>()
+            launch {
+                val calculatedTo = toInclusive ?: currentHeight
+                log.info("calculated-to:$calculatedTo need-live:$needLive")
+                streamHistoricalBlocks(from, calculatedTo).buffer().flowOn(dispatchers.io()).collect { historyChannel.send(it) }
+            }
 
-            log.info("realTo:$realTo need-live:$needLive")
-            emitAll(streamHistoricalBlocks(from, realTo))
+            emitAll(historyChannel)
             if (needLive) {
                 emitAll(liveChannel)
             } else {
+                log.info("cancelling live job")
                 liveJob.cancel()
                 liveChannel.close()
             }
         }
-            .filterNonEmptyIfSet()
             .cancellable()
             .retryWhen { cause: Throwable, attempt: Long ->
                 log.warn("streamBlocks::error; recovering Flow (attempt ${attempt + 1})", cause)

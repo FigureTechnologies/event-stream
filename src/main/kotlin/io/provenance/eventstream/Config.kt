@@ -31,6 +31,7 @@ data class EventStreamConfig(
     val filter: StreamEventsFilterConfig = StreamEventsFilterConfig(),
     val height: HeightConfig = HeightConfig(),
     val concurrency: Int = DEFAULT_CONCURRENCY,
+    val ordered: Boolean?,
     @ConfigAlias("skip_empty_blocks") val skipEmptyBlocks: Boolean?,
 )
 

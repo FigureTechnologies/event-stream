@@ -22,6 +22,7 @@ interface BlockStreamFactory {
             withFromHeight(config.eventStream.height.from),
             withToHeight(config.eventStream.height.to),
             withConcurrency(config.eventStream.concurrency),
+            withOrdered(config.eventStream.ordered)
         )
     )
 

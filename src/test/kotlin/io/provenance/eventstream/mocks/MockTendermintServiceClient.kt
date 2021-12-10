@@ -12,7 +12,4 @@ class MockTendermintServiceClient(mocker: ServiceMock) : TendermintServiceClient
 
     override suspend fun blockResults(height: Long?) =
         respondWith<BlockResultsResponse>("blockResults", height)
-
-    override suspend fun blockchain(minHeight: Long?, maxHeight: Long?) =
-        respondWith<BlockchainResponse>("blockchain", minHeight, maxHeight)
 }

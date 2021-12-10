@@ -14,9 +14,11 @@ data class BlockStreamOptions(
     val fromHeight: Long? = null,
     val toHeight: Long? = null,
     val skipEmptyBlocks: Boolean = false,
+    val ordered: Boolean = false,
     val blockEvents: Set<String> = emptySet(),
     val txEvents: Set<String> = emptySet(),
 ) {
+
     companion object {
         fun create(vararg options: BlockStreamCfg): BlockStreamOptions {
             return options.fold(BlockStreamOptions()) { acc, fn -> fn(acc) }
@@ -77,3 +79,5 @@ fun withBlockEvents(events: Set<String>) = blockStreamCfg { copy(blockEvents = e
  * @property predicate If evaluated to true will include the given block for processing.
  */
 fun withTxEvents(events: Set<String>) = blockStreamCfg { copy(txEvents = events) }
+
+fun withOrdered(value: Boolean?) = blockStreamCfg { if (value == null) this else copy(ordered = value) }

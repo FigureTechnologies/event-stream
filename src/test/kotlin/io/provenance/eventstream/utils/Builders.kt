@@ -12,6 +12,7 @@ import io.provenance.eventstream.stream.models.BlockResponse
 import io.provenance.eventstream.stream.models.BlockResultsResponse
 import io.provenance.eventstream.stream.models.BlockchainResponse
 import io.provenance.eventstream.mocks.MockEventStreamService
+import io.provenance.eventstream.stream.TMBlockFetcher
 import io.provenance.eventstream.test.mocks.MockTendermintServiceClient
 import io.provenance.eventstream.test.mocks.ServiceMocker
 import io.provenance.eventstream.test.utils.Defaults
@@ -79,24 +80,23 @@ object Builders {
 
         // shortcuts for options:
         fun batchSize(value: Int) = apply { options = options.copy(batchSize = value) }
-        fun fromHeight(value: Long) = apply { options = options.copy(fromHeight = value) }
-        fun toHeight(value: Long) = apply { options = options.copy(toHeight = value) }
         fun skipEmptyBlocks(value: Boolean) = apply { options = options.copy(skipEmptyBlocks = value) }
         fun matchBlockEvents(events: Set<String>) = apply { options = options.copy(blockEvents = events) }
         fun matchTxEvents(events: Set<String>) = apply { options = options.copy(txEvents = events) }
 
         suspend fun build(): EventStream {
             val dispatchers = dispatchers ?: error("dispatchers must be provided")
+            val tmServiceClient = tendermintServiceClient ?: tendermintService().build(MockTendermintServiceClient::class.java)
             return EventStream(
                 eventStreamService = eventStreamService
                     ?: eventStreamService(includeLiveBlocks = includeLiveBlocks)
                         .dispatchers(dispatchers)
                         .build(),
-                tendermintServiceClient = tendermintServiceClient
-                    ?: tendermintService().build(MockTendermintServiceClient::class.java),
+                tendermintServiceClient = tmServiceClient,
                 decoder = if (moshi != null) MoshiDecoderEngine(moshi!!) else Defaults.decoderEngine(),
                 dispatchers = dispatchers,
                 options = options,
+                blockFetcher = TMBlockFetcher(tmServiceClient)
             )
         }
     }

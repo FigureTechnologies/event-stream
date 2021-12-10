@@ -203,41 +203,6 @@ class StreamTests : TestBase() {
                 }
             }
         }
-
-        @OptIn(ExperimentalCoroutinesApi::class)
-        @Test
-        fun testBlockchainResponse() {
-
-            val tendermint: TendermintServiceClient = ServiceMocker.Builder()
-                .doFor("blockchain") {
-                    templates.readAs(
-                        BlockchainResponse::class.java,
-                        "blockchain/${it[0]}-${it[1]}.json"
-                    )
-                }
-                .build(MockTendermintServiceClient::class.java)
-
-            val expectedMinHeight: Long = MIN_HISTORICAL_BLOCK_HEIGHT
-            val expectedMaxHeight: Long = expectedMinHeight + 20 - 1
-
-            dispatcherProvider.runBlockingTest {
-                val blockMetas = tendermint.blockchain(expectedMinHeight, expectedMaxHeight).result?.blockMetas
-
-                assert(blockMetas?.size == 20)
-
-                val expectedHeights: Set<Long> = (expectedMinHeight..expectedMaxHeight).toSet()
-                val heights: Set<Long> = blockMetas?.mapNotNull { b -> b.header?.height }?.toSet() ?: setOf()
-
-                assert((expectedHeights - heights).isEmpty())
-
-            }
-
-            assertThrows<Throwable> {
-                dispatcherProvider.runBlockingTest {
-                    tendermint.blockchain(-expectedMinHeight, expectedMaxHeight)
-                }
-            }
-        }
     }
 
     @Nested
@@ -288,26 +253,24 @@ class StreamTests : TestBase() {
                 // If not skipping empty blocks, we should get EXPECTED_TOTAL_BLOCKS:
                 val collectedNoSkip = Builders.eventStream()
                     .dispatchers(dispatcherProvider)
-                    .fromHeight(MIN_HISTORICAL_BLOCK_HEIGHT)
                     .skipEmptyBlocks(false)
                     .build()
                     .streamHistoricalBlocks()
                     .toList()
 
-                assert(collectedNoSkip.size.toLong() == EXPECTED_TOTAL_BLOCKS)
-                assert(collectedNoSkip.all { it.historical })
+                assert(collectedNoSkip.size.toLong() == EXPECTED_TOTAL_BLOCKS) { "collectedNoSkip:${collectedNoSkip.size} != $EXPECTED_TOTAL_BLOCKS" }
+                assert(collectedNoSkip.all { it.historical }) { "not all historical:${collectedNoSkip.filterNot { it.historical }}"}
 
                 // If skipping empty blocks, we should get EXPECTED_NONEMPTY_BLOCKS:
                 val collectedSkip = Builders.eventStream()
                     .dispatchers(dispatcherProvider)
-                    .fromHeight(MIN_HISTORICAL_BLOCK_HEIGHT)
                     .skipEmptyBlocks(true)
                     .build()
                     .streamHistoricalBlocks().toList()
                     .toList()
 
-                assert(collectedSkip.size.toLong() == EXPECTED_NONEMPTY_BLOCKS)
-                assert(collectedSkip.all { it.historical })
+                assert(collectedSkip.size.toLong() == EXPECTED_NONEMPTY_BLOCKS) { "collectedSkip:${collectedSkip.size} != $EXPECTED_NONEMPTY_BLOCKS"}
+                assert(collectedSkip.all { it.historical }) { "not all historical:${collectedSkip.filterNot { it.historical }}"}
             }
         }
 
@@ -360,7 +323,6 @@ class StreamTests : TestBase() {
                     .dispatchers(dispatcherProvider)
                     .eventStreamService(eventStreamService)
                     .tendermintService(tendermintService)
-                    .fromHeight(MIN_HISTORICAL_BLOCK_HEIGHT)
                     .skipEmptyBlocks(true)
                     .build()
 
@@ -370,15 +332,19 @@ class StreamTests : TestBase() {
                     .streamBlocks()
                     .toList()
 
-                assert(collected.size == expectTotal.toInt())
-                assert(collected.filter { it.historical }.size.toLong() == EXPECTED_NONEMPTY_BLOCKS)
-                assert(collected.filter { !it.historical }.size.toLong() == eventStreamService.expectedResponseCount())
+                assert(collected.size == expectTotal.toInt()) { "collected.size:${collected.size} expected.size:$expectTotal" }
+                assert(collected.filter { it.historical }.size.toLong() == EXPECTED_NONEMPTY_BLOCKS) {
+                    "${collected.filter { it.historical }.size.toLong()} != $EXPECTED_NONEMPTY_BLOCKS"
+                }
+                assert(collected.filter { !it.historical }.size.toLong() == eventStreamService.expectedResponseCount()) {
+                    "${collected.filter { !it.historical }.size.toLong()} != ${eventStreamService.expectedResponseCount()}"
+                }
             }
         }
 
         @OptIn(ExperimentalCoroutinesApi::class, kotlinx.coroutines.FlowPreview::class)
         @Test
-        fun testCombinedBlockStreamingCancelledOnpanic() {
+        fun testCombinedBlockStreamingCancelledOnPanic() {
             assertThrows<CancellationException> {
                 dispatcherProvider.runBlockingTest {
 
@@ -395,7 +361,6 @@ class StreamTests : TestBase() {
                         .dispatchers(dispatcherProvider)
                         .eventStreamService(eventStreamService)
                         .tendermintService(tendermintService)
-                        .fromHeight(MIN_HISTORICAL_BLOCK_HEIGHT)
                         .skipEmptyBlocks(true)
                         .build()
 
@@ -426,7 +391,6 @@ class StreamTests : TestBase() {
                     .dispatchers(dispatcherProvider)
                     .eventStreamService(eventStreamService)
                     .tendermintService(tendermintService)
-                    .fromHeight(MIN_HISTORICAL_BLOCK_HEIGHT)
                     .skipEmptyBlocks(true)
                     .matchTxEvents(setOf(requireTxEvent))
                     .build()
@@ -453,7 +417,6 @@ class StreamTests : TestBase() {
                     .dispatchers(dispatcherProvider)
                     .eventStreamService(eventStreamService)
                     .tendermintService(tendermintService)
-                    .fromHeight(MIN_HISTORICAL_BLOCK_HEIGHT)
                     .skipEmptyBlocks(true)
                     .matchTxEvents(setOf(requireTxEvent))
                     .build()

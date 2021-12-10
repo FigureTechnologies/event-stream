@@ -33,9 +33,16 @@ const val EXPECTED_EMPTY_BLOCKS: Long = EXPECTED_TOTAL_BLOCKS - EXPECTED_NONEMPT
 
 const val BATCH_SIZE: Int = 4
 
-val heights: List<Long> = (MIN_HISTORICAL_BLOCK_HEIGHT..MAX_HISTORICAL_BLOCK_HEIGHT).toList()
+val heightsRange = (MIN_HISTORICAL_BLOCK_HEIGHT..MAX_HISTORICAL_BLOCK_HEIGHT)
+val heights: List<Long> = heightsRange.toList()
 
 @OptIn(ExperimentalCoroutinesApi::class)
 val heightChunks: List<Pair<Long, Long>> = heights
-    .chunked(EventStream.TENDERMINT_MAX_QUERY_RANGE)
+    .chunked(20)
     .map { Pair(it.minOrNull()!!, it.maxOrNull()!!) }
+
+@OptIn(ExperimentalCoroutinesApi::class)
+suspend fun EventStream.streamBlocks() = streamBlocks(heightsRange.first, heightsRange.last)
+
+@OptIn(ExperimentalCoroutinesApi::class)
+suspend fun EventStream.streamHistoricalBlocks() = streamHistoricalBlocks(heightsRange.first, heightsRange.last)
