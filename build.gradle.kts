@@ -60,9 +60,7 @@ dependencies {
     testImplementation("org.junit.jupiter", "junit-jupiter-engine", Version.JUnit)
     testImplementation("org.apache.commons", "commons-text", Version.ApacheCommons.Text)
     testImplementation("org.junit-pioneer", "junit-pioneer", Version.JUnitPioneer)
-
-    implementation("io.arrow-kt", "arrow-core", Version.Arrow)
-
+    
     implementation("org.apache.commons", "commons-lang3", Version.ApacheCommons.Lang3)
 
     implementation("com.tinder.scarlet", "scarlet", Version.Scarlet)

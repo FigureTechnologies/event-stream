@@ -12,4 +12,7 @@ class TMBlockFetcher(private val tmClient: TendermintServiceClient) : BlockFetch
         val blockResult = tmClient.blockResults(height).result
         return BlockData(block, blockResult)
     }
+
+    override suspend fun close() {
+    }
 }

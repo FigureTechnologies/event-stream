@@ -19,6 +19,8 @@ data class BlockData(val block: Block, val blockResult: BlockResultsResponseResu
 
 @OptIn(ExperimentalCoroutinesApi::class)
 interface BlockFetcher {
+    suspend fun close()
+
     suspend fun getBlock(height: Long): BlockData
 
     suspend fun getBlockResults(heights: List<Long>): Flow<BlockData> =

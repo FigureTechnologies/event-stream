@@ -15,20 +15,15 @@ import io.provenance.eventstream.stream.observers.consoleOutput
 import io.provenance.eventstream.stream.observers.fileOutput
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
+import okhttp3.Dispatcher
 import okhttp3.OkHttpClient
 import java.net.URI
 import java.util.concurrent.TimeUnit
 
-private fun configureEventStreamBuilder(websocketUri: String): Scarlet.Builder {
+private fun configureEventStreamBuilder(client: OkHttpClient, websocketUri: String): Scarlet.Builder {
     val node = URI(websocketUri)
     return Scarlet.Builder()
-        .webSocketFactory(
-            OkHttpClient.Builder()
-                .pingInterval(10, TimeUnit.SECONDS)
-                .readTimeout(60, TimeUnit.SECONDS)
-                .build()
-                .newWebSocketFactory("${node.scheme}://${node.host}:${node.port}/websocket")
-        )
+        .webSocketFactory(client.newWebSocketFactory("${node.scheme}://${node.host}:${node.port}/websocket"))
         .addMessageAdapterFactory(MoshiMessageAdapter.Factory())
         .addStreamAdapterFactory(CoroutinesStreamAdapterFactory())
 }
@@ -60,7 +55,15 @@ fun main(args: Array<String>) {
         .build()
         .let { MoshiDecoderEngine(it) }
 
-    val wsStreamBuilder = configureEventStreamBuilder(config.eventStream.websocket.uri)
+    val okDispatcher = Dispatcher()
+
+    val okClient = OkHttpClient.Builder()
+        .pingInterval(10, TimeUnit.SECONDS)
+        .readTimeout(60, TimeUnit.SECONDS)
+        .dispatcher(okDispatcher)
+        .build()
+
+    val wsStreamBuilder = configureEventStreamBuilder(okClient, config.eventStream.websocket.uri)
     val tendermintService = TendermintServiceOpenApiClient(config.eventStream.rpc.uri)
 
     val factory: BlockStreamFactory = DefaultBlockStreamFactory(config, decoderEngine, wsStreamBuilder, tendermintService)
@@ -74,7 +77,12 @@ fun main(args: Array<String>) {
             .catch { log.error("", it) }
             .observe(consoleOutput(config.verbose))
             .observe(fileOutput("../pio-testnet-1/json-data", decoderEngine))
-            .collect()
+            .onCompletion {
+                log.info("done!")
+                okClient.dispatcher.executorService.shutdownNow()
+            }.collect()
+
+        log.info("really done")
     }
 }
 

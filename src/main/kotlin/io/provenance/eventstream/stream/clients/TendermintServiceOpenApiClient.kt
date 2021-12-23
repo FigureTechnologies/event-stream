@@ -5,7 +5,6 @@ import io.provenance.eventstream.stream.apis.InfoApi
 import io.provenance.eventstream.stream.models.ABCIInfoResponse
 import io.provenance.eventstream.stream.models.BlockResponse
 import io.provenance.eventstream.stream.models.BlockResultsResponse
-import io.provenance.eventstream.stream.models.BlockchainResponse
 
 /**
  * An OpenAPI generated client designed to interact with the Tendermint RPC API.
