@@ -47,8 +47,8 @@ fun main(args: Array<String>) {
      */
     val config: Config = ConfigLoader.Builder()
         .addCommandLineSource(args)
-        .addSource(EnvironmentVariablesPropertySource(useUnderscoresAsSeparator = true, allowUppercaseNames = true))
-        .addSource(PropertySource.resource("/application.yml"))
+        .addEnvironmentSource(useUnderscoresAsSeparator = true, allowUppercaseNames = true)
+        .addPropertySource(PropertySource.resource("/application.yml"))
         .build()
         .loadConfigOrThrow()
 
@@ -59,6 +59,7 @@ fun main(args: Array<String>) {
         .add(JSONObjectAdapter())
         .build()
         .let { MoshiDecoderEngine(it) }
+
     val wsStreamBuilder = configureEventStreamBuilder(config.eventStream.websocket.uri)
     val tendermintService = TendermintServiceOpenApiClient(config.eventStream.rpc.uri)
 

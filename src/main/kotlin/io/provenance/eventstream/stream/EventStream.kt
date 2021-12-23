@@ -25,12 +25,24 @@ import java.net.SocketTimeoutException
 import java.util.concurrent.CompletionException
 import kotlin.time.ExperimentalTime
 
+interface AbciInfoFetcher {
+    suspend fun getCurrentHeight(): Long
+}
+
+class AbciException(m: String) : Exception(m)
+
+class TMAbciInfoFetcher(private val tendermintServiceClient: TendermintServiceClient) : AbciInfoFetcher {
+    override suspend fun getCurrentHeight(): Long =
+        tendermintServiceClient.abciInfo().result?.response?.lastBlockHeight
+            ?: throw AbciException("failed to fetch block height")
+}
+
 @OptIn(FlowPreview::class, ExperimentalTime::class)
 @ExperimentalCoroutinesApi
 class EventStream(
     private val eventStreamService: EventStreamService,
     private val blockFetcher: BlockFetcher,
-    private val tendermintServiceClient: TendermintServiceClient,
+    private val abciInfo: AbciInfoFetcher,
     private val decoder: DecoderEngine,
     private val dispatchers: DispatcherProvider = DefaultDispatcherProvider(),
     private val options: BlockStreamOptions = BlockStreamOptions()
@@ -154,34 +166,27 @@ class EventStream(
             for (event in eventStreamService.observeWebSocketEvent()) {
                 when (event) {
                     is WebSocket.Event.OnConnectionOpened<*> -> {
-                        log.info("streamLiveBlocks::received OnConnectionOpened event")
                         log.info("streamLiveBlocks::initializing subscription for tm.event='NewBlock'")
                         eventStreamService.subscribe(Subscribe("tm.event='NewBlock'"))
                     }
                     is WebSocket.Event.OnMessageReceived ->
                         when (val message = event.message) {
+                            is Message.Bytes -> log.warn("live::binary message payload not supported")
                             is Message.Text -> {
                                 when (val type = responseMessageDecoder.decode(message.value)) {
-                                    is MessageType.Empty ->
-                                        log.info("received empty ACK message => ${message.value}")
                                     is MessageType.NewBlock -> {
                                         val block = type.block.data.value.block
                                         log.info("live::received NewBlock message: #${block.header?.height}")
                                         send(block)
                                     }
-                                    is MessageType.Error ->
-                                        log.error("upstream error from RPC endpoint: ${type.error}")
+                                    is MessageType.Empty -> log.info("received empty ACK message => ${message.value}")
+                                    is MessageType.Error -> log.error("upstream error from RPC endpoint: ${type.error}")
+                                    is MessageType.Unknown -> log.info("unknown message type; skipping message => ${message.value}")
                                     is MessageType.Panic -> {
                                         log.error("upstream panic from RPC endpoint: ${type.error}")
                                         throw CancellationException("RPC endpoint panic: ${type.error}")
                                     }
-                                    is MessageType.Unknown ->
-                                        log.info("unknown message type; skipping message => ${message.value}")
                                 }
-                            }
-                            is Message.Bytes -> {
-                                // ignore; binary payloads not supported:
-                                log.warn("live::binary message payload not supported")
                             }
                         }
                     is WebSocket.Event.OnConnectionFailed -> throw event.throwable
@@ -223,30 +228,36 @@ class EventStream(
      * @return A Flow of live and historical blocks, plus associated event data.
      */
     override suspend fun streamBlocks(from: Long, toInclusive: Long?): Flow<StreamBlock> = coroutineScope {
+        val liveChannel = Channel<StreamBlock>(720)
+        val liveJob = async {
+            streamLiveBlocks()
+                .buffer()
+                .cancellable()
+                .onCompletion { liveChannel.close() }
+                .collect { liveChannel.send(it) }
+        }
+
+        val currentHeight = abciInfo.getCurrentHeight()
+        val needLive = toInclusive == null || toInclusive > currentHeight
+        if (!needLive) {
+            liveJob.cancelAndJoin()
+            liveChannel.close()
+            log.info("live job cancelled: not needed")
+        }
+
+        val hflow: Flow<StreamBlock> = channelFlow {
+            val calculatedTo = toInclusive ?: currentHeight
+            log.info("calculated-to:$calculatedTo need-live:$needLive")
+            streamHistoricalBlocks(from, calculatedTo)
+                .buffer()
+                .cancellable()
+                .collect { send(it) }
+        }
+
         flow {
-            val liveChannel = Channel<StreamBlock>(720)
-            val liveJob = launch {
-                streamLiveBlocks().buffer().flowOn(dispatchers.io()).collect { liveChannel.send(it) }
-            }
-
-            val currentHeight = tendermintServiceClient.abciInfo().result?.response?.lastBlockHeight
-                ?: throw RuntimeException("could not fetch current height")
-            val needLive = toInclusive != null && toInclusive >= currentHeight
-
-            val historyChannel = Channel<StreamBlock>()
-            launch {
-                val calculatedTo = toInclusive ?: currentHeight
-                log.info("calculated-to:$calculatedTo need-live:$needLive")
-                streamHistoricalBlocks(from, calculatedTo).buffer().flowOn(dispatchers.io()).collect { historyChannel.send(it) }
-            }
-
-            emitAll(historyChannel)
+            emitAll(hflow)
             if (needLive) {
                 emitAll(liveChannel)
-            } else {
-                log.info("cancelling live job")
-                liveJob.cancel()
-                liveChannel.close()
             }
         }
             .cancellable()
