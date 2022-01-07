@@ -6,7 +6,6 @@ import io.provenance.eventstream.Config
 import io.provenance.eventstream.DefaultDispatcherProvider
 import io.provenance.eventstream.DispatcherProvider
 import io.provenance.eventstream.adapter.json.decoder.DecoderEngine
-import io.provenance.eventstream.stream.clients.TendermintServiceClient
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import org.slf4j.LoggerFactory
 
@@ -19,10 +18,10 @@ interface BlockStreamFactory {
             withSkipEmptyBlocks(config.eventStream.skipEmptyBlocks),
             withBlockEvents(config.eventStream.filter.blockEvents),
             withTxEvents(config.eventStream.filter.txEvents),
-            withFromHeight(config.eventStream.height.from),
-            withToHeight(config.eventStream.height.to),
+            withFromHeight(config.from),
+            withToHeight(config.to),
             withConcurrency(config.eventStream.concurrency),
-            withOrdered(config.eventStream.ordered)
+            withOrdered(config.ordered)
         )
     )
 
@@ -38,13 +37,13 @@ class DefaultBlockStreamFactory(
     private val config: Config,
     private val decoderEngine: DecoderEngine,
     private val eventStreamBuilder: Scarlet.Builder,
-    private val tendermintServiceClient: TendermintServiceClient,
+    private val blockFetcher: BlockFetcher,
     private val dispatchers: DispatcherProvider = DefaultDispatcherProvider(),
 ) : BlockStreamFactory {
     private val log = LoggerFactory.getLogger(javaClass)
 
     override fun createSource(options: BlockStreamOptions): BlockSource {
-        log.info("Connecting stream instance to ${config.eventStream.websocket.uri}")
+        log.info("Connecting stream instance to ${config.node}")
         val lifecycle = LifecycleRegistry(config.eventStream.websocket.throttleDurationMs)
         val scarlet: Scarlet = eventStreamBuilder.lifecycle(lifecycle).build()
         val tendermintRpc: TendermintRPCStream = scarlet.create(TendermintRPCStream::class.java)
@@ -52,8 +51,7 @@ class DefaultBlockStreamFactory(
 
         return EventStream(
             eventStreamService,
-            TMBlockFetcher(tendermintServiceClient),
-            TMAbciInfoFetcher(tendermintServiceClient),
+            blockFetcher,
             decoderEngine,
             options = options,
             dispatchers = dispatchers

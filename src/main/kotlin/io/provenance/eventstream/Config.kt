@@ -47,5 +47,9 @@ data class UploadConfig(
 data class Config(
     val verbose: Boolean = false,
     @ConfigAlias("event-stream") val eventStream: EventStreamConfig,
-    val upload: UploadConfig = UploadConfig()
+    val upload: UploadConfig = UploadConfig(),
+    val node: String,
+    val from: Long? = null,
+    val to: Long? = null,
+    val ordered: Boolean = false,
 )

@@ -20,7 +20,7 @@ class FileOutput(dir: String, decoderEngine: DecoderEngine): BlockSink {
         File(dir).mkdirs()
     }
 
-    override fun invoke(block: StreamBlock) {
+    override suspend fun invoke(block: StreamBlock) {
         val checksum = sha256(block.height.toString()).toHex()
         val splay = checksum.take(4)
         val dirname = dirname(splay)

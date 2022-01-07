@@ -11,9 +11,9 @@ import io.provenance.eventstream.stream.models.StreamBlock
 import io.provenance.eventstream.stream.models.TxEvent
 import io.provenance.eventstream.stream.models.extensions.dateTime
 
-fun consoleOutput(verbose: Boolean) = ConsoleOutput(verbose)
+fun consoleOutput(verbose: Boolean, nth: Int = 100) = ConsoleOutput(verbose, nth)
 
-class ConsoleOutput(private val verbose: Boolean) : BlockSink {
+class ConsoleOutput(private val verbose: Boolean, private val nth: Int) : BlockSink {
     private val log = logger()
 
     private val logAttribute: (Event) -> Unit = {
@@ -38,7 +38,11 @@ class ConsoleOutput(private val verbose: Boolean) : BlockSink {
         log.info { "Block: $height: $date $hash; $size tx event(s)" }
     }
 
-    override fun invoke(block: StreamBlock) {
+    override suspend fun invoke(block: StreamBlock) {
+        if (block.height % nth != 0L) {
+            return
+        }
+
         block.logBlockInfo()
         if (verbose) {
             block.txEvents.forEach(logBlockTxEvent)

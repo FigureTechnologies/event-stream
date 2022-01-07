@@ -13,5 +13,5 @@ data class StreamBlock(
     val txEvents: List<TxEvent>,
     val historical: Boolean = false
 ) {
-    val height: Long? get() = block.header?.height
+    val height: Long get() = block.header!!.height
 }

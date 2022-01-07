@@ -1,21 +1,16 @@
 package io.provenance.eventstream.test
 
-import com.squareup.moshi.JsonEncodingException
 import com.tinder.scarlet.Message
 import com.tinder.scarlet.WebSocket
 import io.provenance.eventstream.adapter.json.decoder.DecoderEncodingException
-import io.provenance.eventstream.adapter.json.decoder.DecoderException
 import io.provenance.eventstream.logger
 import io.provenance.eventstream.mocks.MockEventStreamService
-import io.provenance.eventstream.stream.clients.TendermintServiceClient
 import io.provenance.eventstream.stream.models.*
 import io.provenance.eventstream.stream.models.extensions.toDecodedMap
-import io.provenance.eventstream.stream.models.MessageType
 import io.provenance.eventstream.test.base.TestBase
 import io.provenance.eventstream.test.mocks.*
 import io.provenance.eventstream.test.utils.*
 import io.provenance.eventstream.utils.Builders
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.count
 import kotlinx.coroutines.flow.toList
