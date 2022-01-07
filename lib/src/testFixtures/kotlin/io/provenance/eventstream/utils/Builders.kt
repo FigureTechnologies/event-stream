@@ -1,10 +1,10 @@
 package io.provenance.eventstream.test.utils
 
 import com.squareup.moshi.Moshi
+import io.provenance.eventstream.adapter.json.decoder.MoshiDecoderEngine
 import io.provenance.eventstream.coroutines.DispatcherProvider
-import io.provenance.eventstream.stream.EventStream
-import io.provenance.eventstream.stream.EventStreamService
-import io.provenance.eventstream.stream.TendermintServiceClient
+import io.provenance.eventstream.stream.*
+import io.provenance.eventstream.stream.clients.TendermintBlockFetcher
 import io.provenance.eventstream.stream.models.ABCIInfoResponse
 import io.provenance.eventstream.stream.models.BlockResponse
 import io.provenance.eventstream.stream.models.BlockResultsResponse
@@ -61,39 +61,34 @@ object Builders {
     data class EventStreamBuilder(val builders: Builders) {
         var dispatchers: DispatcherProvider? = null
         var eventStreamService: EventStreamService? = null
-        var tendermintServiceClient: TendermintServiceClient? = null
         var moshi: Moshi? = null
-        var options: EventStream.Options.Builder = EventStream.Options.Builder()
+        var options: BlockStreamOptions = BlockStreamOptions()
         var includeLiveBlocks: Boolean = true
 
         fun <T : EventStreamService> eventStreamService(value: T) = apply { eventStreamService = value }
-        fun <T : TendermintServiceClient> tendermintService(value: T) = apply { tendermintServiceClient = value }
         fun moshi(value: Moshi) = apply { moshi = value }
         fun dispatchers(value: DispatcherProvider) = apply { dispatchers = value }
-        fun options(value: EventStream.Options.Builder) = apply { options = value }
+        fun options(value: BlockStreamOptions) = apply { options = value }
         fun includeLiveBlocks(value: Boolean) = apply { includeLiveBlocks = value }
 
         // shortcuts for options:
-        fun batchSize(value: Int) = apply { options.batchSize(value) }
-        fun fromHeight(value: Long) = apply { options.fromHeight(value) }
-        fun toHeight(value: Long) = apply { options.toHeight(value) }
-        fun skipIfEmpty(value: Boolean) = apply { options.skipIfEmpty(value) }
-        fun matchBlockEvent(predicate: (event: String) -> Boolean) = apply { options.matchBlockEvent(predicate) }
-        fun matchTxEvent(predicate: (event: String) -> Boolean) = apply { options.matchTxEvent(predicate) }
+        fun batchSize(value: Int) = apply { options = options.copy(batchSize = value) }
+        fun skipEmptyBlocks(value: Boolean) = apply { options = options.copy(skipEmptyBlocks = value) }
+        fun matchBlockEvents(events: Set<String>) = apply { options = options.copy(blockEvents = events) }
+        fun matchTxEvents(events: Set<String>) = apply { options = options.copy(txEvents = events) }
 
         suspend fun build(): EventStream {
             val dispatchers = dispatchers ?: error("dispatchers must be provided")
             return EventStream(
                 eventStreamService = eventStreamService
-                    ?: builders
-                        .eventStreamService(includeLiveBlocks = includeLiveBlocks)
+                    ?: eventStreamService(includeLiveBlocks = includeLiveBlocks)
                         .dispatchers(dispatchers)
                         .build(),
-                tendermintServiceClient = tendermintServiceClient
-                    ?: builders.tendermintService().build(MockTendermintServiceClient::class.java),
-                moshi = moshi ?: Defaults.moshi,
+                decoder = MoshiDecoderEngine(moshi!!),
                 dispatchers = dispatchers,
-                options = options.build()
+                options = options,
+                blockFetcher = TendermintBlockFetcher(""),
+                checkpoint = InMemoryCheckpoint()
             )
         }
     }

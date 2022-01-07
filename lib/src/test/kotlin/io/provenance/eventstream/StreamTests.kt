@@ -15,10 +15,7 @@ import io.provenance.eventstream.test.base.TestBase
 import io.provenance.eventstream.test.mocks.MockEventStreamService
 import io.provenance.eventstream.test.mocks.MockTendermintServiceClient
 import io.provenance.eventstream.test.mocks.ServiceMocker
-import io.provenance.eventstream.test.utils.Builders
-import io.provenance.eventstream.test.utils.EXPECTED_NONEMPTY_BLOCKS
-import io.provenance.eventstream.test.utils.EXPECTED_TOTAL_BLOCKS
-import io.provenance.eventstream.test.utils.MIN_HISTORICAL_BLOCK_HEIGHT
+import io.provenance.eventstream.test.utils.*
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.count
@@ -34,7 +31,7 @@ import org.junit.jupiter.api.assertThrows
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class StreamTests : TestBase() {
 
-    val decoder = MessageType.Decoder(moshi)
+    val decoder = MessageType.Decoder(decoderEngine)
 
     @BeforeAll
     override fun setup() {
@@ -267,12 +264,12 @@ class StreamTests : TestBase() {
                 )
                 val blocks: Array<BlockResponse> =
                     heights
-                        .map { templates.unsafeReadAs(BlockResponse::class.java, "block/$it.json") }
+                        .map { templates.unsafeReadAs(BlockResponse::class.java, "block/${it}.json") }
                         .toTypedArray()
 
                 // set up:
                 val ess = MockEventStreamService
-                    .Builder()
+                    .builder()
                     .dispatchers(dispatcherProvider)
                     .response(BlockResponse::class.java, *blocks)
                     .build()
@@ -281,11 +278,10 @@ class StreamTests : TestBase() {
 
                 // make sure we get the same stuff back out:
                 dispatcherProvider.runBlockingTest {
-                    // receive is a blocking call:
-                    val event = receiver.receive()
+                    val event = receiver.receive()  // block
                     assert(event is WebSocket.Event.OnMessageReceived)
                     val payload = ((event as WebSocket.Event.OnMessageReceived).message as Message.Text).value
-                    val response: BlockResponse? = moshi.adapter(BlockResponse::class.java).fromJson(payload)
+                    val response: BlockResponse? = decoderEngine.adapter(BlockResponse::class).fromJson(payload)
                     assert(response?.result?.block?.header?.height in heights)
                 }
             }
@@ -297,28 +293,27 @@ class StreamTests : TestBase() {
 
             dispatcherProvider.runBlockingTest {
 
-                // If not skipping empty blocks, we should get 100:
+                // If not skipping empty blocks, we should get EXPECTED_TOTAL_BLOCKS:
                 val collectedNoSkip = Builders.eventStream()
                     .dispatchers(dispatcherProvider)
-                    .fromHeight(MIN_HISTORICAL_BLOCK_HEIGHT)
-                    .skipIfEmpty(false)
+                    .skipEmptyBlocks(false)
                     .build()
                     .streamHistoricalBlocks()
                     .toList()
 
-                assert(collectedNoSkip.size.toLong() == EXPECTED_TOTAL_BLOCKS)
-                assert(collectedNoSkip.all { it.historical })
+                assert(collectedNoSkip.size.toLong() == EXPECTED_TOTAL_BLOCKS) { "collectedNoSkip:${collectedNoSkip.size} != $EXPECTED_TOTAL_BLOCKS" }
+                assert(collectedNoSkip.all { it.historical }) { "not all historical:${collectedNoSkip.filterNot { it.historical }}"}
 
                 // If skipping empty blocks, we should get EXPECTED_NONEMPTY_BLOCKS:
                 val collectedSkip = Builders.eventStream()
                     .dispatchers(dispatcherProvider)
-                    .fromHeight(MIN_HISTORICAL_BLOCK_HEIGHT)
+                    .skipEmptyBlocks(true)
                     .build()
                     .streamHistoricalBlocks().toList()
                     .toList()
 
-                assert(collectedSkip.size.toLong() == EXPECTED_NONEMPTY_BLOCKS)
-                assert(collectedSkip.all { it.historical })
+                assert(collectedSkip.size.toLong() == EXPECTED_NONEMPTY_BLOCKS) { "collectedSkip:${collectedSkip.size} != $EXPECTED_NONEMPTY_BLOCKS"}
+                assert(collectedSkip.all { it.historical }) { "not all historical:${collectedSkip.filterNot { it.historical }}"}
             }
         }
 
@@ -332,14 +327,10 @@ class StreamTests : TestBase() {
                     .dispatchers(dispatcherProvider)
                     .build()
 
-                val tendermintService = Builders.tendermintService()
-                    .build(MockTendermintServiceClient::class.java)
-
                 val eventStream = Builders.eventStream()
                     .dispatchers(dispatcherProvider)
                     .eventStreamService(eventStreamService)
-                    .tendermintService(tendermintService)
-                    .skipIfEmpty(false)
+                    .skipEmptyBlocks(false)
                     .build()
 
                 val collected = eventStream
@@ -364,15 +355,10 @@ class StreamTests : TestBase() {
                     .dispatchers(dispatcherProvider)
                     .build()
 
-                val tendermintService = Builders.tendermintService()
-                    .build(MockTendermintServiceClient::class.java)
-
                 val eventStream = Builders.eventStream()
                     .dispatchers(dispatcherProvider)
                     .eventStreamService(eventStreamService)
-                    .tendermintService(tendermintService)
-                    .fromHeight(MIN_HISTORICAL_BLOCK_HEIGHT)
-                    .skipIfEmpty(true)
+                    .skipEmptyBlocks(true)
                     .build()
 
                 val expectTotal = EXPECTED_NONEMPTY_BLOCKS + eventStreamService.expectedResponseCount()
@@ -399,15 +385,10 @@ class StreamTests : TestBase() {
                         .dispatchers(dispatcherProvider)
                         .build()
 
-                    val tendermintService = Builders.tendermintService()
-                        .build(MockTendermintServiceClient::class.java)
-
                     val eventStream = Builders.eventStream()
                         .dispatchers(dispatcherProvider)
                         .eventStreamService(eventStreamService)
-                        .tendermintService(tendermintService)
-                        .fromHeight(MIN_HISTORICAL_BLOCK_HEIGHT)
-                        .skipIfEmpty(true)
+                        .skipEmptyBlocks(true)
                         .build()
 
                     eventStream.streamBlocks().toList()
@@ -428,18 +409,13 @@ class StreamTests : TestBase() {
                     .dispatchers(dispatcherProvider)
                     .build()
 
-                val tendermintService = Builders.tendermintService()
-                    .build(MockTendermintServiceClient::class.java)
-
                 val requireTxEvent = "DOES-NOT-EXIST"
 
                 val eventStream = Builders.eventStream()
                     .dispatchers(dispatcherProvider)
                     .eventStreamService(eventStreamService)
-                    .tendermintService(tendermintService)
-                    .fromHeight(MIN_HISTORICAL_BLOCK_HEIGHT)
-                    .skipIfEmpty(true)
-                    .matchTxEvent { it == requireTxEvent }
+                    .skipEmptyBlocks(true)
+                    .matchTxEvents(setOf(requireTxEvent))
                     .build()
 
                 assert(eventStream.streamBlocks().count() == 0)
@@ -455,18 +431,13 @@ class StreamTests : TestBase() {
                     .dispatchers(dispatcherProvider)
                     .build()
 
-                val tendermintService = Builders.tendermintService()
-                    .build(MockTendermintServiceClient::class.java)
-
                 val requireTxEvent = "provenance.metadata.v1.EventRecordCreated"
 
                 val eventStream = Builders.eventStream()
                     .dispatchers(dispatcherProvider)
                     .eventStreamService(eventStreamService)
-                    .tendermintService(tendermintService)
-                    .fromHeight(MIN_HISTORICAL_BLOCK_HEIGHT)
-                    .skipIfEmpty(true)
-                    .matchTxEvent { it == requireTxEvent }
+                    .skipEmptyBlocks(true)
+                    .matchTxEvents(setOf(requireTxEvent))
                     .build()
 
                 val collected = eventStream

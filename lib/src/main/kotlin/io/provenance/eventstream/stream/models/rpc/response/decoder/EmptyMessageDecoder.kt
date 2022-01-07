@@ -1,21 +1,19 @@
 package io.provenance.eventstream.stream.models.rpc.response.decoder
 
-import com.squareup.moshi.JsonAdapter
-import com.squareup.moshi.Moshi
-import com.squareup.moshi.Types
+import io.provenance.eventstream.adapter.json.decoder.Adapter
+import io.provenance.eventstream.adapter.json.decoder.DecoderEngine
 import io.provenance.eventstream.stream.models.rpc.response.MessageType
 import io.provenance.eventstream.stream.models.rpc.response.RpcResponse
 import org.json.JSONObject
 
-class EmptyMessageDecoder(moshi: Moshi) : Decoder(moshi) {
-
+class EmptyMessageDecoder(decoderEngine: DecoderEngine) : Decoder(decoderEngine) {
     override val priority: Int = 1
 
     // We have to build a reified, parameterized type suitable to pass to `moshi.adapter`
     // because it's not possible to do something like `RpcResponse<NewBlockResult>::class.java`:
     // See https://stackoverflow.com/questions/46193355/moshi-generic-type-adapter
-    private val adapter: JsonAdapter<RpcResponse<JSONObject>> = moshi.adapter(
-        Types.newParameterizedType(RpcResponse::class.java, JSONObject::class.java)
+    private val adapter: Adapter<RpcResponse<JSONObject>> = decoderEngine.adapter(
+        decoderEngine.parameterizedType(RpcResponse::class.java, JSONObject::class.java)
     )
 
     override fun decode(input: String): MessageType? {

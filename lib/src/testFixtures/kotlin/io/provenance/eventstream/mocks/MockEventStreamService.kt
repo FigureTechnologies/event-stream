@@ -25,6 +25,10 @@ class MockEventStreamService private constructor(
 
     private val log = KotlinLogging.logger { }
 
+    companion object {
+        fun builder() = Builder()
+    }
+
     class Builder {
         private var dispatchers: DispatcherProvider? = null
         private var moshi: Moshi = Defaults.moshi

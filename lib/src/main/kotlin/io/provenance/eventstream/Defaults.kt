@@ -11,10 +11,19 @@ import com.tinder.scarlet.messageadapter.moshi.MoshiMessageAdapter
 import com.tinder.scarlet.websocket.okhttp.newWebSocketFactory
 import com.tinder.streamadapter.coroutines.CoroutinesStreamAdapterFactory
 import io.provenance.eventstream.adapter.json.JSONObjectAdapter
+import io.provenance.eventstream.adapter.json.decoder.DecoderEngine
+import io.provenance.eventstream.adapter.json.decoder.MoshiDecoderEngine
 import io.provenance.eventstream.config.Config
 import io.provenance.eventstream.config.Environment
+import io.provenance.eventstream.coroutines.DefaultDispatcherProvider
+import io.provenance.eventstream.coroutines.DispatcherProvider
+import io.provenance.eventstream.stream.BlockStreamFactory
+import io.provenance.eventstream.stream.DefaultBlockStreamFactory
 import io.provenance.eventstream.stream.TendermintServiceClient
+import io.provenance.eventstream.stream.clients.BlockFetcher
+import io.provenance.eventstream.stream.clients.TendermintBlockFetcher
 import io.provenance.eventstream.stream.clients.TendermintServiceOpenApiClient
+import io.provenance.eventstream.stream.infrastructure.Serializer
 import okhttp3.OkHttpClient
 import java.net.URI
 import java.util.concurrent.TimeUnit
@@ -38,21 +47,19 @@ fun defaultConfig(environment: Environment): Config = ConfigLoader.Builder()
     .build()
     .loadConfigOrThrow()
 
+fun defaultOkHttpClient(): OkHttpClient = OkHttpClient.Builder()
+    .pingInterval(10, TimeUnit.SECONDS)
+    .readTimeout(60, TimeUnit.SECONDS)
+    .build()
+
 /**
  * Create a default websocket builder for the event stream.
  *
  * @param websocketUri The URI the websocket will listen on.
  */
-fun defaultEventStreamBuilder(websocketUri: String): Scarlet.Builder {
-    val node = URI(websocketUri)
+fun defaultEventStreamBuilder(node: String, okHttpClient: OkHttpClient = defaultOkHttpClient(), websocketUri: String = "ws://$node/websocket"): Scarlet.Builder {
     return Scarlet.Builder()
-        .webSocketFactory(
-            OkHttpClient.Builder()
-                .pingInterval(10, TimeUnit.SECONDS)
-                .readTimeout(60, TimeUnit.SECONDS)
-                .build()
-                .newWebSocketFactory("${node.scheme}://${node.host}:${node.port}/websocket")
-        )
+        .webSocketFactory(okHttpClient.newWebSocketFactory(websocketUri))
         .addMessageAdapterFactory(MoshiMessageAdapter.Factory())
         .addStreamAdapterFactory(CoroutinesStreamAdapterFactory())
 }
@@ -75,3 +82,24 @@ fun defaultMoshi(): Moshi = Moshi.Builder()
  */
 fun defaultTendermintService(rpcUri: String): TendermintServiceClient =
     TendermintServiceOpenApiClient(rpcUri)
+
+fun defaultDecoderEngine(): DecoderEngine =
+    Serializer.moshiBuilder
+        .addLast(KotlinJsonAdapterFactory())
+        .add(JSONObjectAdapter())
+        .build()
+        .let { MoshiDecoderEngine(it) }
+
+fun defaultBlockFetcher(node: String): BlockFetcher =
+    TendermintBlockFetcher(node)
+
+fun defaultDispatcherProvider() = DefaultDispatcherProvider()
+
+fun defaultBlockStreamFactory(
+    config: Config,
+    okHttpClient: OkHttpClient = defaultOkHttpClient(),
+    decoderEngine: DecoderEngine = defaultDecoderEngine(),
+    eventStreamBuilder: Scarlet.Builder = defaultEventStreamBuilder(config.node, okHttpClient),
+    blockFetcher: BlockFetcher = defaultBlockFetcher(config.node),
+    dispatcherProvider: DispatcherProvider = defaultDispatcherProvider(),
+): BlockStreamFactory = DefaultBlockStreamFactory(config, decoderEngine, eventStreamBuilder, blockFetcher, dispatcherProvider)
