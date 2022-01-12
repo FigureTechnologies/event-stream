@@ -1,8 +1,6 @@
 package io.provenance.eventstream.stream.models.extensions
 
-import com.google.api.client.util.Base64.decodeBase64
-import io.provenance.eventstream.extensions.decodeBase64
-import io.provenance.eventstream.extensions.hash
+import com.google.common.io.BaseEncoding
 import io.provenance.eventstream.stream.models.Block
 import io.provenance.eventstream.stream.models.BlockEvent
 import io.provenance.eventstream.stream.models.BlockHeader
@@ -11,10 +9,38 @@ import io.provenance.eventstream.stream.models.BlockResultsResponse
 import io.provenance.eventstream.stream.models.BlockResultsResponseResult
 import io.provenance.eventstream.stream.models.BlockResultsResponseResultEvents
 import io.provenance.eventstream.stream.models.BlockResultsResponseResultTxsResults
-import io.provenance.eventstream.stream.models.Event
+import io.provenance.eventstream.stream.models.EncodedBlockchainEvent
 import io.provenance.eventstream.stream.models.TxEvent
+import java.security.MessageDigest
+import java.security.NoSuchAlgorithmException
 import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
+
+/**
+ * Compute a hex-encoded (printable) version of a SHA-256 encoded byte array.
+ */
+fun ByteArray.toHexString(): String = BaseEncoding.base16().encode(this)
+
+/**
+ * Compute a hex-encoded (printable) version of a SHA-256 encoded string.
+ *
+ * @param input An array of bytes.
+ * @return An array of SHA-256 hashed bytes.
+ */
+fun sha256(input: ByteArray?): ByteArray =
+    try {
+        val digest = MessageDigest.getInstance("SHA-256")
+        digest.digest(input)
+    } catch (e: NoSuchAlgorithmException) {
+        throw RuntimeException("Couldn't find a SHA-256 provider", e)
+    }
+
+/**
+ * Compute a hex-encoded (printable) SHA-256 encoded string, from a base64 encoded string.
+ */
+fun String.hash(): String = sha256(BaseEncoding.base64().decode(this)).toHexString()
+
+// === Date/time methods ===============================================================================================
 
 fun Block.txHash(index: Int): String? = this.data?.txs?.get(index)?.hash()
 
@@ -39,7 +65,7 @@ fun BlockResultsResponseResult.txEvents(blockDateTime: OffsetDateTime?, txHash: 
         }
     } ?: emptyList()
 
-fun BlockResultsResponseResult.blockEvents(blockDateTime: OffsetDateTime?): List<BlockEvent> = run {
+fun BlockResultsResponseResult.blockEvents(blockDateTime: OffsetDateTime?): List<EncodedBlockchainEvent> = run {
     beginBlockEvents?.map { e: BlockResultsResponseResultEvents ->
         BlockEvent(
             blockHeight = height,
@@ -70,35 +96,3 @@ fun BlockResultsResponseResultEvents.toTxEvent(
         eventType = this.type ?: "",
         attributes = this.attributes ?: emptyList()
     )
-
-/**
- * A utility function which converts a list of key/value event attributes like:
- *
- *   [
- *     {
- *       "key": "cmVjb3JkX2FkZHI=",
- *       "value": "InJlY29yZDFxMm0zeGFneDc2dXl2ZzRrN3l2eGM3dWhudWdnOWc2bjBsY2Robm43YXM2YWQ4a3U4Z3ZmdXVnZjZ0aiI="
- *     },
- *     {
- *       "key": "c2Vzc2lvbl9hZGRy",
- *       "value": "InNlc3Npb24xcXhtM3hhZ3g3NnV5dmc0azd5dnhjN3VobnVnMHpwdjl1cTNhdTMzMmsyNzY2NmplMGFxZ2o4Mmt3dWUi"
- *     },
- *     {
- *       "key": "c2NvcGVfYWRkcg==",
- *       "value": "InNjb3BlMXF6bTN4YWd4NzZ1eXZnNGs3eXZ4Yzd1aG51Z3F6ZW1tbTci"
- *     }
- *   ]
- *
- * which have been deserialized in `List<Event>`, into `Map<String, String>`,
- *
- * where keys have been base64 decoded:
- *
- *   {
- *     "record_addr"  to "InJlY29yZDFxMm0zeGFneDc2dXl2ZzRrN3l2eGM3dWhudWdnOWc2bjBsY2Robm43YXM2YWQ4a3U4Z3ZmdXVnZjZ0aiI=",
- *     "session_addr" to "InNlc3Npb24xcXhtM3hhZ3g3NnV5dmc0azd5dnhjN3VobnVnMHpwdjl1cTNhdTMzMmsyNzY2NmplMGFxZ2o4Mmt3dWUi",
- *     "scope_addr"   to "InNjb3BlMXF6bTN4YWd4NzZ1eXZnNGs3eXZ4Yzd1aG51Z3F6ZW1tbTci"
- *   }
- */
-fun List<Event>.toDecodedMap(): Map<String, String?> =
-    this.mapNotNull { e -> e.key?.let { it.decodeBase64() to e.value } }
-        .toMap()
