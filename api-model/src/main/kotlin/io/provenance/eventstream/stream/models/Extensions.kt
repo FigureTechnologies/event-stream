@@ -65,7 +65,7 @@ fun BlockResultsResponseResult.txEvents(blockDateTime: OffsetDateTime?, txHash: 
         }
     } ?: emptyList()
 
-fun BlockResultsResponseResult.blockEvents(blockDateTime: OffsetDateTime?): List<EncodedBlockchainEvent> = run {
+fun BlockResultsResponseResult.blockEvents(blockDateTime: OffsetDateTime?): List<BlockEvent> = run {
     beginBlockEvents?.map { e: BlockResultsResponseResultEvents ->
         BlockEvent(
             blockHeight = height,

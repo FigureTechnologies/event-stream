@@ -8,6 +8,7 @@ import com.tinder.scarlet.WebSocket
 import io.provenance.eventstream.coroutines.DefaultDispatcherProvider
 import io.provenance.eventstream.coroutines.DispatcherProvider
 import io.provenance.eventstream.stream.models.Block
+import io.provenance.eventstream.stream.models.BlockEvent
 import io.provenance.eventstream.stream.models.EncodedBlockchainEvent
 import io.provenance.eventstream.stream.models.StreamBlock
 import io.provenance.eventstream.stream.models.TxEvent
@@ -302,7 +303,7 @@ class EventStream(
         return block?.run {
             val blockDatetime = header?.dateTime()
             val blockResponse = tendermintServiceClient.blockResults(header?.height).result
-            val blockEvents: List<EncodedBlockchainEvent> = blockResponse.blockEvents(blockDatetime)
+            val blockEvents: List<BlockEvent> = blockResponse.blockEvents(blockDatetime)
             val txEvents: List<TxEvent> = blockResponse.txEvents(blockDatetime) { index: Int -> txHash(index) ?: "" }
             val streamBlock = StreamBlock(this, blockEvents, txEvents)
             val matchBlock = matchesBlockEvent(blockEvents)

@@ -9,7 +9,7 @@ import com.squareup.moshi.JsonClass
 @JsonClass(generateAdapter = true)
 data class StreamBlock(
     val block: Block,
-    val blockEvents: List<EncodedBlockchainEvent>,
+    val blockEvents: List<BlockEvent>,
     val txEvents: List<TxEvent>,
     val historical: Boolean = false
 ) {
