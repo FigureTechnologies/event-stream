@@ -9,7 +9,6 @@ import io.provenance.eventstream.stream.models.BlockResultsResponse
 import io.provenance.eventstream.stream.models.BlockResultsResponseResult
 import io.provenance.eventstream.stream.models.BlockResultsResponseResultEvents
 import io.provenance.eventstream.stream.models.BlockResultsResponseResultTxsResults
-import io.provenance.eventstream.stream.models.EncodedBlockchainEvent
 import io.provenance.eventstream.stream.models.TxEvent
 import java.security.MessageDigest
 import java.security.NoSuchAlgorithmException

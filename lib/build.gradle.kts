@@ -16,6 +16,7 @@ group = rootProject.group
 version = rootProject.version
 
 dependencies {
+    api(project(":api"))
     api(project(":api-model"))
 
     implementation(platform("org.jetbrains.kotlin:kotlin-bom"))
