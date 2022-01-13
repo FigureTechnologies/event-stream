@@ -1,24 +1,23 @@
 import util.extensions.javadocJar
 
 plugins {
-    kotlin("jvm")
-    id("java-library")
-    id("com.google.protobuf") version Plugins.Protobuf
     idea
+    kotlin("jvm")
+    kotlin("kapt")
+    id("java-library")
     id("maven-publish")
     id("core-config")
     id("with-linter")
-    id("with-test-fixtures")
     id("generate-docs")
+    id("org.openapi.generator") version Plugins.OpenAPI
 }
 
 group = rootProject.group
 version = rootProject.version
 
-dependencies {
-    api(project(":api"))
-    api(project(":api-model"))
+val TENDERMINT_OPENAPI_YAML = "$rootDir/api-model/src/main/resources/tendermint-v0.34.12-rpc-openapi-FIXED.yaml"
 
+dependencies {
     implementation(platform("org.jetbrains.kotlin:kotlin-bom"))
     implementation("org.jetbrains.kotlin", "kotlin-stdlib")
     implementation("org.jetbrains.kotlin", "kotlin-reflect")
@@ -36,7 +35,6 @@ dependencies {
     implementation("io.grpc", "grpc-netty", Versions.GRPC)
     implementation("io.grpc", "grpc-protobuf", Versions.GRPC)
     implementation("io.grpc", "grpc-stub", Versions.GRPC)
-    implementation("io.provenance.protobuf", "pb-proto-java", Versions.Provenance)
     runtimeOnly("ch.qos.logback", "logback-classic", Versions.LogBack)
     implementation("io.github.microutils", "kotlin-logging-jvm", Versions.KotlinLogging)
     implementation("com.squareup.moshi", "moshi-kotlin-codegen", Versions.Moshi)
@@ -46,13 +44,59 @@ dependencies {
     implementation("org.json", "json", Versions.JSON)
 }
 
+sourceSets {
+    main {
+        java {
+            srcDirs(
+                "$projectDir/api-model/src/main/kotlin",
+                "$buildDir/generated/src/main/kotlin"
+            )
+        }
+    }
+    test {
+        java {
+            srcDir("$projectDir/api-model/src/test/kotlin")
+        }
+    }
+}
+
 kapt {
     correctErrorTypes = true
 }
 
-publishing {
-    repositories {}
+project.afterEvaluate {
+    // Force generation of the API and models based on the
+    tasks.get("kaptGenerateStubsKotlin").dependsOn("generateTendermintAPI")
+}
 
+/**
+ * See the following links for information about generating models from an OpenAPI spec:
+ * - https://github.com/OpenAPITools/openapi-generator/tree/master/modules/openapi-generator-gradle-plugin
+ * - https://github.com/OpenAPITools/openapi-generator/blob/master/docs/global-properties.md
+ * - https://github.com/OpenAPITools/openapi-generator/blob/master/docs/generators/kotlin.md
+ */
+tasks.register<org.openapitools.generator.gradle.plugin.tasks.GenerateTask>("generateTendermintAPI") {
+    generatorName.set("kotlin")
+    verbose.set(false)
+    validateSpec.set(true)
+    inputSpec.set(TENDERMINT_OPENAPI_YAML)
+    outputDir.set("$buildDir/generated")
+    packageName.set("io.provenance.eventstream.stream")
+    modelPackage.set("io.provenance.eventstream.stream.models")
+    library.set("jvm-okhttp4")
+    configOptions.set(
+        mapOf(
+            "artifactId" to "tendermint-api",
+            "dateLibrary" to "java8",
+            "moshiCodeGen" to "true",
+            "modelMutable" to "false",
+            "serializableModel" to "true",
+            "useCoroutines" to "true"
+        )
+    )
+}
+
+publishing {
     publications {
         create<MavenPublication>("maven") {
             groupId = rootProject.group.toString()

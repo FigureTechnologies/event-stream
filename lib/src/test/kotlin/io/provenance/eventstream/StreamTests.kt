@@ -9,8 +9,8 @@ import io.provenance.eventstream.stream.models.BlockResponse
 import io.provenance.eventstream.stream.models.BlockResultsResponse
 import io.provenance.eventstream.stream.models.BlockchainResponse
 import io.provenance.eventstream.stream.models.Event
-import io.provenance.eventstream.stream.models.extensions.toDecodedMap
 import io.provenance.eventstream.stream.models.rpc.response.MessageType
+import io.provenance.eventstream.stream.models.toDecodedMap
 import io.provenance.eventstream.test.base.TestBase
 import io.provenance.eventstream.test.mocks.MockEventStreamService
 import io.provenance.eventstream.test.mocks.MockTendermintServiceClient

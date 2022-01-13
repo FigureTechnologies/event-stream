@@ -5,6 +5,7 @@ import com.squareup.moshi.JsonDataException
 import com.squareup.moshi.Moshi
 import com.tinder.scarlet.Message
 import com.tinder.scarlet.WebSocket
+import io.provenance.blockchain.stream.api.BlockSource
 import io.provenance.eventstream.coroutines.DefaultDispatcherProvider
 import io.provenance.eventstream.coroutines.DispatcherProvider
 import io.provenance.eventstream.stream.models.Block
@@ -61,7 +62,7 @@ class EventStream(
     private val moshi: Moshi,
     private val dispatchers: DispatcherProvider = DefaultDispatcherProvider(),
     private val options: Options = Options.DEFAULT
-) {
+) : BlockSource {
     companion object {
         /**
          * The default number of blocks that will be contained in a batch.
@@ -296,7 +297,7 @@ class EventStream(
             is Either.Right<Block> -> heightOrBlock.value
         }
 
-        if (skipIfNoTxs && block?.data?.txs?.size ?: 0 == 0) {
+        if (skipIfNoTxs && (block?.data?.txs?.size ?: 0) == 0) {
             return null
         }
 
@@ -467,7 +468,7 @@ class EventStream(
      *
      * @return A Flow of live and historical blocks, plus associated event data.
      */
-    fun streamBlocks(): Flow<StreamBlock> = flow {
+    override fun streamBlocks(): Flow<StreamBlock> = flow {
         val startingHeight: Long? = getStartingHeight()
         emitAll(
             if (startingHeight != null) {
