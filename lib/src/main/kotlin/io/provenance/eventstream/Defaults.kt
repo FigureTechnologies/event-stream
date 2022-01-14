@@ -13,11 +13,26 @@ import com.tinder.streamadapter.coroutines.CoroutinesStreamAdapterFactory
 import io.provenance.eventstream.adapter.json.JSONObjectAdapter
 import io.provenance.eventstream.config.Config
 import io.provenance.eventstream.config.Environment
+import io.provenance.eventstream.stream.EventStream
 import io.provenance.eventstream.stream.TendermintServiceClient
 import io.provenance.eventstream.stream.clients.TendermintServiceOpenApiClient
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import okhttp3.OkHttpClient
 import java.net.URI
 import java.util.concurrent.TimeUnit
+import kotlin.time.Duration
+import kotlin.time.ExperimentalTime
+
+/**
+ * Create a default okHttpClient to use for the event stream.
+ */
+@OptIn(ExperimentalTime::class)
+fun defaultOkHttpClient(pingInterval: Duration = Duration.seconds(10), readInterval: Duration = Duration.seconds(60)) =
+    OkHttpClient.Builder()
+        .pingInterval(pingInterval.inWholeMilliseconds, TimeUnit.MILLISECONDS)
+        .readTimeout(readInterval.inWholeMilliseconds, TimeUnit.MILLISECONDS)
+        .build()
+
 
 /**
  * Create a default configuration to use for the event stream.
@@ -43,16 +58,11 @@ fun defaultConfig(environment: Environment): Config = ConfigLoader.Builder()
  *
  * @param websocketUri The URI the websocket will listen on.
  */
-fun defaultEventStreamBuilder(websocketUri: String): Scarlet.Builder {
+@OptIn(ExperimentalTime::class)
+fun defaultEventStreamBuilder(websocketUri: String, okHttpClient: OkHttpClient = defaultOkHttpClient()): Scarlet.Builder {
     val node = URI(websocketUri)
     return Scarlet.Builder()
-        .webSocketFactory(
-            OkHttpClient.Builder()
-                .pingInterval(10, TimeUnit.SECONDS)
-                .readTimeout(60, TimeUnit.SECONDS)
-                .build()
-                .newWebSocketFactory("${node.scheme}://${node.host}:${node.port}/websocket")
-        )
+        .webSocketFactory(okHttpClient.newWebSocketFactory("${node.scheme}://${node.host}:${node.port}/websocket"))
         .addMessageAdapterFactory(MoshiMessageAdapter.Factory())
         .addStreamAdapterFactory(CoroutinesStreamAdapterFactory())
 }
@@ -75,3 +85,18 @@ fun defaultMoshi(): Moshi = Moshi.Builder()
  */
 fun defaultTendermintService(rpcUri: String): TendermintServiceClient =
     TendermintServiceOpenApiClient(rpcUri)
+
+/**
+ *
+ */
+@OptIn(ExperimentalCoroutinesApi::class, ExperimentalTime::class)
+fun defaultEventStream(config: Config, options: EventStream.Options, okHttpClient: OkHttpClient = defaultOkHttpClient(), moshi: Moshi = defaultMoshi()): EventStream {
+    val factory = Factory(
+        config = config,
+        moshi = moshi,
+        eventStreamBuilder = defaultEventStreamBuilder(config.eventStream.websocket.uri, okHttpClient),
+        tendermintServiceClient = defaultTendermintService(config.eventStream.rpc.uri)
+    )
+
+    return factory.createStream(options)
+}
