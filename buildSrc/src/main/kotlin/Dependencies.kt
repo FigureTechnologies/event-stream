@@ -25,6 +25,7 @@ object Versions {
     const val KotlinLogging = "2.0.11"
     const val LogBack = "1.2.3"
     const val Moshi = "1.12.0"
+    const val OkHttp = "4.9.3"
     const val Provenance = "1.5.0"
     const val Scarlet = "0.1.12"
 }
