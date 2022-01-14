@@ -1,6 +1,5 @@
 package io.provenance.eventstream
 
-
 import io.provenance.blockchain.stream.api.BlockSink
 import io.provenance.eventstream.config.BatchConfig
 import io.provenance.eventstream.config.Config
