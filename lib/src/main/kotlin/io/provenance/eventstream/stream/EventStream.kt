@@ -4,8 +4,8 @@ import com.squareup.moshi.Moshi
 import io.provenance.blockchain.stream.api.BlockSource
 import io.provenance.eventstream.coroutines.DefaultDispatcherProvider
 import io.provenance.eventstream.coroutines.DispatcherProvider
+import io.provenance.eventstream.stream.clients.BlockFetcher
 import io.provenance.eventstream.stream.models.StreamBlock
-import io.provenance.eventstream.stream.producers.BlockFetcher
 import io.provenance.eventstream.stream.producers.HistoricalBlockSource
 import io.provenance.eventstream.stream.producers.LiveBlockSource
 import io.provenance.eventstream.utils.backoff
@@ -170,7 +170,9 @@ class EventStream(
      */
     private fun getStartingHeight(): Long? = options.fromHeight
 
-    fun streamHistoricalBlocks(fromHeight: Long, toHeight: Long? = null): Flow<StreamBlock> = flow {
+    private fun getEndingHeight(): Long = options.toHeight ?: Long.MAX_VALUE
+
+    fun streamHistoricalBlocks(fromHeight: Long, toHeight: Long): Flow<StreamBlock> = flow {
         HistoricalBlockSource(
             dispatchers,
             blockFetcher,
@@ -202,10 +204,11 @@ class EventStream(
      */
     override fun streamBlocks(): Flow<StreamBlock> = flow {
         val startingHeight: Long? = getStartingHeight()
+        val endingHeight: Long = getEndingHeight()
         emitAll(
-            if (startingHeight != null) {
+            if (startingHeight != null) {                    
                 log.info("Listening for live and historical blocks from height $startingHeight")
-                merge(streamHistoricalBlocks(startingHeight), streamLiveBlocks())
+                merge(streamHistoricalBlocks(startingHeight, endingHeight), streamLiveBlocks())
             } else {
                 log.info("Listening for live blocks only")
                 streamLiveBlocks()

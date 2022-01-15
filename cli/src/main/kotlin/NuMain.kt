@@ -36,6 +36,7 @@ fun main(args: Array<String>) {
     val parser = ArgParser("provenance-event-stream")
     val fromHeight by parser.option(ArgType.String, fullName = "from", description = "Fetch blocks starting from height, inclusive.")
     val toHeight by parser.option(ArgType.String, fullName = "to", description = "Fetch blocks up to height, inclusive")
+    val skipEmpty by parser.option(ArgType.Boolean, fullName = "skip-empty", description = "Skip processing no-transaction blocks").default(false)
     val verbose by parser.option(ArgType.Boolean, fullName = "verbose", shortName = "v", description = "Enables verbose output").default(false)
     val node by parser.option(ArgType.String, fullName = "node", shortName = "n", description = "Node to connect to for block stream").default("localhost:26657")
     val ordered by parser.option(ArgType.Boolean, fullName = "ordered", shortName = "o", description = "Order incoming blocks").default(false)
@@ -54,9 +55,9 @@ fun main(args: Array<String>) {
             websocket = WebsocketStreamConfig("ws://$node"),
             rpc = RpcStreamConfig("http://$node"),
             filter = StreamEventsFilterConfig(
-                txEvents = txFilter.split(",").filter { it.isNotBlank() }.toSet(),
-                blockEvents = blockFilter.split(",").filter { it.isNotBlank() }.toSet()),
-            batch = BatchConfig(batchSize, timeoutMillis = timeout.toLong())
+            txEvents = txFilter.split(",").filter { it.isNotBlank() }.toSet(),
+            blockEvents = blockFilter.split(",").filter { it.isNotBlank() }.toSet()),
+            batch = BatchConfig(batchSize, timeoutMillis = timeout.toLong()),
         ),
     )
 

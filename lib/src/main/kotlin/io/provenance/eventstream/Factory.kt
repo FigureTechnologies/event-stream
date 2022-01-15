@@ -11,6 +11,7 @@ import io.provenance.eventstream.stream.EventStream
 import io.provenance.eventstream.stream.TendermintEventStreamService
 import io.provenance.eventstream.stream.TendermintRPCStream
 import io.provenance.eventstream.stream.TendermintServiceClient
+import io.provenance.eventstream.stream.clients.TMBlockFetcher
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 
 @ExperimentalCoroutinesApi
@@ -84,9 +85,7 @@ class Factory(
         val scarlet: Scarlet = eventStreamBuilder.lifecycle(lifecycle).build()
         val tendermintRpc: TendermintRPCStream = scarlet.create()
         val eventStreamService = TendermintEventStreamService(tendermintRpc, lifecycle)
-
-        return EventStream(
-            eventStreamService, tendermintServiceClient, moshi, options = options, dispatchers = dispatchers
-        )
+        val fetcher = TMBlockFetcher(tendermintServiceClient)
+        return EventStream(eventStreamService, fetcher, tendermintServiceClient, moshi, dispatchers, options)
     }
 }

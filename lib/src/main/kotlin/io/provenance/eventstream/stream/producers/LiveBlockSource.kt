@@ -7,6 +7,7 @@ import com.tinder.scarlet.WebSocket
 import io.provenance.blockchain.stream.api.BlockSource
 import io.provenance.eventstream.coroutines.DispatcherProvider
 import io.provenance.eventstream.stream.EventStreamService
+import io.provenance.eventstream.stream.clients.BlockFetcher
 import io.provenance.eventstream.stream.models.Block
 import io.provenance.eventstream.stream.models.StreamBlock
 import io.provenance.eventstream.stream.models.rpc.request.Subscribe
