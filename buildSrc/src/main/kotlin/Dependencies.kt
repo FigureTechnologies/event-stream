@@ -28,4 +28,5 @@ object Versions {
     const val OkHttp = "4.9.3"
     const val Provenance = "1.5.0"
     const val Scarlet = "0.1.12"
+    const val kafka = ""
 }

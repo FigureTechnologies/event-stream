@@ -8,12 +8,22 @@ plugins {
 group = rootProject.group
 version = rootProject.version
 
+repositories {
+    maven {
+        url = uri("http://packages.confluent.io/maven/")
+        isAllowInsecureProtocol = true
+    }
+}
+
 dependencies {
     api(project(":lib"))
+    api(project(":modules"))
 
     implementation("org.jetbrains.kotlinx", "kotlinx-coroutines-core", Versions.Kotlinx.Core)
     implementation("org.jetbrains.kotlinx", "kotlinx-cli-jvm", Versions.Kotlinx.CLI)
-
+    implementation("io.confluent", "kafka-json-serializer", "7.0.1")
+    implementation("org.apache.kafka", "kafka-clients", "3.0.0")
+    implementation("org.apache.kafka", "kafka-streams", "3.0.0")
     runtimeOnly("ch.qos.logback", "logback-classic", Versions.LogBack)
 
     implementation("com.squareup.okhttp3", "okhttp", Versions.OkHttp)
