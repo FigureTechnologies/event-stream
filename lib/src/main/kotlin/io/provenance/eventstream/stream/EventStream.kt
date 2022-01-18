@@ -483,7 +483,6 @@ class EventStream(
      * @return A Flow of live and historical blocks, plus associated event data.
      */
     override fun streamBlocks(): Flow<StreamBlock> = flow {
-        log.info("skipEmptyBlocks:${options.skipIfEmpty}")
         val startingHeight: Long? = getStartingHeight()
         emitAll(
             if (startingHeight != null) {
