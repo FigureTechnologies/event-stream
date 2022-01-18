@@ -451,7 +451,7 @@ class EventStream(
                 }
             }
         }.flowOn(dispatchers.io()).onStart { log.info("live::starting") }.mapNotNull { block: Block ->
-            val maybeBlock = queryBlock(Either.Right(block), skipIfNoTxs = options.skipIfEmpty)
+            val maybeBlock = queryBlock(Either.Right(block), skipIfNoTxs = false)
             if (maybeBlock != null) {
                 log.info("live::got block #${maybeBlock.height}")
                 maybeBlock
