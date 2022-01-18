@@ -68,7 +68,7 @@ class Factory(
     fun createStream(setOptions: (options: EventStream.Options.Builder) -> Unit = ::noop): EventStream {
         val optionsBuilder = EventStream.Options.Builder()
             .batchSize(config.eventStream.batch.size)
-            .skipIfEmpty(true)
+            .skipIfEmpty(config.eventStream.skipEmpty)
         setOptions(optionsBuilder)
         return createStream(optionsBuilder.build())
     }

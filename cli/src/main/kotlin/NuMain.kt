@@ -45,15 +45,17 @@ fun main(args: Array<String>) {
     val concurrency by parser.option(ArgType.Int, fullName = "concurrency", shortName = "c", description = "Concurrency limit for parallel fetches").default(DEFAULT_CONCURRENCY)
     val txFilter by parser.option(ArgType.String, fullName = "filter-tx", shortName = "t", description = "Filter by tx events (comma separated)").default("")
     val blockFilter by parser.option(ArgType.String, fullName = "filter-block", shortName = "b", description = "Filter by block events (comma separated)").default("")
+    val keepEmpty by parser.option(ArgType.Boolean, fullName = "keep-empty", description = "Keep empty blocks").default(false)
     parser.parse(args)
 
     val config = Config(
         eventStream = EventStreamConfig(
+            skipEmpty = !keepEmpty,
             websocket = WebsocketStreamConfig("ws://$node"),
             rpc = RpcStreamConfig("http://$node"),
             filter = StreamEventsFilterConfig(
-                txEvents = txFilter.split(",").toSet(),
-                blockEvents = blockFilter.split(",").toSet()),
+                txEvents = txFilter.split(",").filter { it.isNotBlank() }.toSet(),
+                blockEvents = blockFilter.split(",").filter { it.isNotBlank() }.toSet()),
             batch = BatchConfig(batchSize, timeoutMillis = timeout.toLong())
         ),
     )
@@ -77,9 +79,9 @@ fun main(args: Array<String>) {
         batchSize = batchSize,
         fromHeight = fromHeight?.toLong(),
         toHeight = toHeight?.toLong(),
-        skipIfEmpty = false,
-        txEventPredicate = { it in config.eventStream.filter.txEvents },
-        blockEventPredicate = { it in config.eventStream.filter.blockEvents },
+        skipIfEmpty = config.eventStream.skipEmpty,
+        txEventPredicate = { config.eventStream.filter.txEvents.isEmpty() || it in config.eventStream.filter.txEvents },
+        blockEventPredicate = { config.eventStream.filter.blockEvents.isEmpty() || it in config.eventStream.filter.blockEvents },
         concurrency = concurrency,
     )
 

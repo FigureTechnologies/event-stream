@@ -29,7 +29,8 @@ data class EventStreamConfig(
     val websocket: WebsocketStreamConfig,
     val rpc: RpcStreamConfig,
     val batch: BatchConfig,
-    val filter: StreamEventsFilterConfig = StreamEventsFilterConfig.empty
+    val filter: StreamEventsFilterConfig = StreamEventsFilterConfig.empty,
+    val skipEmpty: Boolean = true,
 )
 
 data class UploadConfig(
