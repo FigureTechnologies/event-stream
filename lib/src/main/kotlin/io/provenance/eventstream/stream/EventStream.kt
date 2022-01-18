@@ -1,6 +1,7 @@
 package io.provenance.eventstream.stream
 
 import arrow.core.Either
+import arrow.core.computations.option
 import com.squareup.moshi.JsonDataException
 import com.squareup.moshi.Moshi
 import com.tinder.scarlet.Message
@@ -272,8 +273,14 @@ class EventStream(
      * @return True or false if [Options.blockEventPredicate] matches a block-level event associated with a block.
      * If the return value is null, then [Options.blockEventPredicate] was never set.
      */
-    private fun <T : EncodedBlockchainEvent> matchesBlockEvent(blockEvents: Iterable<T>): Boolean? =
-        options.blockEventPredicate?.let { p -> blockEvents.any { p(it.eventType) } }
+    private fun <T : EncodedBlockchainEvent> matchesBlockEvent(blockEvents: List<T>): Boolean? =
+        options.blockEventPredicate?.let { p ->
+            if (options.skipIfEmpty) {
+                blockEvents.any { p(it.eventType) }
+            } else {
+                blockEvents.isEmpty() || blockEvents.any { p(it.eventType) }
+            }
+        }
 
     /**
      * Test if any transaction events match the supplied predicate.
@@ -281,8 +288,14 @@ class EventStream(
      * @return True or false if [Options.txEventPredicate] matches a transaction-level event associated with a block.
      * If the return value is null, then [Options.txEventPredicate] was never set.
      */
-    private fun <T : EncodedBlockchainEvent> matchesTxEvent(txEvents: Iterable<T>): Boolean? =
-        options.txEventPredicate?.let { p -> txEvents.any { p(it.eventType) } }
+    private fun <T : EncodedBlockchainEvent> matchesTxEvent(txEvents: List<T>): Boolean? =
+        options.txEventPredicate?.let { p ->
+            if (options.skipIfEmpty) {
+                txEvents.any { p(it.eventType) }
+            } else {
+                txEvents.isEmpty() || txEvents.any { p(it.eventType) }
+            }
+        }
 
     /**
      * Query a block by height, returning any events associated with the block.
@@ -309,6 +322,7 @@ class EventStream(
             val streamBlock = StreamBlock(this, blockEvents, txEvents)
             val matchBlock = matchesBlockEvent(blockEvents)
             val matchTx = matchesTxEvent(txEvents)
+
             // ugly:
             if ((matchBlock == null && matchTx == null) || (matchBlock == null && matchTx != null && matchTx) || (matchBlock != null && matchBlock && matchTx == null) || (matchBlock != null && matchBlock && matchTx != null && matchTx)) {
                 streamBlock

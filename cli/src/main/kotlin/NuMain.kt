@@ -10,8 +10,6 @@ import io.provenance.eventstream.config.StreamEventsFilterConfig
 import io.provenance.eventstream.config.WebsocketStreamConfig
 import io.provenance.eventstream.stream.*
 import io.provenance.eventstream.stream.infrastructure.Serializer.moshi
-import io.provenance.eventstream.stream.models.Block
-import io.provenance.eventstream.stream.models.BlockEvent
 import io.provenance.eventstream.stream.models.StreamBlock
 import io.provenance.eventstream.stream.observers.consoleOutput
 import io.provenance.eventstream.stream.observers.fileOutput
@@ -26,8 +24,6 @@ import org.apache.kafka.clients.admin.AdminClient
 import org.apache.kafka.clients.admin.NewTopic
 import org.apache.kafka.clients.producer.KafkaProducer
 import org.apache.kafka.clients.producer.ProducerConfig
-import org.apache.kafka.clients.producer.ProducerRecord
-import org.apache.kafka.clients.producer.RecordMetadata
 import org.apache.kafka.common.errors.TopicExistsException
 import org.apache.kafka.common.serialization.StringSerializer
 import java.util.*
@@ -48,72 +44,28 @@ fun main(args: Array<String>) {
      * @see https://github.com/sksamuel/hoplite#environmentvariablespropertysource
      */
     val parser = ArgParser("provenance-event-stream")
-    val fromHeight by parser.option(
-        ArgType.String,
-        fullName = "from",
-        description = "Fetch blocks starting from height, inclusive."
-    )
+    val fromHeight by parser.option(ArgType.String, fullName = "from", description = "Fetch blocks starting from height, inclusive.")
     val toHeight by parser.option(ArgType.String, fullName = "to", description = "Fetch blocks up to height, inclusive")
-    val verbose by parser.option(
-        ArgType.Boolean,
-        fullName = "verbose",
-        shortName = "v",
-        description = "Enables verbose output"
-    ).default(false)
-    val node by parser.option(
-        ArgType.String,
-        fullName = "node",
-        shortName = "n",
-        description = "Node to connect to for block stream"
-    ).default("localhost:26657")
-    val ordered by parser.option(
-        ArgType.Boolean,
-        fullName = "ordered",
-        shortName = "o",
-        description = "Order incoming blocks"
-    ).default(false)
-    val batchSize by parser.option(ArgType.Int, fullName = "batch", shortName = "s", description = "Batch fetch size")
-        .default(16)
-    val throttle by parser.option(
-        ArgType.Int,
-        fullName = "throttle",
-        shortName = "w",
-        description = "Websocket throttle duration (milliseconds)"
-    ).default(0)
-    val timeout by parser.option(
-        ArgType.Int,
-        fullName = "timeout",
-        shortName = "x",
-        description = "History fetch timeout (milliseconds)"
-    ).default(30000)
-    val concurrency by parser.option(
-        ArgType.Int,
-        fullName = "concurrency",
-        shortName = "c",
-        description = "Concurrency limit for parallel fetches"
-    ).default(DEFAULT_CONCURRENCY)
-    val txFilter by parser.option(
-        ArgType.String,
-        fullName = "filter-tx",
-        shortName = "t",
-        description = "Filter by tx events (comma separated)"
-    ).default("")
-    val blockFilter by parser.option(
-        ArgType.String,
-        fullName = "filter-block",
-        shortName = "b",
-        description = "Filter by block events (comma separated)"
-    ).default("")
+    val verbose by parser.option(ArgType.Boolean, fullName = "verbose", shortName = "v", description = "Enables verbose output").default(false)
+    val node by parser.option(ArgType.String, fullName = "node", shortName = "n", description = "Node to connect to for block stream").default("localhost:26657")
+    val ordered by parser.option(ArgType.Boolean, fullName = "ordered", shortName = "o", description = "Order incoming blocks").default(false)
+    val batchSize by parser.option(ArgType.Int, fullName = "batch", shortName = "s", description = "Batch fetch size").default(16)
+    val throttle by parser.option(ArgType.Int, fullName = "throttle", shortName = "w", description = "Websocket throttle duration (milliseconds)").default(0)
+    val timeout by parser.option(ArgType.Int, fullName = "timeout", shortName = "x", description = "History fetch timeout (milliseconds)").default(30000)
+    val concurrency by parser.option(ArgType.Int, fullName = "concurrency", shortName = "c", description = "Concurrency limit for parallel fetches").default(DEFAULT_CONCURRENCY)
+    val txFilter by parser.option(ArgType.String, fullName = "filter-tx", shortName = "t", description = "Filter by tx events (comma separated)").default("")
+    val blockFilter by parser.option(ArgType.String, fullName = "filter-block", shortName = "b", description = "Filter by block events (comma separated)").default("")
+    val keepEmpty by parser.option(ArgType.Boolean, fullName = "keep-empty", description = "Keep empty blocks").default(true)
     parser.parse(args)
 
     val config = Config(
         eventStream = EventStreamConfig(
+            skipEmpty = !keepEmpty,
             websocket = WebsocketStreamConfig("ws://$node"),
             rpc = RpcStreamConfig("http://$node"),
             filter = StreamEventsFilterConfig(
-                txEvents = txFilter.split(",").toSet(),
-                blockEvents = blockFilter.split(",").toSet()
-            ),
+                txEvents = txFilter.split(",").filter { it.isNotBlank() }.toSet(),
+                blockEvents = blockFilter.split(",").filter { it.isNotBlank() }.toSet()),
             batch = BatchConfig(batchSize, timeoutMillis = timeout.toLong())
         ),
     )
@@ -137,9 +89,9 @@ fun main(args: Array<String>) {
         batchSize = batchSize,
         fromHeight = fromHeight?.toLong(),
         toHeight = toHeight?.toLong(),
-        skipIfEmpty = false,
-        txEventPredicate = { it in config.eventStream.filter.txEvents },
-        blockEventPredicate = { it in config.eventStream.filter.blockEvents },
+        skipIfEmpty = config.eventStream.skipEmpty,
+        txEventPredicate = { config.eventStream.filter.txEvents.isEmpty() || it in config.eventStream.filter.txEvents },
+        blockEventPredicate = { config.eventStream.filter.blockEvents.isEmpty() || it in config.eventStream.filter.blockEvents },
         concurrency = concurrency,
     )
 
