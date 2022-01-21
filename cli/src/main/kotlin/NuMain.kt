@@ -109,15 +109,6 @@ fun main(args: Array<String>) {
     val kafkaProducer = KafkaProducer<String, StreamBlock>(properties)
     createTopic("test", 1, 3, properties)
 
-//    kafkaProducer.use { producer ->
-//        producer.send(ProducerRecord("test", "eventTesting", StreamBlock(Block(), mutableListOf<BlockEvent>(), mutableListOf()))) { m: RecordMetadata, e: Exception? ->
-//            when (e) {
-//                null -> log.info("Produced record to topic ${m.topic()} partition [${m.partition()}] @ offset ${m.offset()}")
-//                else -> e.printStackTrace()
-//            }
-//        }
-//        producer.flush()
-//    }
     runBlocking {
         log.info("config: $config")
 
@@ -127,7 +118,7 @@ fun main(args: Array<String>) {
             .catch { log.error("", it) }
             .onCompletion { log.info("stream fetch complete", it) }
             .onEach(fileOutput("../pio-testnet-1/json-data", moshi))
-            .onEach(kafkaWriter(kafkaProducer, "test", "eventTesting"))
+            .onEach(kafkaWriter(kafkaProducer, "test"))
             .collectTo(consoleOutput(verbose, 1))
     }
 

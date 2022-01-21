@@ -9,6 +9,7 @@ plugins {
     id("core-config")
     id("with-linter")
     id("with-test-fixtures")
+    id("java-test-fixtures")
     id("generate-docs")
 }
 
