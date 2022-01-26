@@ -21,6 +21,7 @@ repositories {
 dependencies {
     api(project(":api"))
     api(project(":api-model"))
+    api(project(":lib"))
     implementation(platform("org.jetbrains.kotlin:kotlin-bom"))
     implementation("org.jetbrains.kotlin", "kotlin-stdlib")
     implementation("org.jetbrains.kotlin", "kotlin-reflect")
