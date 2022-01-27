@@ -18,7 +18,7 @@ class KafkaTests : TestBase() {
 
     @OptIn(ExperimentalCoroutinesApi::class)
     @Test
-    fun kafka_writer_send_success() = dispatcherProvider.runBlockingTest {
+    fun kafkaWriterSendSuccess() = dispatcherProvider.runBlockingTest {
 
         val kafkaJsonSerializer = KafkaJsonSerializer<StreamBlock>()
         kafkaJsonSerializer.configure(mutableMapOf<String, StreamBlock>(), true)
@@ -50,7 +50,7 @@ class KafkaTests : TestBase() {
 
     @OptIn(ExperimentalCoroutinesApi::class)
     @Test
-    fun kafka_writer_send_fail() = dispatcherProvider.runBlockingTest {
+    fun kafkaWriterSendFail() = dispatcherProvider.runBlockingTest {
 
         val kafkaJsonSerializer = KafkaJsonSerializer<StreamBlock>()
         kafkaJsonSerializer.configure(mutableMapOf<String, StreamBlock>(), true)
