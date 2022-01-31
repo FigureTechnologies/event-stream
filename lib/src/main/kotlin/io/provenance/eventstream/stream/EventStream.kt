@@ -13,6 +13,7 @@ import io.provenance.eventstream.stream.models.Block
 import io.provenance.eventstream.stream.models.BlockEvent
 import io.provenance.eventstream.stream.models.EncodedBlockchainEvent
 import io.provenance.eventstream.stream.models.StreamBlock
+import io.provenance.eventstream.stream.models.StreamBlockImpl
 import io.provenance.eventstream.stream.models.TxEvent
 import io.provenance.eventstream.stream.models.extensions.blockEvents
 import io.provenance.eventstream.stream.models.extensions.dateTime
@@ -319,7 +320,7 @@ class EventStream(
             val blockResponse = tendermintServiceClient.blockResults(header?.height).result
             val blockEvents: List<BlockEvent> = blockResponse.blockEvents(blockDatetime)
             val txEvents: List<TxEvent> = blockResponse.txEvents(blockDatetime) { index: Int -> txHash(index) ?: "" }
-            val streamBlock = StreamBlock(this, blockEvents, txEvents)
+            val streamBlock = StreamBlockImpl(this, blockEvents, txEvents, true)
             val matchBlock = matchesBlockEvent(blockEvents)
             val matchTx = matchesTxEvent(txEvents)
 
@@ -397,7 +398,7 @@ class EventStream(
         log.info("historical::${availableBlocks.size} block(s) in [${heightPairChunk.minOf { it.first }}..${heightPairChunk.maxOf { it.second }}]")
         availableBlocks
     }.flowOn(dispatchers.io()).flatMapMerge(options.concurrency) { queryBlocks(it) }.flowOn(dispatchers.io())
-        .map { it.copy(historical = true) }.onCompletion { cause: Throwable? ->
+        .onCompletion { cause: Throwable? ->
             if (cause == null) {
                 log.info("historical::exhausted historical block stream ok")
             } else {
