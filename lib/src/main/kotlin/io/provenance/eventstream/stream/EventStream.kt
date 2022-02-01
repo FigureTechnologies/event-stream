@@ -64,7 +64,7 @@ class EventStream(
     private val moshi: Moshi,
     private val dispatchers: DispatcherProvider = DefaultDispatcherProvider(),
     private val options: Options = Options.DEFAULT
-) : BlockSource {
+) : BlockSource<StreamBlockImpl> {
     companion object {
         /**
          * The default number of blocks that will be contained in a batch.
@@ -305,7 +305,7 @@ class EventStream(
      *  @param skipIfNoTxs If [skipIfNoTxs] is true, if the block at the given height has no transactions, null will
      *  be returned in its place.
      */
-    private suspend fun queryBlock(heightOrBlock: Either<Long, Block>, skipIfNoTxs: Boolean = true): StreamBlock? {
+    private suspend fun queryBlock(heightOrBlock: Either<Long, Block>, skipIfNoTxs: Boolean = true): StreamBlockImpl? {
         val block: Block? = when (heightOrBlock) {
             is Either.Left<Long> -> tendermintServiceClient.block(heightOrBlock.value).result?.block
             is Either.Right<Block> -> heightOrBlock.value
@@ -342,7 +342,7 @@ class EventStream(
      *  block data.
      * @return A Flow of found historical blocks along with events associated with each block, if any.
      */
-    private fun queryBlocks(blockHeights: Iterable<Long>): Flow<StreamBlock> =
+    private fun queryBlocks(blockHeights: Iterable<Long>): Flow<StreamBlockImpl> =
         blockHeights.chunked(options.batchSize).asFlow().transform { chunkOfHeights: List<Long> ->
             emitAll(
                 coroutineScope {
@@ -364,7 +364,7 @@ class EventStream(
      *
      * @return A flow of historical blocks
      */
-    fun streamHistoricalBlocks(): Flow<StreamBlock> = flow {
+    fun streamHistoricalBlocks(): Flow<StreamBlockImpl> = flow {
         val startHeight: Long = getStartingHeight() ?: run {
             log.warn("No starting height provided; defaulting to 0")
             0
@@ -373,12 +373,12 @@ class EventStream(
         emitAll(streamHistoricalBlocks(startHeight, endHeight))
     }
 
-    private fun streamHistoricalBlocks(startHeight: Long): Flow<StreamBlock> = flow {
+    private fun streamHistoricalBlocks(startHeight: Long): Flow<StreamBlockImpl> = flow {
         val endHeight: Long = getEndingHeight() ?: error("Couldn't determine ending height")
         emitAll(streamHistoricalBlocks(startHeight, endHeight))
     }
 
-    private fun streamHistoricalBlocks(startHeight: Long, endHeight: Long): Flow<StreamBlock> = flow {
+    private fun streamHistoricalBlocks(startHeight: Long, endHeight: Long): Flow<StreamBlockImpl> = flow {
         log.info("historical::streaming blocks from $startHeight to $endHeight")
         log.info("historical::batch size = ${options.batchSize}")
 
@@ -411,7 +411,7 @@ class EventStream(
      *
      * @return A Flow of newly minted blocks and associated events
      */
-    fun streamLiveBlocks(): Flow<StreamBlock> {
+    fun streamLiveBlocks(): Flow<StreamBlockImpl> {
 
         // Toggle the Lifecycle register start state:
         eventStreamService.startListening()
@@ -483,7 +483,7 @@ class EventStream(
      *
      * @return A Flow of live and historical blocks, plus associated event data.
      */
-    override fun streamBlocks(): Flow<StreamBlock> = flow {
+    override fun streamBlocks(): Flow<StreamBlockImpl> = flow {
         val startingHeight: Long? = getStartingHeight()
         emitAll(
             if (startingHeight != null) {
