@@ -5,6 +5,7 @@ import io.provenance.eventstream.config.Environment
 import io.provenance.eventstream.extensions.repeatDecodeBase64
 import io.provenance.eventstream.stream.EventStream
 import io.provenance.eventstream.stream.consumers.EventStreamViewer
+import io.provenance.eventstream.stream.models.BaseStreamBlock
 import io.provenance.eventstream.stream.models.StreamBlock
 import io.provenance.eventstream.stream.models.extensions.dateTime
 import io.provenance.eventstream.utils.colors.green

@@ -9,14 +9,16 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import org.apache.kafka.clients.consumer.ConsumerConfig
 import org.apache.kafka.common.serialization.Serdes
 
-open class KafkaBlockSource(consumerProps: Map<String, Any>, topic: String) : BlockSource {
-    private val deserializer = Serdes.ByteArray().deserializer()
-    private val byteArrayProps = mapOf<String, Any>(
-        ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG to deserializer.javaClass,
-        ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG to deserializer.javaClass,
-    )
+fun kafkaBlockSource(
+    consumerProperties: Map<String, Any>,
+    topic: String
+): KafkaBlockSource {
+    return KafkaBlockSource(consumerProperties, topic)
+}
 
-    private val incoming = kafkaChannel<ByteArray, ByteArray>(consumerProps + byteArrayProps, setOf(topic))
+open class KafkaBlockSource(consumerProps: Map<String, Any>, topic: String) : BlockSource {
+
+    private val incoming = kafkaChannel<ByteArray, ByteArray>(consumerProps, setOf(topic))
 
     override fun streamBlocks(): Flow<StreamBlock> {
         return incoming.receiveAsFlow().map { KafkaStreamBlock(it.record) }

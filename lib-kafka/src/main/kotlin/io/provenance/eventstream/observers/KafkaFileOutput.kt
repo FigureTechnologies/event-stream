@@ -1,20 +1,20 @@
-package io.provenance.eventstream.stream.observers
+package kafka
 
 import com.squareup.moshi.JsonAdapter
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.adapter
 import io.provenance.blockchain.stream.api.BlockSink
-import io.provenance.eventstream.stream.models.StreamBlockImpl
+import io.provenance.eventstream.stream.models.BaseStreamBlock
 import io.provenance.eventstream.stream.models.StreamBlock
-import io.provenance.eventstream.utils.sha256
+import io.provenance.eventstream.stream.models.extensions.sha256
 import java.io.File
 import java.math.BigInteger
 
-fun fileOutput(dir: String, decoder: Moshi): FileOutput = FileOutput(dir, decoder)
+fun kafkaFileOutput(dir: String, decoder: Moshi): KafkaFileOutput = KafkaFileOutput(dir, decoder)
 
 @OptIn(ExperimentalStdlibApi::class)
-class FileOutput(dir: String, decoder: Moshi): BlockSink {
-    private val adapter: JsonAdapter<StreamBlockImpl> = decoder.adapter()
+class KafkaFileOutput(dir: String, decoder: Moshi): BlockSink {
+    private val adapter: JsonAdapter<BaseStreamBlock> = decoder.adapter()
     private val dirname = { name: String -> "$dir/$name" }
 
     init {
@@ -22,7 +22,7 @@ class FileOutput(dir: String, decoder: Moshi): BlockSink {
     }
 
     override suspend fun invoke(block: StreamBlock) {
-        val checksum = sha256(block.height.toString()).toHex()
+        val checksum = sha256(block.height.toString().toByteArray()).toHex()
         val splay = checksum.take(4)
         val dirname = dirname(splay)
 
@@ -31,9 +31,13 @@ class FileOutput(dir: String, decoder: Moshi): BlockSink {
         val filename = "$dirname/${block.height.toString().padStart(10, '0')}.json"
         val file = File(filename)
         if (!file.exists()) {
-            file.writeText(adapter.toJson(block as StreamBlockImpl))
+            file.writeText(adapter.toJson(block.toBaseStreamBlock()))
         }
     }
+}
+
+private fun StreamBlock.toBaseStreamBlock(): BaseStreamBlock? {
+    return BaseStreamBlock(this.block, this.blockEvents, this.txEvents, this.historical)
 }
 
 private fun ByteArray.toHex(): String {

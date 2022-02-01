@@ -17,7 +17,7 @@ repositories {
 
 dependencies {
     api(project(":lib"))
-    api(project(":modules"))
+    api(project(":lib-kafka"))
 
     implementation("org.jetbrains.kotlinx", "kotlinx-coroutines-core", Versions.Kotlinx.Core)
     implementation("org.jetbrains.kotlinx", "kotlinx-cli-jvm", Versions.Kotlinx.CLI)
