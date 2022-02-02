@@ -56,8 +56,6 @@ val commonProps = { id: String? ->
 }
 
 val producerProps = mapOf(
-    ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG to StringSerializer::class.java,
-    ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG to KafkaSerializer::class.java,
     ProducerConfig.ACKS_CONFIG to "all",
     ProducerConfig.ENABLE_IDEMPOTENCE_CONFIG to true,
 )
@@ -67,8 +65,6 @@ val consumerProps = mapOf(
     ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG to false,
     ConsumerConfig.MAX_POLL_INTERVAL_MS_CONFIG to 10000,
     ConsumerConfig.GROUP_ID_CONFIG to "test-group",
-    ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG to StringDeserializer::class.java,
-    ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG to KafkaDeserializer::class.java
 )
 
 fun logger(name: String): org.slf4j.Logger = LoggerFactory.getLogger(name)
@@ -208,7 +204,7 @@ fun main(args: Array<String>) {
             .catch { log.error("", it) }
             .onCompletion { log.info("stream fetch complete", it) }
             .onEach(fileOutput("../pio-testnet-1/json-data", moshi))
-            .onEach(kafkaWriter(kafkaProducer, "test"))
+            .onEach(kafkaWriter(producerProps("producer"), "test"))
 
         val kafkaStreamFlow = kafkaBlockSource(consumerProps("test"), "test").streamBlocks()
             .flowOn(Dispatchers.IO)
