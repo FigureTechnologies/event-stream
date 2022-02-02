@@ -1,13 +1,12 @@
-package kafka
+package io.provenance.eventstream.serializers
 
 import org.apache.kafka.common.serialization.Serializer
-import com.squareup.moshi.*
+import com.squareup.moshi.JsonAdapter
 import io.provenance.eventstream.stream.infrastructure.Serializer.moshi
 import io.provenance.eventstream.stream.models.StreamBlockImpl
 import org.apache.kafka.common.errors.SerializationException
 
-class KafkaSerializer
-    : Serializer<StreamBlockImpl> {
+class KafkaSerializer : Serializer<StreamBlockImpl> {
 
     override fun close() {}
     override fun serialize(topic: String?, data: StreamBlockImpl?): ByteArray {

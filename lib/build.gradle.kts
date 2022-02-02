@@ -1,5 +1,3 @@
-import util.extensions.javadocJar
-
 plugins {
     id("com.google.protobuf") version Plugins.Protobuf
     idea

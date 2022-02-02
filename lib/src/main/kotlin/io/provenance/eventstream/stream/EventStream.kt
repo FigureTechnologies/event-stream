@@ -11,7 +11,6 @@ import io.provenance.eventstream.coroutines.DispatcherProvider
 import io.provenance.eventstream.stream.models.Block
 import io.provenance.eventstream.stream.models.BlockEvent
 import io.provenance.eventstream.stream.models.EncodedBlockchainEvent
-import io.provenance.eventstream.stream.models.StreamBlock
 import io.provenance.eventstream.stream.models.StreamBlockImpl
 import io.provenance.eventstream.stream.models.TxEvent
 import io.provenance.eventstream.stream.models.extensions.blockEvents
@@ -63,7 +62,7 @@ class EventStream(
     private val moshi: Moshi,
     private val dispatchers: DispatcherProvider = DefaultDispatcherProvider(),
     private val options: Options = Options.DEFAULT
-) : BlockSource {
+) : BlockSource<StreamBlockImpl> {
     companion object {
         /**
          * The default number of blocks that will be contained in a batch.
@@ -194,7 +193,7 @@ class EventStream(
     private val responseMessageDecoder: MessageType.Decoder = MessageType.Decoder(moshi)
 
     /**
-     * A serializer function that converts a [BaseStreamBlock] instance to a JSON string.
+     * A serializer function that converts a [StreamBlockImpl] instance to a JSON string.
      *
      * @return (StreamBlock) -> String
      */
@@ -304,7 +303,11 @@ class EventStream(
      *  @param skipIfNoTxs If [skipIfNoTxs] is true, if the block at the given height has no transactions, null will
      *  be returned in its place.
      */
-    private suspend fun queryBlock(heightOrBlock: Either<Long, Block>, skipIfNoTxs: Boolean = true): StreamBlockImpl? {
+    private suspend fun queryBlock(
+        heightOrBlock: Either<Long, Block>,
+        skipIfNoTxs: Boolean = true,
+        historical: Boolean = false
+    ): StreamBlockImpl? {
         val block: Block? = when (heightOrBlock) {
             is Either.Left<Long> -> tendermintServiceClient.block(heightOrBlock.value).result?.block
             is Either.Right<Block> -> heightOrBlock.value
@@ -319,7 +322,7 @@ class EventStream(
             val blockResponse = tendermintServiceClient.blockResults(header?.height).result
             val blockEvents: List<BlockEvent> = blockResponse.blockEvents(blockDatetime)
             val txEvents: List<TxEvent> = blockResponse.txEvents(blockDatetime) { index: Int -> txHash(index) ?: "" }
-            val streamBlock = StreamBlockImpl(this, blockEvents, txEvents, true)
+            val streamBlock = StreamBlockImpl(this, blockEvents, txEvents, historical)
             val matchBlock = matchesBlockEvent(blockEvents)
             val matchTx = matchesTxEvent(txEvents)
 
@@ -347,7 +350,7 @@ class EventStream(
                 coroutineScope {
                     // Concurrently process <batch-size> blocks at a time:
                     chunkOfHeights.map { height ->
-                        async { queryBlock(Either.Left(height), skipIfNoTxs = options.skipIfEmpty) }
+                        async { queryBlock(Either.Left(height), skipIfNoTxs = options.skipIfEmpty, historical = true) }
                     }.awaitAll().filterNotNull()
                 }.asFlow()
             )
@@ -451,7 +454,7 @@ class EventStream(
                 }
             }
         }.flowOn(dispatchers.io()).onStart { log.info("live::starting") }.mapNotNull { block: Block ->
-            val maybeBlock = queryBlock(Either.Right(block), skipIfNoTxs = false)
+            val maybeBlock = queryBlock(Either.Right(block), skipIfNoTxs = false, historical = false)
             if (maybeBlock != null) {
                 log.info("live::got block #${maybeBlock.height}")
                 maybeBlock
@@ -482,7 +485,7 @@ class EventStream(
      *
      * @return A Flow of live and historical blocks, plus associated event data.
      */
-    override fun streamBlocks(): Flow<StreamBlock> = flow {
+    override fun streamBlocks(): Flow<StreamBlockImpl> = flow {
         val startingHeight: Long? = getStartingHeight()
         emitAll(
             if (startingHeight != null) {

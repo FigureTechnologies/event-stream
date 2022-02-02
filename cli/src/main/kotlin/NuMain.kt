@@ -7,32 +7,42 @@ import io.provenance.eventstream.config.EventStreamConfig
 import io.provenance.eventstream.config.RpcStreamConfig
 import io.provenance.eventstream.config.StreamEventsFilterConfig
 import io.provenance.eventstream.config.WebsocketStreamConfig
-import io.provenance.eventstream.flow.kafka.UnAckedConsumerRecordImpl
-import io.provenance.eventstream.stream.*
+import io.provenance.eventstream.flow.kafka.acking
+import io.provenance.eventstream.observers.kafkaFileOutput
+import io.provenance.eventstream.serializers.KafkaDeserializer
 import io.provenance.eventstream.stream.infrastructure.Serializer.moshi
 import io.provenance.eventstream.stream.models.StreamBlock
 import io.provenance.eventstream.stream.models.StreamBlockImpl
 import io.provenance.eventstream.stream.observers.fileOutput
-import io.provenance.eventstream.flow.kafka.acking
-import kafka.*
+import io.provenance.eventstream.serializers.KafkaSerializer
+import io.provenance.eventstream.stream.kafkaBlockSource
+import io.provenance.eventstream.stream.EventStream
+import io.provenance.eventstream.stream.kafkaWriter
 import kotlinx.cli.ArgParser
 import kotlinx.cli.ArgType
 import kotlinx.cli.default
-import kotlinx.coroutines.*
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.flow.DEFAULT_CONCURRENCY
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.flow.buffer
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.onCompletion
+import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.Flow
 import mu.KotlinLogging
 import org.apache.kafka.clients.CommonClientConfigs
-import org.apache.kafka.clients.admin.AdminClient
-import org.apache.kafka.clients.admin.NewTopic
 import org.apache.kafka.clients.consumer.ConsumerConfig
 import org.apache.kafka.clients.producer.KafkaProducer
 import org.apache.kafka.clients.producer.ProducerConfig
-import org.apache.kafka.common.errors.TopicExistsException
 import org.apache.kafka.common.serialization.StringDeserializer
 import org.apache.kafka.common.serialization.StringSerializer
 import org.slf4j.LoggerFactory
-import java.util.*
-import java.util.concurrent.ExecutionException
+import java.util.UUID
 import java.util.concurrent.TimeUnit
 import java.util.logging.Level
 import java.util.logging.Logger
@@ -64,12 +74,14 @@ val consumerProps = mapOf(
 fun logger(name: String): org.slf4j.Logger = LoggerFactory.getLogger(name)
 var org.slf4j.Logger.level: Level
     get() = (this as Logger).level
-    set(value) { (this as Logger).level = value }
+    set(value) {
+        (this as Logger).level = value
+    }
 
 fun producerProps(id: String) = commonProps(id) + producerProps
 fun consumerProps(id: String) = commonProps(id) + consumerProps
 
-@OptIn(FlowPreview::class, ExperimentalTime::class)
+@OptIn(FlowPreview::class, ExperimentalTime::class, kotlinx.coroutines.InternalCoroutinesApi::class)
 @ExperimentalCoroutinesApi
 fun main(args: Array<String>) {
     /**
@@ -82,18 +94,64 @@ fun main(args: Array<String>) {
      * @see https://github.com/sksamuel/hoplite#environmentvariablespropertysource
      */
     val parser = ArgParser("provenance-event-stream")
-    val fromHeight by parser.option(ArgType.String, fullName = "from", description = "Fetch blocks starting from height, inclusive.")
+    val fromHeight by parser.option(
+        ArgType.String,
+        fullName = "from",
+        description = "Fetch blocks starting from height, inclusive."
+    )
     val toHeight by parser.option(ArgType.String, fullName = "to", description = "Fetch blocks up to height, inclusive")
-    val verbose by parser.option(ArgType.Boolean, fullName = "verbose", shortName = "v", description = "Enables verbose output").default(false)
-    val node by parser.option(ArgType.String, fullName = "node", shortName = "n", description = "Node to connect to for block stream").default("localhost:26657")
-    val ordered by parser.option(ArgType.Boolean, fullName = "ordered", shortName = "o", description = "Order incoming blocks").default(false)
-    val batchSize by parser.option(ArgType.Int, fullName = "batch", shortName = "s", description = "Batch fetch size").default(16)
-    val throttle by parser.option(ArgType.Int, fullName = "throttle", shortName = "w", description = "Websocket throttle duration (milliseconds)").default(0)
-    val timeout by parser.option(ArgType.Int, fullName = "timeout", shortName = "x", description = "History fetch timeout (milliseconds)").default(30000)
-    val concurrency by parser.option(ArgType.Int, fullName = "concurrency", shortName = "c", description = "Concurrency limit for parallel fetches").default(DEFAULT_CONCURRENCY)
-    val txFilter by parser.option(ArgType.String, fullName = "filter-tx", shortName = "t", description = "Filter by tx events (comma separated)").default("")
-    val blockFilter by parser.option(ArgType.String, fullName = "filter-block", shortName = "b", description = "Filter by block events (comma separated)").default("")
-    val keepEmpty by parser.option(ArgType.Boolean, fullName = "keep-empty", description = "Keep empty blocks").default(true)
+    val verbose by parser.option(
+        ArgType.Boolean,
+        fullName = "verbose",
+        shortName = "v",
+        description = "Enables verbose output"
+    ).default(false)
+    val node by parser.option(
+        ArgType.String,
+        fullName = "node",
+        shortName = "n",
+        description = "Node to connect to for block stream"
+    ).default("localhost:26657")
+    val ordered by parser.option(
+        ArgType.Boolean,
+        fullName = "ordered",
+        shortName = "o",
+        description = "Order incoming blocks"
+    ).default(false)
+    val batchSize by parser.option(ArgType.Int, fullName = "batch", shortName = "s", description = "Batch fetch size")
+        .default(16)
+    val throttle by parser.option(
+        ArgType.Int,
+        fullName = "throttle",
+        shortName = "w",
+        description = "Websocket throttle duration (milliseconds)"
+    ).default(0)
+    val timeout by parser.option(
+        ArgType.Int,
+        fullName = "timeout",
+        shortName = "x",
+        description = "History fetch timeout (milliseconds)"
+    ).default(30000)
+    val concurrency by parser.option(
+        ArgType.Int,
+        fullName = "concurrency",
+        shortName = "c",
+        description = "Concurrency limit for parallel fetches"
+    ).default(DEFAULT_CONCURRENCY)
+    val txFilter by parser.option(
+        ArgType.String,
+        fullName = "filter-tx",
+        shortName = "t",
+        description = "Filter by tx events (comma separated)"
+    ).default("")
+    val blockFilter by parser.option(
+        ArgType.String,
+        fullName = "filter-block",
+        shortName = "b",
+        description = "Filter by block events (comma separated)"
+    ).default("")
+    val keepEmpty by parser.option(ArgType.Boolean, fullName = "keep-empty", description = "Keep empty blocks")
+        .default(true)
     parser.parse(args)
 
     val config = Config(
@@ -103,7 +161,8 @@ fun main(args: Array<String>) {
             rpc = RpcStreamConfig("http://$node"),
             filter = StreamEventsFilterConfig(
                 txEvents = txFilter.split(",").filter { it.isNotBlank() }.toSet(),
-                blockEvents = blockFilter.split(",").filter { it.isNotBlank() }.toSet()),
+                blockEvents = blockFilter.split(",").filter { it.isNotBlank() }.toSet()
+            ),
             batch = BatchConfig(batchSize, timeoutMillis = timeout.toLong())
         ),
     )
@@ -138,20 +197,7 @@ fun main(args: Array<String>) {
 
     System.setProperty("kotlinx.coroutines.debug", "on")
 
-    // Kafka Setup
-//    val properties = Properties()
-//    properties["application.id"] = "event-stream"
-//    properties["bootstrap.servers"] = "127.0.0.1:9092"
-//    properties[ProducerConfig.ACKS_CONFIG] = "all"
-////    We have to specify our own serializer
-//    properties[ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG] = StringDeserializer::class.qualifiedName
-//    properties[ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG] = KafkaJsonSerializer::class.qualifiedName
-//    properties[ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG] = StringSerializer::class.qualifiedName
-//    properties[ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG] = KafkaJsonSerializer::class.qualifiedName
     val kafkaProducer = KafkaProducer<String, StreamBlockImpl>(producerProps("producer"))
-//    val kafkaConsumer = KafkaConsumer<String, BaseStreamBlock>(consumerProps("consumer"))
-////    createTopic("test", 1, 3, properties)
-
 
     runBlocking {
         log.info("config: $config")
@@ -168,21 +214,23 @@ fun main(args: Array<String>) {
             .flowOn(Dispatchers.IO)
             .buffer()
             .catch { log.error("", it) }
-            .onEach(kafkaFileOutput("../pio-testnet-1-kafka/json-data", moshi))
-
+            .onEach {
+                kafkaFileOutput("../pio-testnet-1-kafka/json-data", moshi).invoke(it)
+            }
+            .acking {
+                log.info("successfully acked:$it")
+            }
 
         launch {
-//            chainStreamFlow.collectTo(consoleOutput(verbose, 1))
-            chainStreamFlow.collect {log.info("recv from Chain: ${it} :: ${it.block} -> ${it.height}")}
+            chainStreamFlow.collect {
+                log.info("recv from Chain: $it :: ${it.block} -> ${it.height}")
+            }
         }
 
         launch {
-//            kafkaStreamFlow.collectTo(consoleOutput(verbose, 1))
             kafkaStreamFlow.collect {
-                log.info("recv from Kafka: ${it} :: ${it.block} -> ${it.height}")
-            }//.acking {
-            //    log.info("successfully acked:$it")
-            //}
+                log.info("recv from Kafka: $it :: ${it.block} -> ${it.height}")
+            }
         }
     }
 
@@ -190,24 +238,6 @@ fun main(args: Array<String>) {
     // the pool in order for the app to gracefully exit.
     okClient.dispatcher.executorService.shutdownNow()
     okClient.dispatcher.executorService.awaitTermination(3, TimeUnit.SECONDS)
-}
-
-fun createTopic(
-    topic: String,
-    partitions: Int,
-    replication: Short,
-    cloudConfig: Properties
-) {
-    val newTopic = NewTopic(topic, partitions, replication)
-
-
-    try {
-        with(AdminClient.create(cloudConfig)) {
-            createTopics(listOf(newTopic)).all().get()
-        }
-    } catch (e: ExecutionException) {
-        if (e.cause !is TopicExistsException) throw e
-    }
 }
 
 private suspend fun Flow<StreamBlock>.collectTo(sink: BlockSink) =

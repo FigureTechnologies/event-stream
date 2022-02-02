@@ -4,7 +4,12 @@ import com.squareup.moshi.JsonEncodingException
 import com.tinder.scarlet.Message
 import com.tinder.scarlet.WebSocket
 import io.provenance.eventstream.stream.TendermintServiceClient
-import io.provenance.eventstream.stream.models.*
+import io.provenance.eventstream.stream.models.Event
+import io.provenance.eventstream.stream.models.toDecodedMap
+import io.provenance.eventstream.stream.models.BlockResultsResponse
+import io.provenance.eventstream.stream.models.ABCIInfoResponse
+import io.provenance.eventstream.stream.models.BlockResponse
+import io.provenance.eventstream.stream.models.BlockchainResponse
 import io.provenance.eventstream.stream.models.rpc.response.MessageType
 import io.provenance.eventstream.test.base.TestBase
 import io.provenance.eventstream.test.mocks.MockEventStreamService
@@ -373,10 +378,12 @@ class StreamTests : TestBase() {
                 val expectTotal = EXPECTED_NONEMPTY_BLOCKS + eventStreamService.expectedResponseCount()
 
                 val collected = eventStream
-                    .streamBlocks<BaseStreamBlock>()
+                    .streamBlocks()
                     .toList()
 
                 assert(collected.size == expectTotal.toInt())
+                println(collected)
+                println(collected.filter { it.historical }.size)
                 assert(collected.filter { it.historical }.size.toLong() == EXPECTED_NONEMPTY_BLOCKS)
                 assert(collected.filter { !it.historical }.size.toLong() == eventStreamService.expectedResponseCount())
             }
@@ -405,7 +412,7 @@ class StreamTests : TestBase() {
                         .skipIfEmpty(true)
                         .build()
 
-                    eventStream.streamBlocks<BaseStreamBlock>().toList()
+                    eventStream.streamBlocks().toList()
                 }
             }
         }
@@ -437,7 +444,7 @@ class StreamTests : TestBase() {
                     .matchTxEvent { it == requireTxEvent }
                     .build()
 
-                assert(eventStream.streamBlocks<BaseStreamBlock>().count() == 0)
+                assert(eventStream.streamBlocks().count() == 0)
             }
         }
 
@@ -465,7 +472,7 @@ class StreamTests : TestBase() {
                     .build()
 
                 val collected = eventStream
-                    .streamBlocks<BaseStreamBlock>()
+                    .streamBlocks()
                     .toList()
 
                 assert(

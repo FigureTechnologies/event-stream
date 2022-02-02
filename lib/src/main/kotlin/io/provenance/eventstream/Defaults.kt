@@ -33,7 +33,6 @@ fun defaultOkHttpClient(pingInterval: Duration = Duration.seconds(10), readInter
         .readTimeout(readInterval.inWholeMilliseconds, TimeUnit.MILLISECONDS)
         .build()
 
-
 /**
  * Create a default configuration to use for the event stream.
  *

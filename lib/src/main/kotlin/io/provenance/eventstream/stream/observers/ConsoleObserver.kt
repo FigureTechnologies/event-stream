@@ -3,7 +3,11 @@ package io.provenance.eventstream.stream.observers
 import io.provenance.blockchain.stream.api.BlockSink
 import io.provenance.eventstream.extensions.decodeBase64
 import io.provenance.eventstream.extensions.isAsciiPrintable
-import io.provenance.eventstream.stream.models.*
+import io.provenance.eventstream.stream.models.Event
+import io.provenance.eventstream.stream.models.TxEvent
+import io.provenance.eventstream.stream.models.BlockEvent
+import io.provenance.eventstream.stream.models.StreamBlockImpl
+import io.provenance.eventstream.stream.models.StreamBlock
 import io.provenance.eventstream.stream.models.extensions.dateTime
 import mu.KotlinLogging
 
@@ -26,7 +30,7 @@ class ConsoleOutput(private val verbose: Boolean, private val nth: Int) : BlockS
         it.attributes.forEach(logAttribute)
     }
 
-    private val logBlockInfo: BaseStreamBlock.() -> Unit = {
+    private val logBlockInfo: StreamBlockImpl.() -> Unit = {
         val height = block.header?.height ?: "--"
         val date = block.header?.dateTime()?.toLocalDate()
         val hash = block.header?.lastBlockId?.hash
@@ -39,11 +43,12 @@ class ConsoleOutput(private val verbose: Boolean, private val nth: Int) : BlockS
             return
         }
 
-        (block as BaseStreamBlock).logBlockInfo()
+        (block as StreamBlockImpl).logBlockInfo()
         if (verbose) {
             block.txEvents.forEach(logBlockTxEvent)
             block.blockEvents.forEach(logBlockEvent)
-        }    }
+        }
+    }
 }
 
 /**
@@ -64,7 +69,6 @@ private fun String.repeatDecodeBase64(): String {
         }
         s = t
         t = t.decodeBase64().stripQuotes()
-
     }
     return s
 }
@@ -73,4 +77,3 @@ private fun String.repeatDecodeBase64(): String {
  * Remove surrounding quotation marks from a string.
  */
 private fun String.stripQuotes(): String = this.removeSurrounding("\"")
-

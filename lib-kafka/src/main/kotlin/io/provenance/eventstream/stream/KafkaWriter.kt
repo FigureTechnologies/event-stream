@@ -1,4 +1,4 @@
-package kafka
+package io.provenance.eventstream.stream
 
 import io.provenance.blockchain.stream.api.BlockSink
 import io.provenance.eventstream.stream.models.StreamBlockImpl
@@ -39,5 +39,6 @@ class KafkaWriter(
 
     override suspend fun invoke(block: StreamBlock) {
         val key = "${block.block.header!!.chainId}.${block.height}"
-        send(block as StreamBlockImpl, key).asDeferred().await()    }
+        send(block as StreamBlockImpl, key).asDeferred().await()
+    }
 }

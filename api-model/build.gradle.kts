@@ -1,5 +1,3 @@
-import util.extensions.javadocJar
-
 plugins {
     kotlin("kapt")
     id("org.openapi.generator") version Plugins.OpenAPI

@@ -7,5 +7,4 @@ dependencies {
     implementation("com.squareup.moshi", "moshi", Versions.Moshi)
     implementation("com.squareup.moshi", "moshi-kotlin-codegen", Versions.Moshi)
     kapt("com.squareup.moshi:moshi-kotlin-codegen:${Versions.Moshi}")
-
 }

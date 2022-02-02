@@ -13,7 +13,7 @@ import java.math.BigInteger
 fun fileOutput(dir: String, decoder: Moshi): FileOutput = FileOutput(dir, decoder)
 
 @OptIn(ExperimentalStdlibApi::class)
-class FileOutput(dir: String, decoder: Moshi): BlockSink {
+class FileOutput(dir: String, decoder: Moshi) : BlockSink {
     private val adapter: JsonAdapter<StreamBlockImpl> = decoder.adapter()
     private val dirname = { name: String -> "$dir/$name" }
 
