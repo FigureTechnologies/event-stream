@@ -9,12 +9,10 @@ import io.provenance.eventstream.config.StreamEventsFilterConfig
 import io.provenance.eventstream.config.WebsocketStreamConfig
 import io.provenance.eventstream.flow.kafka.acking
 import io.provenance.eventstream.observers.kafkaFileOutput
-import io.provenance.eventstream.serializers.KafkaDeserializer
 import io.provenance.eventstream.stream.infrastructure.Serializer.moshi
 import io.provenance.eventstream.stream.models.StreamBlock
 import io.provenance.eventstream.stream.models.StreamBlockImpl
 import io.provenance.eventstream.stream.observers.fileOutput
-import io.provenance.eventstream.serializers.KafkaSerializer
 import io.provenance.eventstream.stream.kafkaBlockSource
 import io.provenance.eventstream.stream.EventStream
 import io.provenance.eventstream.stream.kafkaWriter
@@ -192,8 +190,6 @@ fun main(args: Array<String>) {
     val stream = defaultEventStream(config, options, okClient)
 
     System.setProperty("kotlinx.coroutines.debug", "on")
-
-    val kafkaProducer = KafkaProducer<String, StreamBlockImpl>(producerProps("producer"))
 
     runBlocking {
         log.info("config: $config")
