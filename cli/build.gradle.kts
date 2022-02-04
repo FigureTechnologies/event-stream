@@ -8,13 +8,6 @@ plugins {
 group = rootProject.group
 version = rootProject.version
 
-repositories {
-    maven {
-        url = uri("http://packages.confluent.io/maven/")
-        isAllowInsecureProtocol = true
-    }
-}
-
 dependencies {
     api(project(":lib"))
     api(project(":lib-kafka"))

@@ -8,7 +8,11 @@ import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.withContext
-import org.apache.kafka.clients.producer.*
+import org.apache.kafka.clients.producer.ProducerRecord
+import org.apache.kafka.clients.producer.KafkaProducer
+import org.apache.kafka.clients.producer.Producer
+import org.apache.kafka.clients.producer.ProducerConfig
+import org.apache.kafka.clients.producer.RecordMetadata
 import org.apache.kafka.common.serialization.Serdes
 import java.time.Duration
 import java.util.concurrent.Future

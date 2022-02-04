@@ -6,10 +6,17 @@ import io.provenance.eventstream.flow.kafka.kafkaChannel
 import io.provenance.eventstream.flow.kafka.toByteArray
 import io.provenance.eventstream.flow.kafka.toStreamBlock
 import io.provenance.eventstream.stream.KafkaStreamBlock
-import io.provenance.eventstream.stream.models.*
+import io.provenance.eventstream.stream.models.Block
+import io.provenance.eventstream.stream.models.BlockEvent
+import io.provenance.eventstream.stream.models.BlockResponse
+import io.provenance.eventstream.stream.models.BlockResultsResponse
+import io.provenance.eventstream.stream.models.StreamBlockImpl
 import io.provenance.eventstream.test.base.TestBase
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.flow.receiveAsFlow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.runBlocking
 import org.apache.kafka.clients.CommonClientConfigs
 import org.apache.kafka.clients.consumer.ConsumerConfig
@@ -24,8 +31,7 @@ import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.assertThrows
 import java.lang.IllegalStateException
 import java.time.OffsetDateTime
-import java.util.*
-
+import java.util.UUID
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class KafkaSourceTests : TestBase() {

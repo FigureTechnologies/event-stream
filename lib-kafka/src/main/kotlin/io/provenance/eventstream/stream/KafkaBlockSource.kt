@@ -2,7 +2,6 @@ package io.provenance.eventstream.stream
 
 import io.provenance.blockchain.stream.api.BlockSource
 import io.provenance.eventstream.flow.kafka.kafkaChannel
-import io.provenance.eventstream.flow.kafka.toStreamBlock
 import io.provenance.eventstream.stream.models.StreamBlockImpl
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
