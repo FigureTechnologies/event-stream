@@ -4,6 +4,7 @@ import com.squareup.moshi.JsonAdapter
 import io.provenance.eventstream.flow.kafka.acking
 import io.provenance.eventstream.flow.kafka.kafkaChannel
 import io.provenance.eventstream.flow.kafka.toByteArray
+import io.provenance.eventstream.flow.kafka.toStreamBlock
 import io.provenance.eventstream.stream.KafkaStreamBlock
 import io.provenance.eventstream.stream.models.*
 import io.provenance.eventstream.test.base.TestBase
@@ -16,6 +17,7 @@ import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.apache.kafka.clients.consumer.MockConsumer
 import org.apache.kafka.clients.consumer.OffsetResetStrategy
 import org.apache.kafka.common.TopicPartition
+import org.apache.kafka.common.errors.SerializationException
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
@@ -57,6 +59,31 @@ class KafkaSourceTests : TestBase() {
                 BlockEvent(v.result.height, OffsetDateTime.now(), it.type!!, it.attributes!!)
             }
             streamBlocks[k] = StreamBlockImpl(blockResponses[k]!!.result!!.block!!, blockEvents, mutableListOf())
+        }
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun testStreamBlockByteArrayExtensions() {
+        val streamBytes = streamBlocks["2270370"]!!.toByteArray()
+        val streamBlockImpl = streamBytes!!.toStreamBlock()
+        assert(streamBlockImpl!!.height == 2270370L)
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun testStreamBlockByteArrayExtensionsEmpty() {
+        val streamBytes = StreamBlockImpl(Block(), mutableListOf(), mutableListOf()).toByteArray()
+        val streamBlockImpl = streamBytes!!.toStreamBlock()
+        assert(streamBlockImpl!!.block.data == null)
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun testStreamBlockByteArrayExtensionsIncompatibleValue() {
+        val streamBytes = "failStrin".toByteArray()
+        assertThrows<SerializationException> {
+            streamBytes!!.toStreamBlock()
         }
     }
 
