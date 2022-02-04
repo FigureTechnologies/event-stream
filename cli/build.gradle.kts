@@ -19,8 +19,6 @@ dependencies {
     api(project(":lib"))
     api(project(":lib-kafka"))
 
-    implementation("org.apache.kafka", "kafka-clients", "3.0.0")
-    implementation("org.apache.kafka", "kafka-streams", "3.0.0")
     implementation("org.jetbrains.kotlinx", "kotlinx-coroutines-core", Versions.Kotlinx.Core)
     implementation("org.jetbrains.kotlinx", "kotlinx-cli-jvm", Versions.Kotlinx.CLI)
 
