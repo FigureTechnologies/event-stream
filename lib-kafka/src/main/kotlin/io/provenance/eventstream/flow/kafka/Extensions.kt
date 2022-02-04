@@ -12,7 +12,7 @@ import org.apache.kafka.common.errors.SerializationException
 
 internal fun <T, L : Iterable<T>> L.ifEmpty(block: () -> L): L = if (count() == 0) block() else this
 
-fun Flow<KafkaStreamBlock<String, StreamBlockImpl>>.acking(block: (KafkaStreamBlock<String, StreamBlockImpl>) -> Unit): Flow<AckedKafkaStreamBlock<String, StreamBlockImpl>> {
+fun Flow<KafkaStreamBlock<String, StreamBlockImpl>>.acking(block: (KafkaStreamBlock<String, StreamBlockImpl>) -> Unit): Flow<AckedKafkaStreamBlock<ByteArray, ByteArray>> {
     return flow {
         collect {
             val ackedConsumerRecordImpl = it.record.ack()

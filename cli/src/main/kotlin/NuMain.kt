@@ -11,11 +11,10 @@ import io.provenance.eventstream.flow.kafka.acking
 import io.provenance.eventstream.observers.kafkaFileOutput
 import io.provenance.eventstream.stream.infrastructure.Serializer.moshi
 import io.provenance.eventstream.stream.models.StreamBlock
-import io.provenance.eventstream.stream.models.StreamBlockImpl
 import io.provenance.eventstream.stream.observers.fileOutput
 import io.provenance.eventstream.stream.kafkaBlockSource
 import io.provenance.eventstream.stream.EventStream
-import io.provenance.eventstream.stream.kafkaWriter
+import io.provenance.eventstream.stream.kafkaBlockSink
 import kotlinx.cli.ArgParser
 import kotlinx.cli.ArgType
 import kotlinx.cli.default
@@ -35,10 +34,7 @@ import kotlinx.coroutines.flow.Flow
 import mu.KotlinLogging
 import org.apache.kafka.clients.CommonClientConfigs
 import org.apache.kafka.clients.consumer.ConsumerConfig
-import org.apache.kafka.clients.producer.KafkaProducer
 import org.apache.kafka.clients.producer.ProducerConfig
-import org.apache.kafka.common.serialization.StringDeserializer
-import org.apache.kafka.common.serialization.StringSerializer
 import org.slf4j.LoggerFactory
 import java.util.UUID
 import java.util.concurrent.TimeUnit
@@ -200,7 +196,7 @@ fun main(args: Array<String>) {
             .catch { log.error("", it) }
             .onCompletion { log.info("stream fetch complete", it) }
             .onEach(fileOutput("../pio-testnet-1/json-data", moshi))
-            .onEach(kafkaWriter(producerProps("producer"), "test"))
+            .onEach(kafkaBlockSink(producerProps("producer"), "test"))
 
         val kafkaStreamFlow = kafkaBlockSource(consumerProps("test"), "test").streamBlocks()
             .flowOn(Dispatchers.IO)

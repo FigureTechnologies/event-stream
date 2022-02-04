@@ -8,7 +8,6 @@ import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.withContext
-import org.apache.kafka.clients.consumer.ConsumerConfig
 import org.apache.kafka.clients.producer.*
 import org.apache.kafka.common.serialization.Serdes
 import java.time.Duration
@@ -16,8 +15,8 @@ import java.util.concurrent.Future
 import java.util.concurrent.TimeUnit
 import kotlin.coroutines.CoroutineContext
 
-fun kafkaWriter(producerProps: Map<String, Any>, topicName: String): KafkaWriter =
-    KafkaWriter(producerProps, topicName)
+fun kafkaBlockSink(producerProps: Map<String, Any>, topicName: String): KafkaBlockSink =
+    KafkaBlockSink(producerProps, topicName)
 
 suspend fun <T> Future<T>.asDeferred(timeout: Duration? = null, coroutineContext: CoroutineContext = Dispatchers.IO): Deferred<T> {
     return withContext(coroutineContext) {
@@ -29,7 +28,7 @@ suspend fun <T> Future<T>.asDeferred(timeout: Duration? = null, coroutineContext
 }
 
 @OptIn(ExperimentalStdlibApi::class)
-class KafkaWriter(
+class KafkaBlockSink(
     producerProps: Map<String, Any>,
     val topicName: String,
 ) : BlockSink {
@@ -41,12 +40,12 @@ class KafkaWriter(
 
     val kafkaProducer = KafkaProducer<ByteArray, ByteArray>(producerProps + byteArrayProps)
 
-    fun send(block: StreamBlockImpl, key: String): Future<RecordMetadata> {
-        return kafkaProducer.send(ProducerRecord(topicName, key.toByteArray(), block.toByteArray()))
+    fun send(block: StreamBlockImpl, key: String, producer: Producer<ByteArray, ByteArray>): Future<RecordMetadata> {
+        return producer.send(ProducerRecord(topicName, key.toByteArray(), block.toByteArray()))
     }
 
     override suspend fun invoke(block: StreamBlock) {
         val key = "${block.block.header!!.chainId}.${block.height}"
-        send(block as StreamBlockImpl, key).asDeferred().await()
+        send(block as StreamBlockImpl, key, kafkaProducer).asDeferred().await()
     }
 }

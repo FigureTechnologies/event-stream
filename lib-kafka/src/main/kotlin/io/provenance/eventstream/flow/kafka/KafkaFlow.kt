@@ -52,7 +52,8 @@ open class KafkaChannel<K, V>(
     }
 
     private val log = KotlinLogging.logger {}
-    private val thread = thread(name = "$name-${threadCounter.getAndIncrement()}", block = { run() }, isDaemon = true, start = false)
+    private val thread =
+        thread(name = "$name-${threadCounter.getAndIncrement()}", block = { run() }, isDaemon = true, start = false)
     private val sendChannel = Channel<UnAckedConsumerRecord<K, V>>(Channel.UNLIMITED)
 
     @OptIn(ExperimentalCoroutinesApi::class)
@@ -99,9 +100,13 @@ open class KafkaChannel<K, V>(
                 }
             } finally {
                 log.info("${coroutineContext.job} shutting down consumer thread")
-                consumer.unsubscribe()
-                consumer.close()
-                sendChannel.cancel(CancellationException("consumer shut down"))
+                try {
+                    sendChannel.cancel(CancellationException("consumer shut down"))
+                    consumer.unsubscribe()
+                    consumer.close()
+                } catch (ex: Exception) {
+                    log.debug { "Consumer failed to be closed. It may have been closed from somewhere else." }
+                }
             }
         }
     }
@@ -123,7 +128,8 @@ open class KafkaChannel<K, V>(
     @ExperimentalCoroutinesApi
     override val isEmpty: Boolean = sendChannel.isEmpty
     override val onReceive: SelectClause1<UnAckedConsumerRecord<K, V>> = sendChannel.onReceive
-    override val onReceiveCatching: SelectClause1<ChannelResult<UnAckedConsumerRecord<K, V>>> = sendChannel.onReceiveCatching
+    override val onReceiveCatching: SelectClause1<ChannelResult<UnAckedConsumerRecord<K, V>>> =
+        sendChannel.onReceiveCatching
 
     override fun cancel(cause: Throwable?): Boolean {
         cancel(CancellationException("cancel", cause))
