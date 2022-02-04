@@ -7,21 +7,71 @@ import io.provenance.eventstream.config.EventStreamConfig
 import io.provenance.eventstream.config.RpcStreamConfig
 import io.provenance.eventstream.config.StreamEventsFilterConfig
 import io.provenance.eventstream.config.WebsocketStreamConfig
-import io.provenance.eventstream.stream.*
+import io.provenance.eventstream.flow.kafka.acking
+import io.provenance.eventstream.observers.kafkaFileOutput
 import io.provenance.eventstream.stream.infrastructure.Serializer.moshi
 import io.provenance.eventstream.stream.models.StreamBlock
-import io.provenance.eventstream.stream.observers.consoleOutput
 import io.provenance.eventstream.stream.observers.fileOutput
+import io.provenance.eventstream.stream.kafkaBlockSource
+import io.provenance.eventstream.stream.EventStream
+import io.provenance.eventstream.stream.kafkaBlockSink
 import kotlinx.cli.ArgParser
 import kotlinx.cli.ArgType
 import kotlinx.cli.default
-import kotlinx.coroutines.*
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.flow.DEFAULT_CONCURRENCY
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.flow.buffer
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.onCompletion
+import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.Flow
 import mu.KotlinLogging
+import org.apache.kafka.clients.CommonClientConfigs
+import org.apache.kafka.clients.consumer.ConsumerConfig
+import org.apache.kafka.clients.producer.ProducerConfig
+import org.slf4j.LoggerFactory
+import java.util.UUID
 import java.util.concurrent.TimeUnit
+import java.util.logging.Level
+import java.util.logging.Logger
 import kotlin.time.ExperimentalTime
 
-@OptIn(FlowPreview::class, ExperimentalTime::class)
+val commonProps = { id: String? ->
+    mapOf(
+        CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG to "localhost:9092",
+        CommonClientConfigs.CLIENT_ID_CONFIG to (id ?: UUID.randomUUID().toString()),
+    )
+}
+
+val producerProps = mapOf(
+    ProducerConfig.ACKS_CONFIG to "all",
+    ProducerConfig.ENABLE_IDEMPOTENCE_CONFIG to true,
+)
+
+val consumerProps = mapOf(
+    ConsumerConfig.MAX_POLL_RECORDS_CONFIG to 15,
+    ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG to false,
+    ConsumerConfig.MAX_POLL_INTERVAL_MS_CONFIG to 10000,
+    ConsumerConfig.GROUP_ID_CONFIG to "test-group",
+)
+
+fun logger(name: String): org.slf4j.Logger = LoggerFactory.getLogger(name)
+var org.slf4j.Logger.level: Level
+    get() = (this as Logger).level
+    set(value) {
+        (this as Logger).level = value
+    }
+
+fun producerProps(id: String) = commonProps(id) + producerProps
+fun consumerProps(id: String) = commonProps(id) + consumerProps
+
+@OptIn(FlowPreview::class, ExperimentalTime::class, kotlinx.coroutines.InternalCoroutinesApi::class)
 @ExperimentalCoroutinesApi
 fun main(args: Array<String>) {
     /**
@@ -34,18 +84,64 @@ fun main(args: Array<String>) {
      * @see https://github.com/sksamuel/hoplite#environmentvariablespropertysource
      */
     val parser = ArgParser("provenance-event-stream")
-    val fromHeight by parser.option(ArgType.String, fullName = "from", description = "Fetch blocks starting from height, inclusive.")
+    val fromHeight by parser.option(
+        ArgType.String,
+        fullName = "from",
+        description = "Fetch blocks starting from height, inclusive."
+    )
     val toHeight by parser.option(ArgType.String, fullName = "to", description = "Fetch blocks up to height, inclusive")
-    val verbose by parser.option(ArgType.Boolean, fullName = "verbose", shortName = "v", description = "Enables verbose output").default(false)
-    val node by parser.option(ArgType.String, fullName = "node", shortName = "n", description = "Node to connect to for block stream").default("localhost:26657")
-    val ordered by parser.option(ArgType.Boolean, fullName = "ordered", shortName = "o", description = "Order incoming blocks").default(false)
-    val batchSize by parser.option(ArgType.Int, fullName = "batch", shortName = "s", description = "Batch fetch size").default(16)
-    val throttle by parser.option(ArgType.Int, fullName = "throttle", shortName = "w", description = "Websocket throttle duration (milliseconds)").default(0)
-    val timeout by parser.option(ArgType.Int, fullName = "timeout", shortName = "x", description = "History fetch timeout (milliseconds)").default(30000)
-    val concurrency by parser.option(ArgType.Int, fullName = "concurrency", shortName = "c", description = "Concurrency limit for parallel fetches").default(DEFAULT_CONCURRENCY)
-    val txFilter by parser.option(ArgType.String, fullName = "filter-tx", shortName = "t", description = "Filter by tx events (comma separated)").default("")
-    val blockFilter by parser.option(ArgType.String, fullName = "filter-block", shortName = "b", description = "Filter by block events (comma separated)").default("")
-    val keepEmpty by parser.option(ArgType.Boolean, fullName = "keep-empty", description = "Keep empty blocks").default(false)
+    val verbose by parser.option(
+        ArgType.Boolean,
+        fullName = "verbose",
+        shortName = "v",
+        description = "Enables verbose output"
+    ).default(false)
+    val node by parser.option(
+        ArgType.String,
+        fullName = "node",
+        shortName = "n",
+        description = "Node to connect to for block stream"
+    ).default("localhost:26657")
+    val ordered by parser.option(
+        ArgType.Boolean,
+        fullName = "ordered",
+        shortName = "o",
+        description = "Order incoming blocks"
+    ).default(false)
+    val batchSize by parser.option(ArgType.Int, fullName = "batch", shortName = "s", description = "Batch fetch size")
+        .default(16)
+    val throttle by parser.option(
+        ArgType.Int,
+        fullName = "throttle",
+        shortName = "w",
+        description = "Websocket throttle duration (milliseconds)"
+    ).default(0)
+    val timeout by parser.option(
+        ArgType.Int,
+        fullName = "timeout",
+        shortName = "x",
+        description = "History fetch timeout (milliseconds)"
+    ).default(30000)
+    val concurrency by parser.option(
+        ArgType.Int,
+        fullName = "concurrency",
+        shortName = "c",
+        description = "Concurrency limit for parallel fetches"
+    ).default(DEFAULT_CONCURRENCY)
+    val txFilter by parser.option(
+        ArgType.String,
+        fullName = "filter-tx",
+        shortName = "t",
+        description = "Filter by tx events (comma separated)"
+    ).default("")
+    val blockFilter by parser.option(
+        ArgType.String,
+        fullName = "filter-block",
+        shortName = "b",
+        description = "Filter by block events (comma separated)"
+    ).default("")
+    val keepEmpty by parser.option(ArgType.Boolean, fullName = "keep-empty", description = "Keep empty blocks")
+        .default(true)
     parser.parse(args)
 
     val config = Config(
@@ -55,7 +151,8 @@ fun main(args: Array<String>) {
             rpc = RpcStreamConfig("http://$node"),
             filter = StreamEventsFilterConfig(
                 txEvents = txFilter.split(",").filter { it.isNotBlank() }.toSet(),
-                blockEvents = blockFilter.split(",").filter { it.isNotBlank() }.toSet()),
+                blockEvents = blockFilter.split(",").filter { it.isNotBlank() }.toSet()
+            ),
             batch = BatchConfig(batchSize, timeoutMillis = timeout.toLong())
         ),
     )
@@ -89,16 +186,40 @@ fun main(args: Array<String>) {
     val stream = defaultEventStream(config, options, okClient)
 
     System.setProperty("kotlinx.coroutines.debug", "on")
+
     runBlocking {
         log.info("config: $config")
 
-        stream.streamBlocks()
+        val chainStreamFlow = stream.streamBlocks()
             .flowOn(Dispatchers.IO)
             .buffer()
             .catch { log.error("", it) }
             .onCompletion { log.info("stream fetch complete", it) }
             .onEach(fileOutput("../pio-testnet-1/json-data", moshi))
-            .collectTo(consoleOutput(verbose, 1))
+            .onEach(kafkaBlockSink(producerProps("producer"), "test"))
+
+        val kafkaStreamFlow = kafkaBlockSource(consumerProps("test"), "test").streamBlocks()
+            .flowOn(Dispatchers.IO)
+            .buffer()
+            .catch { log.error("", it) }
+            .onEach {
+                kafkaFileOutput("../pio-testnet-1-kafka/json-data", moshi).invoke(it)
+            }
+            .acking {
+                log.info("successfully acked:$it")
+            }
+
+        launch {
+            chainStreamFlow.collect {
+                log.info("recv from Chain: $it :: ${it.block} -> ${it.height}")
+            }
+        }
+
+        launch {
+            kafkaStreamFlow.collect {
+                log.info("recv from Kafka: $it :: ${it.block} -> ${it.height}")
+            }
+        }
     }
 
     // OkHttp leaves a non-daemon executor running in the background. Have to explicitly shut down
@@ -106,7 +227,6 @@ fun main(args: Array<String>) {
     okClient.dispatcher.executorService.shutdownNow()
     okClient.dispatcher.executorService.awaitTermination(3, TimeUnit.SECONDS)
 }
-
 
 private suspend fun Flow<StreamBlock>.collectTo(sink: BlockSink) =
     collect { sink(it) }

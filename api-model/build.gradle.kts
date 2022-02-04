@@ -1,19 +1,7 @@
-import util.extensions.javadocJar
-
 plugins {
-    idea
-    kotlin("jvm")
     kotlin("kapt")
-    id("java-library")
-    id("maven-publish")
-    id("core-config")
-    id("with-linter")
-    id("generate-docs")
     id("org.openapi.generator") version Plugins.OpenAPI
 }
-
-group = rootProject.group
-version = rootProject.version
 
 val TENDERMINT_OPENAPI_YAML = "$rootDir/api-model/src/main/resources/tendermint-v0.34.12-rpc-openapi-FIXED.yaml"
 
@@ -94,24 +82,4 @@ tasks.register<org.openapitools.generator.gradle.plugin.tasks.GenerateTask>("gen
             "useCoroutines" to "true"
         )
     )
-}
-
-publishing {
-    publications {
-        create<MavenPublication>("maven") {
-            groupId = rootProject.group.toString()
-            artifactId = rootProject.name
-            version = rootProject.version.toString()
-            /* Skip outputting the test-fixtures jar:
-            from(
-                util.filterTestFixturesFromComponents(
-                    configurations,
-                    components["java"] as AdhocComponentWithVariants
-                )
-            )
-            */
-            from(components["java"])
-            artifact(project.javadocJar())
-        }
-    }
 }

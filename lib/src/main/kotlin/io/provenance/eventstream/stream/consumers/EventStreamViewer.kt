@@ -3,6 +3,7 @@ package io.provenance.eventstream.stream.consumers
 import io.provenance.eventstream.Factory
 import io.provenance.eventstream.stream.EventStream
 import io.provenance.eventstream.stream.models.StreamBlock
+import io.provenance.eventstream.stream.models.StreamBlockImpl
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.buffer
@@ -39,7 +40,7 @@ class EventStreamViewer(
 
     suspend fun consume(
         error: (Throwable) -> Unit = ::onError,
-        ok: (block: StreamBlock, serialize: (StreamBlock) -> String) -> Unit
+        ok: (block: StreamBlock, serialize: (StreamBlockImpl) -> String) -> Unit
     ) {
         eventStream.streamBlocks()
             .buffer()

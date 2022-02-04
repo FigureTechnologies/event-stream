@@ -1,7 +1,6 @@
 package io.provenance.eventstream.stream
 
 import arrow.core.Either
-import arrow.core.computations.option
 import com.squareup.moshi.JsonDataException
 import com.squareup.moshi.Moshi
 import com.tinder.scarlet.Message
@@ -12,7 +11,7 @@ import io.provenance.eventstream.coroutines.DispatcherProvider
 import io.provenance.eventstream.stream.models.Block
 import io.provenance.eventstream.stream.models.BlockEvent
 import io.provenance.eventstream.stream.models.EncodedBlockchainEvent
-import io.provenance.eventstream.stream.models.StreamBlock
+import io.provenance.eventstream.stream.models.StreamBlockImpl
 import io.provenance.eventstream.stream.models.TxEvent
 import io.provenance.eventstream.stream.models.extensions.blockEvents
 import io.provenance.eventstream.stream.models.extensions.dateTime
@@ -63,7 +62,7 @@ class EventStream(
     private val moshi: Moshi,
     private val dispatchers: DispatcherProvider = DefaultDispatcherProvider(),
     private val options: Options = Options.DEFAULT
-) : BlockSource {
+) : BlockSource<StreamBlockImpl> {
     companion object {
         /**
          * The default number of blocks that will be contained in a batch.
@@ -194,12 +193,12 @@ class EventStream(
     private val responseMessageDecoder: MessageType.Decoder = MessageType.Decoder(moshi)
 
     /**
-     * A serializer function that converts a [StreamBlock] instance to a JSON string.
+     * A serializer function that converts a [StreamBlockImpl] instance to a JSON string.
      *
      * @return (StreamBlock) -> String
      */
-    val serializer: (StreamBlock) -> String =
-        { block: StreamBlock -> moshi.adapter(StreamBlock::class.java).toJson(block) }
+    val serializer: (StreamBlockImpl) -> String =
+        { block: StreamBlockImpl -> moshi.adapter(StreamBlockImpl::class.java).toJson(block) }
 
     /**
      * Computes and returns the starting height (if it can be determined) to be used when streaming historical blocks.
@@ -304,7 +303,11 @@ class EventStream(
      *  @param skipIfNoTxs If [skipIfNoTxs] is true, if the block at the given height has no transactions, null will
      *  be returned in its place.
      */
-    private suspend fun queryBlock(heightOrBlock: Either<Long, Block>, skipIfNoTxs: Boolean = true): StreamBlock? {
+    private suspend fun queryBlock(
+        heightOrBlock: Either<Long, Block>,
+        skipIfNoTxs: Boolean = true,
+        historical: Boolean = false
+    ): StreamBlockImpl? {
         val block: Block? = when (heightOrBlock) {
             is Either.Left<Long> -> tendermintServiceClient.block(heightOrBlock.value).result?.block
             is Either.Right<Block> -> heightOrBlock.value
@@ -319,7 +322,7 @@ class EventStream(
             val blockResponse = tendermintServiceClient.blockResults(header?.height).result
             val blockEvents: List<BlockEvent> = blockResponse.blockEvents(blockDatetime)
             val txEvents: List<TxEvent> = blockResponse.txEvents(blockDatetime) { index: Int -> txHash(index) ?: "" }
-            val streamBlock = StreamBlock(this, blockEvents, txEvents)
+            val streamBlock = StreamBlockImpl(this, blockEvents, txEvents, historical)
             val matchBlock = matchesBlockEvent(blockEvents)
             val matchTx = matchesTxEvent(txEvents)
 
@@ -341,13 +344,13 @@ class EventStream(
      *  block data.
      * @return A Flow of found historical blocks along with events associated with each block, if any.
      */
-    private fun queryBlocks(blockHeights: Iterable<Long>): Flow<StreamBlock> =
+    private fun queryBlocks(blockHeights: Iterable<Long>): Flow<StreamBlockImpl> =
         blockHeights.chunked(options.batchSize).asFlow().transform { chunkOfHeights: List<Long> ->
             emitAll(
                 coroutineScope {
                     // Concurrently process <batch-size> blocks at a time:
                     chunkOfHeights.map { height ->
-                        async { queryBlock(Either.Left(height), skipIfNoTxs = options.skipIfEmpty) }
+                        async { queryBlock(Either.Left(height), skipIfNoTxs = options.skipIfEmpty, historical = true) }
                     }.awaitAll().filterNotNull()
                 }.asFlow()
             )
@@ -363,7 +366,7 @@ class EventStream(
      *
      * @return A flow of historical blocks
      */
-    fun streamHistoricalBlocks(): Flow<StreamBlock> = flow {
+    fun streamHistoricalBlocks(): Flow<StreamBlockImpl> = flow {
         val startHeight: Long = getStartingHeight() ?: run {
             log.warn("No starting height provided; defaulting to 0")
             0
@@ -372,12 +375,12 @@ class EventStream(
         emitAll(streamHistoricalBlocks(startHeight, endHeight))
     }
 
-    private fun streamHistoricalBlocks(startHeight: Long): Flow<StreamBlock> = flow {
+    private fun streamHistoricalBlocks(startHeight: Long): Flow<StreamBlockImpl> = flow {
         val endHeight: Long = getEndingHeight() ?: error("Couldn't determine ending height")
         emitAll(streamHistoricalBlocks(startHeight, endHeight))
     }
 
-    private fun streamHistoricalBlocks(startHeight: Long, endHeight: Long): Flow<StreamBlock> = flow {
+    private fun streamHistoricalBlocks(startHeight: Long, endHeight: Long): Flow<StreamBlockImpl> = flow {
         log.info("historical::streaming blocks from $startHeight to $endHeight")
         log.info("historical::batch size = ${options.batchSize}")
 
@@ -397,7 +400,7 @@ class EventStream(
         log.info("historical::${availableBlocks.size} block(s) in [${heightPairChunk.minOf { it.first }}..${heightPairChunk.maxOf { it.second }}]")
         availableBlocks
     }.flowOn(dispatchers.io()).flatMapMerge(options.concurrency) { queryBlocks(it) }.flowOn(dispatchers.io())
-        .map { it.copy(historical = true) }.onCompletion { cause: Throwable? ->
+        .onCompletion { cause: Throwable? ->
             if (cause == null) {
                 log.info("historical::exhausted historical block stream ok")
             } else {
@@ -410,7 +413,7 @@ class EventStream(
      *
      * @return A Flow of newly minted blocks and associated events
      */
-    fun streamLiveBlocks(): Flow<StreamBlock> {
+    fun streamLiveBlocks(): Flow<StreamBlockImpl> {
 
         // Toggle the Lifecycle register start state:
         eventStreamService.startListening()
@@ -451,7 +454,7 @@ class EventStream(
                 }
             }
         }.flowOn(dispatchers.io()).onStart { log.info("live::starting") }.mapNotNull { block: Block ->
-            val maybeBlock = queryBlock(Either.Right(block), skipIfNoTxs = false)
+            val maybeBlock = queryBlock(Either.Right(block), skipIfNoTxs = false, historical = false)
             if (maybeBlock != null) {
                 log.info("live::got block #${maybeBlock.height}")
                 maybeBlock
@@ -482,7 +485,7 @@ class EventStream(
      *
      * @return A Flow of live and historical blocks, plus associated event data.
      */
-    override fun streamBlocks(): Flow<StreamBlock> = flow {
+    override fun streamBlocks(): Flow<StreamBlockImpl> = flow {
         val startingHeight: Long? = getStartingHeight()
         emitAll(
             if (startingHeight != null) {
