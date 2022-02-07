@@ -8,6 +8,7 @@ import com.tinder.scarlet.WebSocket
 import io.provenance.blockchain.stream.api.BlockSource
 import io.provenance.eventstream.coroutines.DefaultDispatcherProvider
 import io.provenance.eventstream.coroutines.DispatcherProvider
+import io.provenance.eventstream.flow.extensions.chunked
 import io.provenance.eventstream.stream.models.Block
 import io.provenance.eventstream.stream.models.BlockEvent
 import io.provenance.eventstream.stream.models.EncodedBlockchainEvent
@@ -28,31 +29,14 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.DEFAULT_CONCURRENCY
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.asFlow
-import kotlinx.coroutines.flow.cancellable
-import kotlinx.coroutines.flow.channelFlow
-import kotlinx.coroutines.flow.emitAll
-import kotlinx.coroutines.flow.flatMapMerge
-import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.flowOn
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.mapNotNull
-import kotlinx.coroutines.flow.merge
-import kotlinx.coroutines.flow.onCompletion
-import kotlinx.coroutines.flow.onStart
-import kotlinx.coroutines.flow.retryWhen
-import kotlinx.coroutines.flow.transform
+import kotlinx.coroutines.flow.*
 import mu.KotlinLogging
 import java.io.EOFException
 import java.net.ConnectException
 import java.net.SocketException
 import java.net.SocketTimeoutException
 import java.util.concurrent.CompletionException
-import kotlin.math.floor
-import kotlin.math.max
-import kotlin.math.min
+import kotlin.time.Duration
 
 @OptIn(FlowPreview::class, ExperimentalTime::class)
 @ExperimentalCoroutinesApi
@@ -218,7 +202,7 @@ class EventStream(
     /**
      * Returns a sequence of block height pairs [[low, high]], representing a range to query when searching for blocks.
      */
-    private fun getBlockHeightQueryRanges(minHeight: Long, maxHeight: Long): Sequence<Pair<Long, Long>> {
+    fun getBlockHeightQueryRanges(minHeight: Long, maxHeight: Long): Sequence<Pair<Long, Long>> {
         if (minHeight > maxHeight) {
             return emptySequence()
         }
@@ -380,33 +364,30 @@ class EventStream(
         emitAll(streamHistoricalBlocks(startHeight, endHeight))
     }
 
-    private fun streamHistoricalBlocks(startHeight: Long, endHeight: Long): Flow<StreamBlockImpl> = flow {
+    private fun streamHistoricalBlocks(startHeight: Long, endHeight: Long): Flow<StreamBlockImpl> {
         log.info("historical::streaming blocks from $startHeight to $endHeight")
         log.info("historical::batch size = ${options.batchSize}")
 
-        // We're only allowed to query  a block range of (highBlockHeight - lowBlockHeight) = `TENDERMINT_MAX_QUERY_RANGE`
-        // max block heights in a single request. If `Options.batchSize` is greater than this value, then we need to
-        // make N calls to tendermint to the Tendermint API to have enough blocks to meet batchSize.
-        val limit1 = TENDERMINT_MAX_QUERY_RANGE.toDouble()
-        val limit2 = options.batchSize.toDouble()
-        val numChunks: Int = floor(max(limit1, limit2) / min(limit1, limit2)).toInt()
-
-        emitAll(getBlockHeightQueryRanges(startHeight, endHeight).chunked(numChunks).asFlow())
-    }.map { heightPairChunk: List<Pair<Long, Long>> ->
-        val availableBlocks: List<Long> = coroutineScope {
-            heightPairChunk.map { (minHeight, maxHeight) -> async { getBlockHeightsInRange(minHeight, maxHeight) } }
-                .awaitAll().flatten()
-        }
-        log.info("historical::${availableBlocks.size} block(s) in [${heightPairChunk.minOf { it.first }}..${heightPairChunk.maxOf { it.second }}]")
-        availableBlocks
-    }.flowOn(dispatchers.io()).flatMapMerge(options.concurrency) { queryBlocks(it) }.flowOn(dispatchers.io())
-        .onCompletion { cause: Throwable? ->
-            if (cause == null) {
-                log.info("historical::exhausted historical block stream ok")
-            } else {
-                log.error("historical::exhausted block stream with error: ${cause.message}")
+        return MetadataStream(
+            startHeight,
+            endHeight,
+            options.skipIfEmpty,
+            options.concurrency,
+            options.batchSize,
+            tendermintServiceClient
+        ).streamBlocks().chunked(options.batchSize, Duration.parse("PT0.1S")).map { blockmetas ->
+                blockmetas.map {
+                    it.header!!.height } }
+            .flowOn(dispatchers.io()).flatMapMerge(options.concurrency) {
+                queryBlocks(it) }.flowOn(dispatchers.io())
+            .onCompletion { cause: Throwable? ->
+                if (cause == null) {
+                    log.info("historical::exhausted historical block stream ok")
+                } else {
+                    log.error("historical::exhausted block stream with error: ${cause.message}")
+                }
             }
-        }
+    }
 
     /**
      * Constructs a Flow of newly minted blocks and associated events as the blocks are added to the chain.
