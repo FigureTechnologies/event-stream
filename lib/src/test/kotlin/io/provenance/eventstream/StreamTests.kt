@@ -15,14 +15,16 @@ import io.provenance.eventstream.test.base.TestBase
 import io.provenance.eventstream.test.mocks.MockEventStreamService
 import io.provenance.eventstream.test.mocks.MockTendermintServiceClient
 import io.provenance.eventstream.test.mocks.ServiceMocker
-import io.provenance.eventstream.test.utils.Builders
 import io.provenance.eventstream.test.utils.EXPECTED_NONEMPTY_BLOCKS
 import io.provenance.eventstream.test.utils.EXPECTED_TOTAL_BLOCKS
+import io.provenance.eventstream.test.utils.MAX_HISTORICAL_BLOCK_HEIGHT
 import io.provenance.eventstream.test.utils.MIN_HISTORICAL_BLOCK_HEIGHT
+import io.provenance.eventstream.test.utils.Builders
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.count
 import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.DisplayName
@@ -301,6 +303,7 @@ class StreamTests : TestBase() {
                 val collectedNoSkip = Builders.eventStream()
                     .dispatchers(dispatcherProvider)
                     .fromHeight(MIN_HISTORICAL_BLOCK_HEIGHT)
+                    .toHeight(MAX_HISTORICAL_BLOCK_HEIGHT)
                     .skipIfEmpty(false)
                     .build()
                     .streamHistoricalBlocks()
@@ -313,12 +316,46 @@ class StreamTests : TestBase() {
                 val collectedSkip = Builders.eventStream()
                     .dispatchers(dispatcherProvider)
                     .fromHeight(MIN_HISTORICAL_BLOCK_HEIGHT)
+                    .toHeight(MAX_HISTORICAL_BLOCK_HEIGHT)
                     .build()
                     .streamHistoricalBlocks().toList()
                     .toList()
 
                 assert(collectedSkip.size.toLong() == EXPECTED_NONEMPTY_BLOCKS)
                 assert(collectedSkip.all { it.historical })
+            }
+        }
+
+        @OptIn(ExperimentalCoroutinesApi::class, kotlinx.coroutines.FlowPreview::class)
+        @Test
+        fun testMetadataStreaming() {
+
+            dispatcherProvider.runBlockingTest {
+
+                // If not skipping empty blocks, we should get 100:
+                val collectedNoSkip = Builders.metadataStream()
+                    .dispatchers(dispatcherProvider)
+                    .fromHeight(MIN_HISTORICAL_BLOCK_HEIGHT)
+                    .toHeight(MAX_HISTORICAL_BLOCK_HEIGHT)
+                    .skipIfEmpty(false)
+                    .build()
+                    .streamBlocks()
+                    .toList()
+
+                assert(collectedNoSkip.size.toLong() == EXPECTED_TOTAL_BLOCKS)
+
+                // If skipping empty blocks, we should get EXPECTED_NONEMPTY_BLOCKS:
+                val collectedSkip = Builders.metadataStream()
+                    .dispatchers(dispatcherProvider)
+                    .fromHeight(MIN_HISTORICAL_BLOCK_HEIGHT)
+                    .toHeight(MAX_HISTORICAL_BLOCK_HEIGHT)
+                    .skipIfEmpty(true)
+                    .build()
+                    .streamBlocks()
+                    .toList()
+
+                println(collectedSkip.size.toLong())
+                assert(collectedSkip.size.toLong() == EXPECTED_NONEMPTY_BLOCKS)
             }
         }
 
@@ -372,6 +409,7 @@ class StreamTests : TestBase() {
                     .eventStreamService(eventStreamService)
                     .tendermintService(tendermintService)
                     .fromHeight(MIN_HISTORICAL_BLOCK_HEIGHT)
+                    .toHeight(MAX_HISTORICAL_BLOCK_HEIGHT)
                     .skipIfEmpty(true)
                     .build()
 

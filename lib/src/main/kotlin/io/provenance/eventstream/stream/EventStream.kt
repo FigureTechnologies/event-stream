@@ -68,7 +68,8 @@ class EventStream(
         val toHeight: Long?,
         val skipIfEmpty: Boolean,
         val blockEventPredicate: ((event: String) -> Boolean)?,
-        val txEventPredicate: ((event: String) -> Boolean)?
+        val txEventPredicate: ((event: String) -> Boolean)?,
+        val ordered: Boolean = true
     ) {
         companion object {
             val DEFAULT: Options = Builder().build()
@@ -97,6 +98,7 @@ class EventStream(
             private var skipIfEmpty: Boolean = true
             private var blockEventPredicate: ((event: String) -> Boolean)? = null
             private var txEventPredicate: ((event: String) -> Boolean)? = null
+            private var ordered: Boolean = true
 
             /**
              * Sets the concurrency level when merging disparate streams of block data.
@@ -139,6 +141,13 @@ class EventStream(
             fun skipIfEmpty(value: Boolean) = apply { skipIfEmpty = value }
 
             /**
+             * Toggles ordering blocks that as they arrive.
+             *
+             * @param value If true, incoming blocks will be ordered by height.
+             */
+            fun ordered(value: Boolean) = apply { ordered = value }
+
+            /**
              * Filter blocks by one or more specific block events (case-insensitive).
              * Only blocks possessing the specified block event(s) will be streamed.
              *
@@ -164,7 +173,8 @@ class EventStream(
                 toHeight = toHeight,
                 skipIfEmpty = skipIfEmpty,
                 blockEventPredicate = blockEventPredicate,
-                txEventPredicate = txEventPredicate
+                txEventPredicate = txEventPredicate,
+                ordered = ordered
             )
         }
     }
@@ -198,57 +208,6 @@ class EventStream(
      */
     private suspend fun getEndingHeight(): Long? =
         options.toHeight ?: tendermintServiceClient.abciInfo().result?.response?.lastBlockHeight
-
-    /**
-     * Returns a sequence of block height pairs [[low, high]], representing a range to query when searching for blocks.
-     */
-    fun getBlockHeightQueryRanges(minHeight: Long, maxHeight: Long): Sequence<Pair<Long, Long>> {
-        if (minHeight > maxHeight) {
-            return emptySequence()
-        }
-        val step = TENDERMINT_MAX_QUERY_RANGE
-        return sequence {
-            var i = minHeight
-            var j = i + step - 1
-            while (j <= maxHeight) {
-                yield(Pair(i, j))
-                i = j + 1
-                j = i + step - 1
-            }
-            // If there's a gap between the last range and `maxHeight`, yield one last pair to fill it:
-            if (i <= maxHeight) {
-                yield(Pair(i, maxHeight))
-            }
-        }
-    }
-
-    /**
-     * Returns the heights of all existing blocks in a height range [[low, high]], subject to certain conditions.
-     *
-     * - If [Options.skipIfEmpty] is true, only blocks which contain 1 or more transactions will be returned.
-     *
-     * @return A list of block heights
-     */
-    private suspend fun getBlockHeightsInRange(minHeight: Long, maxHeight: Long): List<Long> {
-        if (minHeight > maxHeight) {
-            return emptyList()
-        }
-
-        // invariant
-        assert((maxHeight - minHeight) <= TENDERMINT_MAX_QUERY_RANGE) {
-            "Difference between (minHeight, maxHeight) can be at maximum $TENDERMINT_MAX_QUERY_RANGE"
-        }
-
-        val blocks = tendermintServiceClient.blockchain(minHeight, maxHeight).result?.blockMetas.let {
-            if (options.skipIfEmpty) {
-                it?.filter { it.numTxs ?: 0 > 0 }
-            } else {
-                it
-            }
-        }?.mapNotNull { it.header?.height } ?: emptyList()
-
-        return blocks.sortedWith(naturalOrder())
-    }
 
     /**
      * Test if any block events match the supplied predicate.
@@ -364,29 +323,44 @@ class EventStream(
         emitAll(streamHistoricalBlocks(startHeight, endHeight))
     }
 
-    private fun streamHistoricalBlocks(startHeight: Long, endHeight: Long): Flow<StreamBlockImpl> {
+    private fun streamHistoricalBlocks(startHeight: Long, endHeight: Long): Flow<StreamBlockImpl> = flow {
         log.info("historical::streaming blocks from $startHeight to $endHeight")
         log.info("historical::batch size = ${options.batchSize}")
 
-        return MetadataStream(
-            startHeight,
-            endHeight,
-            options.skipIfEmpty,
-            options.concurrency,
-            options.batchSize,
-            tendermintServiceClient
-        ).streamBlocks().chunked(options.batchSize, Duration.parse("PT0.1S")).map { blockmetas ->
-                blockmetas.map {
-                    it.header!!.height } }
-            .flowOn(dispatchers.io()).flatMapMerge(options.concurrency) {
-                queryBlocks(it) }.flowOn(dispatchers.io())
-            .onCompletion { cause: Throwable? ->
-                if (cause == null) {
-                    log.info("historical::exhausted historical block stream ok")
-                } else {
-                    log.error("historical::exhausted block stream with error: ${cause.message}")
-                }
+        emitAll(
+            MetadataStream(
+                startHeight,
+                endHeight,
+                options.skipIfEmpty,
+                options.concurrency,
+                options.batchSize,
+                tendermintServiceClient
+            ).streamBlocks()
+        )
+    }
+        .chunked(options.batchSize, endHeight)
+        .flowOn(dispatchers.io())
+        .transform { blockmetas -> emit(blockmetas.map { it.header!!.height }) }
+        .doFlatMap(options.ordered, concurrency = options.concurrency) { queryBlocks(it) }
+        .flowOn(dispatchers.io())
+        .onCompletion { cause: Throwable? ->
+            if (cause == null) {
+                log.info("historical::exhausted historical block stream ok")
+            } else {
+                log.error("historical::exhausted block stream with error: ${cause.message}")
             }
+        }
+
+    private fun <T, R> Flow<List<T>>.doFlatMap(
+        ordered: Boolean,
+        concurrency: Int,
+        block: (List<T>) -> Flow<R>
+    ): Flow<R> {
+        return if (ordered) {
+            flatMapConcat { block(it) }
+        } else {
+            flatMapMerge(concurrency) { block(it) }
+        }
     }
 
     /**

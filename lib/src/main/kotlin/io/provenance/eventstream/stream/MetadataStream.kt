@@ -1,10 +1,15 @@
 package io.provenance.eventstream.stream
 
+import io.provenance.eventstream.stream.EventStream.Options
 import io.provenance.eventstream.stream.models.BlockMeta
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.asFlow
+import kotlinx.coroutines.flow.emitAll
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flatMapConcat
 import mu.KotlinLogging
 import kotlin.math.floor
 import kotlin.math.max
@@ -39,13 +44,16 @@ class MetadataStream(
         emitAll(getBlockHeightQueryRanges(fromHeight, toHeight).chunked(numChunks).asFlow())
     }.flatMapConcat { heightPairChunk: List<Pair<Long, Long>> ->
         val availableBlocks: List<BlockMeta> = coroutineScope {
-            heightPairChunk.map { (minHeight, maxHeight) -> async { getBlockHeightsInRange(minHeight, maxHeight) } }
+            heightPairChunk.map { (minHeight, maxHeight) -> async { getMetadataInRange(minHeight, maxHeight) } }
                 .awaitAll().flatten()
         }
         log.info("metadata::${availableBlocks.size} block(s) in [${heightPairChunk.minOf { it.first }}..${heightPairChunk.maxOf { it.second }}]")
         availableBlocks.asFlow()
     }
 
+    /**
+     * Returns a sequence of block height pairs [[low, high]], representing a range to query when searching for blocks.
+     */
     fun getBlockHeightQueryRanges(minHeight: Long, maxHeight: Long): Sequence<Pair<Long, Long>> {
         if (minHeight > maxHeight) {
             return emptySequence()
@@ -66,7 +74,14 @@ class MetadataStream(
         }
     }
 
-    private suspend fun getBlockHeightsInRange(minHeight: Long, maxHeight: Long): List<BlockMeta> {
+    /**
+     * Returns the metadata of all existing blocks in a height range [[low, high]], subject to certain conditions.
+     *
+     * - If [Options.skipIfEmpty] is true, only blocks which contain 1 or more transactions will be returned.
+     *
+     * @return A list of block metadata
+     */
+    private suspend fun getMetadataInRange(minHeight: Long, maxHeight: Long): List<BlockMeta> {
         if (minHeight > maxHeight) {
             return emptyList()
         }

@@ -14,6 +14,7 @@ import io.provenance.eventstream.stream.models.StreamBlock
 import io.provenance.eventstream.stream.observers.fileOutput
 import io.provenance.eventstream.stream.kafkaBlockSource
 import io.provenance.eventstream.stream.EventStream
+import io.provenance.eventstream.stream.MetadataStream
 import io.provenance.eventstream.stream.kafkaBlockSink
 import kotlinx.cli.ArgParser
 import kotlinx.cli.ArgType
@@ -184,7 +185,6 @@ fun main(args: Array<String>) {
 
     val okClient = defaultOkHttpClient()
     val stream = defaultEventStream(config, options, okClient)
-
     System.setProperty("kotlinx.coroutines.debug", "on")
 
     runBlocking {
