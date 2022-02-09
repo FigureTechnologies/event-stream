@@ -24,7 +24,6 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.count
 import kotlinx.coroutines.flow.toList
-import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.DisplayName
@@ -300,7 +299,7 @@ class StreamTests : TestBase() {
             dispatcherProvider.runBlockingTest {
 
                 // If not skipping empty blocks, we should get 100:
-                val collectedNoSkip = Builders.eventStream()
+                val collectedNoSkip = Builders.historicalStream()
                     .dispatchers(dispatcherProvider)
                     .fromHeight(MIN_HISTORICAL_BLOCK_HEIGHT)
                     .toHeight(MAX_HISTORICAL_BLOCK_HEIGHT)
@@ -313,7 +312,7 @@ class StreamTests : TestBase() {
                 assert(collectedNoSkip.all { it.historical })
 
                 // If skipping empty blocks, we should get EXPECTED_NONEMPTY_BLOCKS:
-                val collectedSkip = Builders.eventStream()
+                val collectedSkip = Builders.historicalStream()
                     .dispatchers(dispatcherProvider)
                     .fromHeight(MIN_HISTORICAL_BLOCK_HEIGHT)
                     .toHeight(MAX_HISTORICAL_BLOCK_HEIGHT)
@@ -372,14 +371,14 @@ class StreamTests : TestBase() {
                 val tendermintService = Builders.tendermintService()
                     .build(MockTendermintServiceClient::class.java)
 
-                val eventStream = Builders.eventStream()
+                val liveStream = Builders.liveStream()
                     .dispatchers(dispatcherProvider)
                     .eventStreamService(eventStreamService)
                     .tendermintService(tendermintService)
                     .skipIfEmpty(false)
                     .build()
 
-                val collected = eventStream
+                val collected = liveStream
                     .streamLiveBlocks()
                     .toList()
 

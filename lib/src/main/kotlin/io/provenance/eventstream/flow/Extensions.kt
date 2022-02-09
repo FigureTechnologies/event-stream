@@ -1,7 +1,14 @@
 package io.provenance.eventstream.flow.extensions
 
 import io.provenance.eventstream.stream.models.BlockMeta
-import kotlinx.coroutines.*
+import kotlinx.coroutines.InternalCoroutinesApi
+import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.FlowCollector
@@ -10,8 +17,6 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.collect
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
-import tendermint.types.Types
-import kotlin.concurrent.timer
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.time.Duration
@@ -82,7 +87,7 @@ private suspend fun <T> getChunk(channel: Channel<T>, maxChunkSize: Int): List<T
  * @param timeout If an element is not emitted in the specified duration, the buffer will be emitted downstream if
  *  it is non-empty.
  */
-@OptIn(InternalCoroutinesApi::class)
+@OptIn(InternalCoroutinesApi::class, ExperimentalCoroutinesApi::class)
 fun <T> Flow<T>.chunked(maxSize: Int, endHeight: Long): Flow<List<T>> {
     val buffer = Channel<T>(maxSize)
     return channelFlow {
@@ -94,10 +99,15 @@ fun <T> Flow<T>.chunked(maxSize: Int, endHeight: Long): Flow<List<T>> {
             }
             launch {
                 while (!buffer.isClosedForReceive) {
-                    val chunk = getChunk(buffer, maxSize)
+                    var chunk = getChunk(buffer, maxSize)
+                    var lastItem = chunk.last()
+                    // ugly
+                    while (chunk.size < maxSize && (lastItem is BlockMeta && lastItem.header!!.height != endHeight)) {
+                        chunk = chunk.plus(getChunk(buffer, maxSize - chunk.size))
+                        lastItem = chunk.last()
+                    }
                     this@channelFlow.send(chunk)
-                    val lastItem = chunk.last()
-                    if ( lastItem is BlockMeta && lastItem.header!!.height == endHeight) {
+                    if (lastItem is BlockMeta && lastItem.header!!.height == endHeight) {
                         buffer.close()
                     }
                 }
