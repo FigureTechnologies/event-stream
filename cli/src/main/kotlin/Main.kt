@@ -2,8 +2,8 @@ package io.provenance.eventstream
 
 import io.provenance.eventstream.config.Config
 import io.provenance.eventstream.config.Environment
+import io.provenance.eventstream.config.Options
 import io.provenance.eventstream.extensions.repeatDecodeBase64
-import io.provenance.eventstream.stream.EventStream
 import io.provenance.eventstream.stream.consumers.EventStreamViewer
 import io.provenance.eventstream.stream.models.StreamBlock
 import io.provenance.eventstream.stream.models.extensions.dateTime
@@ -77,7 +77,7 @@ fun main(args: Array<String>) {
             """.trimMargin("|")
         )
 
-        val options = EventStream.Options
+        val options = Options
             .Builder()
             .batchSize(config.eventStream.batch.size)
             .fromHeight(fromHeight?.toLong())

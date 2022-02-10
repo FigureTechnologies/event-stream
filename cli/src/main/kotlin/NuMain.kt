@@ -1,20 +1,19 @@
 package io.provenance.eventstream
 
 import io.provenance.blockchain.stream.api.BlockSink
-import io.provenance.eventstream.config.BatchConfig
 import io.provenance.eventstream.config.Config
 import io.provenance.eventstream.config.EventStreamConfig
+import io.provenance.eventstream.config.WebsocketStreamConfig
 import io.provenance.eventstream.config.RpcStreamConfig
 import io.provenance.eventstream.config.StreamEventsFilterConfig
-import io.provenance.eventstream.config.WebsocketStreamConfig
+import io.provenance.eventstream.config.BatchConfig
+import io.provenance.eventstream.config.Options
 import io.provenance.eventstream.flow.kafka.acking
 import io.provenance.eventstream.observers.kafkaFileOutput
 import io.provenance.eventstream.stream.infrastructure.Serializer.moshi
 import io.provenance.eventstream.stream.models.StreamBlock
 import io.provenance.eventstream.stream.observers.fileOutput
 import io.provenance.eventstream.stream.kafkaBlockSource
-import io.provenance.eventstream.stream.EventStream
-import io.provenance.eventstream.stream.MetadataStream
 import io.provenance.eventstream.stream.kafkaBlockSink
 import kotlinx.cli.ArgParser
 import kotlinx.cli.ArgType
@@ -173,7 +172,7 @@ fun main(args: Array<String>) {
         }
     }
 
-    val options = EventStream.Options(
+    val options = Options(
         batchSize = batchSize,
         fromHeight = fromHeight?.toLong(),
         toHeight = toHeight?.toLong(),

@@ -1,6 +1,5 @@
 package io.provenance.eventstream.stream
 
-import io.provenance.eventstream.stream.EventStream.Options
 import io.provenance.eventstream.stream.models.BlockMeta
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
