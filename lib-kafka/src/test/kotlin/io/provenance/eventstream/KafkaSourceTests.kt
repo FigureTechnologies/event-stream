@@ -48,20 +48,20 @@ class KafkaSourceTests : TestBase() {
 
     @BeforeAll
     override fun setup() {
-        var blockResponses = mutableMapOf<String, BlockResponse>()
-        var blockResultsResponses = mutableMapOf<String, BlockResultsResponse>()
+        val blockResponses = mutableMapOf<String, BlockResponse>()
+        val blockResultsResponses = mutableMapOf<String, BlockResultsResponse>()
         templates.readAll("block").forEach {
             val adapter: JsonAdapter<BlockResponse> = moshi.adapter(BlockResponse::class.java)
             val blockResponse = adapter.fromJson(it)
-            blockResponses[blockResponse!!.result!!.block!!.header!!.height.toString()] = blockResponse!!
+            blockResponses[blockResponse!!.result!!.block!!.header!!.height.toString()] = blockResponse
         }
         templates.readAll("block_results").forEach {
             val adapter: JsonAdapter<BlockResultsResponse> = moshi.adapter(BlockResultsResponse::class.java)
             val blockResultsResponse = adapter.fromJson(it)
-            blockResultsResponses[blockResultsResponse!!.result.height.toString()] = blockResultsResponse!!
+            blockResultsResponses[blockResultsResponse!!.result.height.toString()] = blockResultsResponse
         }
         blockResultsResponses.forEach { k, v ->
-            val blockEvents = v!!.result.beginBlockEvents!!.map {
+            val blockEvents = v.result.beginBlockEvents!!.map {
                 BlockEvent(v.result.height, OffsetDateTime.now(), it.type!!, it.attributes!!)
             }
             streamBlocks[k] = StreamBlockImpl(blockResponses[k]!!.result!!.block!!, blockEvents, mutableListOf())
@@ -89,7 +89,7 @@ class KafkaSourceTests : TestBase() {
     fun testStreamBlockByteArrayExtensionsIncompatibleValue() {
         val streamBytes = "failStrin".toByteArray()
         assertThrows<SerializationException> {
-            streamBytes!!.toStreamBlock()
+            streamBytes.toStreamBlock()
         }
     }
 

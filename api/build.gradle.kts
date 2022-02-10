@@ -1,12 +1,10 @@
 plugins {
     kotlin("jvm")
-    id("core-config")
-    id("with-linter")
-    id("generate-docs")
 }
 
-group = rootProject.group
-version = rootProject.version
+repositories {
+    mavenCentral()
+}
 
 dependencies {
     api(project(":api-model"))

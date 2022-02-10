@@ -1,12 +1,13 @@
 plugins {
-    id("com.google.protobuf") version Plugins.Protobuf
-    idea
-    id("maven-publish")
-    id("core-config")
-    id("with-linter")
+    kotlin("jvm")
+    kotlin("kapt")
+    id("com.google.protobuf") version Versions.Plugins.Protobuf
     id("with-test-fixtures")
-    id("java-test-fixtures")
-    id("generate-docs")
+    id("core-config")
+}
+
+repositories {
+    mavenCentral()
 }
 
 dependencies {

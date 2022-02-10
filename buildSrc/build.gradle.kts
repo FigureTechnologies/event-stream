@@ -2,7 +2,8 @@ plugins {
     `kotlin-dsl`
 }
 
-val kotlinVersion = "1.5.31"
+val gradleNexusVersion = "1.1.0"
+val kotlinVersion = "1.6.0"
 val ktLintVersion = "10.2.0"
 val dokkaVersion = kotlinVersion
 
@@ -17,6 +18,7 @@ ext {
 }
 
 dependencies {
+    implementation("io.github.gradle-nexus", "publish-plugin", gradleNexusVersion)
     implementation("org.jetbrains.kotlin", "kotlin-gradle-plugin", kotlinVersion)
     implementation("org.jlleitschuh.gradle", "ktlint-gradle", ktLintVersion)
     implementation("org.jetbrains.dokka", "dokka-gradle-plugin", dokkaVersion)

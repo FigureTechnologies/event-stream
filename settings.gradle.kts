@@ -12,8 +12,7 @@ gradle.rootProject {
         group = "io.provenance.eventstream"
         version = libraryVersion
         description =
-            "A library for receiving real-time and historical block, block event, and transaction event data " +
-                    "from the Provenance block chain."
+            "A library for receiving real-time and historical block, block event, and transaction event data from the Provenance block chain."
     }
 }
 

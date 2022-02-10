@@ -7,12 +7,12 @@ import io.provenance.eventstream.stream.models.BlockResultsResponse
 import io.provenance.eventstream.stream.models.StreamBlockImpl
 import io.provenance.eventstream.test.base.TestBase
 import io.provenance.eventstream.test.utils.Defaults
-import junit.framework.Assert.assertEquals
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import org.apache.kafka.clients.CommonClientConfigs
 import org.apache.kafka.clients.producer.MockProducer
 import org.apache.kafka.clients.producer.ProducerConfig
 import org.apache.kafka.common.serialization.Serdes
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import java.lang.RuntimeException

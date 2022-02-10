@@ -1,8 +1,10 @@
 plugins {
     kotlin("jvm")
-    id("core-config")
-    id("with-linter")
     application
+}
+
+repositories {
+    mavenCentral()
 }
 
 group = rootProject.group

@@ -1,24 +1,23 @@
 plugins {
+    kotlin("jvm")
     kotlin("kapt")
-    id("org.openapi.generator") version Plugins.OpenAPI
+    id("org.openapi.generator") version Versions.Plugins.OpenAPI
+}
+
+repositories {
+    mavenCentral()
 }
 
 val TENDERMINT_OPENAPI_YAML = "$rootDir/api-model/src/main/resources/tendermint-v0.34.12-rpc-openapi-FIXED.yaml"
 
 dependencies {
-    implementation(platform("org.jetbrains.kotlin:kotlin-bom"))
-    implementation("org.jetbrains.kotlin", "kotlin-stdlib")
-    implementation("org.jetbrains.kotlin", "kotlin-reflect")
-    implementation("org.jetbrains.kotlinx", "kotlinx-datetime", Versions.Kotlinx.DateTime)
-    implementation("org.jetbrains.kotlinx", "kotlinx-coroutines-core", Versions.Kotlinx.Core)
-    implementation("org.jetbrains.kotlinx", "kotlinx-coroutines-jdk8", Versions.Kotlinx.Core)
-    implementation("org.jetbrains.kotlinx", "kotlinx-coroutines-reactive", Versions.Kotlinx.Core)
+    api("org.apache.commons", "commons-lang3", Versions.ApacheCommons.Lang3)
+    api("com.tinder.scarlet", "scarlet", Versions.Scarlet)
+    api("com.tinder.scarlet", "stream-adapter-coroutines", Versions.Scarlet)
+    api("com.tinder.scarlet", "websocket-okhttp", Versions.Scarlet)
+    api("com.tinder.scarlet", "message-adapter-moshi", Versions.Scarlet)
+
     implementation("io.arrow-kt", "arrow-core", Versions.Arrow)
-    implementation("org.apache.commons", "commons-lang3", Versions.ApacheCommons.Lang3)
-    implementation("com.tinder.scarlet", "scarlet", Versions.Scarlet)
-    implementation("com.tinder.scarlet", "stream-adapter-coroutines", Versions.Scarlet)
-    implementation("com.tinder.scarlet", "websocket-okhttp", Versions.Scarlet)
-    implementation("com.tinder.scarlet", "message-adapter-moshi", Versions.Scarlet)
     implementation("io.grpc", "grpc-alts", Versions.GRPC)
     implementation("io.grpc", "grpc-netty", Versions.GRPC)
     implementation("io.grpc", "grpc-protobuf", Versions.GRPC)

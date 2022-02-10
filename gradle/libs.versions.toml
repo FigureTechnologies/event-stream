@@ -1,0 +1,37 @@
+[versions]
+arrow = "1.0.1"
+bouncyCastle = "1.70"
+commonsLang = "3.12.0"
+commonsText = "1.9"
+grpc = "1.39.0"
+hoplite = "1.4.15"
+junitCore = "5.3.1"
+junitPioneer = "1.4.2"
+json = "20210307"
+kotlinxCore = "1.5.2"
+kotlinxCLI = "0.3.3"
+kotlinxDateTime = "0.3.0"
+kotlinLogging = "2.0.11"
+logback = "1.2.3"
+moshi = "1.13.0"
+okHttp = "4.9.3"
+provenance = "1.5.0"
+scarlet = "0.1.2"
+kafka = "3.0.0"
+
+pluginProtobuf = "0.18.7"
+pluginNexusPublishPlugin = "1.1.0"
+pluginOpenAPI = "5.2.1"
+
+[libraries]
+commons-lang = { module = "org.apache.commons:commons-lang3", version.ref = "commonsLang" }
+commons-text = { module = "org.apache.commons:commons-text", version.ref = "commonsText" }
+
+
+[plugins]
+plugins-publish-nexus = { id = "io.github.gradle-nexus.publish-plugin", version.ref = "pluginNexusPublishPlugin" }
+plugins-protobuf = { id = "com.google.protobuf", version.ref = "pluginProtobuf" }
+plugins-openapi-generator = { id = "org.openapi.generator", version.ref = "pluginOpenAPI" }
+
+[bundles]
+apacheCommons = ["commons-lang", "commons-text"]
