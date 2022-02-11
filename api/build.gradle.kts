@@ -1,13 +1,7 @@
 plugins {
-    kotlin("jvm")
-}
-
-repositories {
-    mavenCentral()
+    id("core-config")
 }
 
 dependencies {
-    api(project(":api-model"))
-
-    implementation("org.jetbrains.kotlinx", "kotlinx-coroutines-core", Versions.Kotlinx.Core)
+    implementation(projects.apiModel)
 }

@@ -42,7 +42,6 @@ dependencies {
     implementation("io.github.microutils", "kotlin-logging-jvm", Versions.KotlinLogging)
 
     testImplementation("org.jetbrains.kotlinx", "kotlinx-coroutines-test", Versions.Kotlinx.Core)
-
     testImplementation("org.junit.jupiter", "junit-jupiter-api", Versions.JUnit.Core)
     testImplementation("org.junit.jupiter", "junit-jupiter-engine", Versions.JUnit.Core)
     testImplementation("org.junit-pioneer", "junit-pioneer", Versions.JUnit.Pioneer)

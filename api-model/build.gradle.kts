@@ -1,49 +1,31 @@
 plugins {
     kotlin("jvm")
     kotlin("kapt")
-    id("org.openapi.generator") version Versions.Plugins.OpenAPI
+    id("core-config")
+    id("org.openapi.generator") version(Versions.Plugins.OpenAPI)
 }
-
-repositories {
-    mavenCentral()
-}
-
-val TENDERMINT_OPENAPI_YAML = "$rootDir/api-model/src/main/resources/tendermint-v0.34.12-rpc-openapi-FIXED.yaml"
 
 dependencies {
-    api("org.apache.commons", "commons-lang3", Versions.ApacheCommons.Lang3)
-    api("com.tinder.scarlet", "scarlet", Versions.Scarlet)
-    api("com.tinder.scarlet", "stream-adapter-coroutines", Versions.Scarlet)
-    api("com.tinder.scarlet", "websocket-okhttp", Versions.Scarlet)
-    api("com.tinder.scarlet", "message-adapter-moshi", Versions.Scarlet)
+    kapt(libs.moshi.kotlin.codegen)
 
-    implementation("io.arrow-kt", "arrow-core", Versions.Arrow)
-    implementation("io.grpc", "grpc-alts", Versions.GRPC)
-    implementation("io.grpc", "grpc-netty", Versions.GRPC)
-    implementation("io.grpc", "grpc-protobuf", Versions.GRPC)
-    implementation("io.grpc", "grpc-stub", Versions.GRPC)
-    runtimeOnly("ch.qos.logback", "logback-classic", Versions.LogBack)
-    implementation("io.github.microutils", "kotlin-logging-jvm", Versions.KotlinLogging)
-    implementation("com.squareup.moshi", "moshi-kotlin-codegen", Versions.Moshi)
-    kapt("com.squareup.moshi:moshi-kotlin-codegen:${Versions.Moshi}")
-    implementation("com.sksamuel.hoplite", "hoplite-core", Versions.Hoplite)
-    implementation("com.sksamuel.hoplite", "hoplite-yaml", Versions.Hoplite)
-    implementation("org.json", "json", Versions.JSON)
+    implementation(libs.bundles.grpc)
+    implementation(libs.bundles.hoplite)
+    implementation(libs.bundles.scarlet)
+
+    implementation(libs.arrow)
+    implementation(libs.commons.lang)
+    implementation(libs.json)
 }
 
 sourceSets {
     main {
-        java {
-            srcDirs(
-                "$projectDir/api-model/src/main/kotlin",
-                "$buildDir/generated/src/main/kotlin"
-            )
-        }
+        java.srcDirs(
+            "$projectDir/api-model/src/main/kotlin",
+            "$buildDir/generated/src/main/kotlin",
+        )
     }
     test {
-        java {
-            srcDir("$projectDir/api-model/src/test/kotlin")
-        }
+        java.srcDir("$projectDir/api-model/src/test/kotlin")
     }
 }
 
@@ -56,6 +38,8 @@ project.afterEvaluate {
     tasks.get("kaptGenerateStubsKotlin").dependsOn("generateTendermintAPI")
 }
 
+val tendermintOpenApiYaml = "$rootDir/api-model/src/main/resources/tendermint-v0.34.12-rpc-openapi-FIXED.yaml"
+
 /**
  * See the following links for information about generating models from an OpenAPI spec:
  * - https://github.com/OpenAPITools/openapi-generator/tree/master/modules/openapi-generator-gradle-plugin
@@ -66,7 +50,7 @@ tasks.register<org.openapitools.generator.gradle.plugin.tasks.GenerateTask>("gen
     generatorName.set("kotlin")
     verbose.set(false)
     validateSpec.set(true)
-    inputSpec.set(TENDERMINT_OPENAPI_YAML)
+    inputSpec.set(tendermintOpenApiYaml)
     outputDir.set("$buildDir/generated")
     packageName.set("io.provenance.eventstream.stream")
     modelPackage.set("io.provenance.eventstream.stream.models")

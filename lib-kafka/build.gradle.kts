@@ -1,17 +1,15 @@
 plugins {
     kotlin("jvm")
-    id("core-config")
-}
 
-repositories {
-    mavenCentral()
+    id("core-config")
+    id("with-test-fixtures")
 }
 
 dependencies {
-    api(project(":api"))
-    api(project(":api-model"))
-    api("org.apache.kafka:kafka-clients:3.0.0")
+    implementation(projects.api)
+    implementation(projects.apiModel)
+    implementation(libs.kafka)
+    implementation(libs.moshi.core)
 
-    testApi(project(":lib"))
-    testApi(testFixtures(project(":lib")))
+    testImplementation(testFixtures(projects.lib))
 }

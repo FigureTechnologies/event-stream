@@ -2,16 +2,16 @@ package io.provenance.eventstream.stream
 
 import io.provenance.blockchain.stream.api.BlockSink
 import io.provenance.eventstream.flow.kafka.toByteArray
-import io.provenance.eventstream.stream.models.StreamBlockImpl
 import io.provenance.eventstream.stream.models.StreamBlock
+import io.provenance.eventstream.stream.models.StreamBlockImpl
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.withContext
-import org.apache.kafka.clients.producer.ProducerRecord
 import org.apache.kafka.clients.producer.KafkaProducer
 import org.apache.kafka.clients.producer.Producer
 import org.apache.kafka.clients.producer.ProducerConfig
+import org.apache.kafka.clients.producer.ProducerRecord
 import org.apache.kafka.clients.producer.RecordMetadata
 import org.apache.kafka.common.serialization.Serdes
 import java.time.Duration
