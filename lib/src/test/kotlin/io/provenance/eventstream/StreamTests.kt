@@ -371,14 +371,14 @@ class StreamTests : TestBase() {
                 val tendermintService = Builders.tendermintService()
                     .build(MockTendermintServiceClient::class.java)
 
-                val liveStream = Builders.liveStream()
+                val eventStream = Builders.eventStream()
                     .dispatchers(dispatcherProvider)
                     .eventStreamService(eventStreamService)
                     .tendermintService(tendermintService)
                     .skipIfEmpty(false)
                     .build()
 
-                val collected = liveStream
+                val collected = eventStream
                     .streamLiveBlocks()
                     .toList()
 

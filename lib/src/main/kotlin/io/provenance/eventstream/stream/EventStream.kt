@@ -1,6 +1,7 @@
 package io.provenance.eventstream.stream
 
 import arrow.core.Either
+import com.squareup.moshi.JsonDataException
 import com.squareup.moshi.Moshi
 import io.provenance.blockchain.stream.api.BlockSource
 import io.provenance.eventstream.config.Options
@@ -8,6 +9,7 @@ import io.provenance.eventstream.coroutines.DefaultDispatcherProvider
 import io.provenance.eventstream.coroutines.DispatcherProvider
 import io.provenance.eventstream.extensions.doFlatMap
 import io.provenance.eventstream.flow.extensions.chunked
+import io.provenance.eventstream.stream.models.Block
 import io.provenance.eventstream.stream.models.BlockMeta
 import io.provenance.eventstream.stream.models.StreamBlockImpl
 import io.provenance.eventstream.stream.transformers.queryBlock
@@ -19,18 +21,20 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.InternalCoroutinesApi
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.cancellable
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.emitAll
+import kotlinx.coroutines.flow.merge
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.retryWhen
 import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.transform
-import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.flowOn
-import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.merge
-import kotlinx.coroutines.flow.cancellable
 import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.onCompletion
-import kotlinx.coroutines.flow.retryWhen
 import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.onStart
+import kotlinx.coroutines.flow.mapNotNull
 import kotlin.time.ExperimentalTime
 import mu.KotlinLogging
 import java.io.EOFException
@@ -101,49 +105,22 @@ class EventStream(
             )
         }.flowOn(dispatchers.io())
 
+    fun streamLiveBlocks(): Flow<StreamBlockImpl> {
+        return streamLiveMetaBlocks()
+            .toLiveStream()
+    }
+
     fun streamHistoricalBlocks(): Flow<StreamBlockImpl> {
         return streamMetaBlocks()
             .toHistoricalStream()
     }
 
-    fun streamMetaBlocks(): Flow<BlockMeta> {
-        return MetadataStream(options, tendermintServiceClient).streamBlocks()
+    fun streamLiveMetaBlocks(): Flow<Block> {
+        return LiveMetaDataStream(eventStreamService, tendermintServiceClient, moshi, dispatchers, options).streamBlocks()
     }
 
-    /**
-     * Constructs a Flow of live and historical blocks, plus associated event data.
-     *
-     * If a starting height is provided, historical blocks will be included in the Flow from the starting height, up
-     * to the latest block height determined at the start of the collection of the Flow.
-     *
-     * @return A Flow of live and historical blocks, plus associated event data.
-     */
-    override fun streamBlocks(): Flow<StreamBlockImpl> = flow {
-        val startingHeight: Long? = options.fromHeight
-        val liveStream = LiveStream(eventStreamService, tendermintServiceClient, moshi, dispatchers, options)
-        emitAll(
-            if (startingHeight != null) {
-                log.info("Listening for live and historical blocks from height $startingHeight")
-                merge(
-                    streamHistoricalBlocks(),
-                    liveStream.streamBlocks()
-                )
-            } else {
-                log.info("Listening for live blocks only")
-                liveStream.streamBlocks()
-            }
-        )
-    }.cancellable().retryWhen { cause: Throwable, attempt: Long ->
-        log.warn("streamBlocks::error; recovering Flow (attempt ${attempt + 1})")
-        when (cause) {
-            is EOFException, is CompletionException, is ConnectException, is SocketTimeoutException, is SocketException -> {
-                val duration = backoff(attempt, jitter = false)
-                log.error("Reconnect attempt #$attempt; waiting ${duration.inWholeSeconds}s before trying again: $cause")
-                delay(duration)
-                true
-            }
-            else -> false
-        }
+    fun streamMetaBlocks(): Flow<BlockMeta> {
+        return MetadataStream(options, tendermintServiceClient).streamBlocks()
     }
 
     @OptIn(InternalCoroutinesApi::class, ExperimentalCoroutinesApi::class)
@@ -169,6 +146,45 @@ class EventStream(
         }
     }
 
+    @OptIn(InternalCoroutinesApi::class, ExperimentalCoroutinesApi::class)
+    fun Flow<Block>.toLiveStream(): Flow<StreamBlockImpl> {
+
+        return channelFlow {
+            this@toLiveStream
+                .flowOn(dispatchers.io())
+                .onStart { log.info("live::starting") }
+                .mapNotNull { block: Block ->
+                    val maybeBlock = queryBlock(
+                        Either.Right(block),
+                        skipIfNoTxs = false,
+                        historical = false,
+                        tendermintServiceClient,
+                        options
+                    )
+                    if (maybeBlock != null) {
+                        log.info("live::got block #${maybeBlock.height}")
+                        maybeBlock
+                    } else {
+                        log.info("live::skipping block #${block.header?.height}")
+                        null
+                    }
+                }.onCompletion {
+                    log.info("live::stopping event stream")
+                    eventStreamService.stopListening()
+                }.retryWhen { cause: Throwable, attempt: Long ->
+                    log.warn("live::error; recovering Flow (attempt ${attempt + 1})")
+                    when (cause) {
+                        is JsonDataException -> {
+                            log.error("streamLiveBlocks::parse error, skipping: $cause")
+                            true
+                        }
+                        else -> false
+                    }
+                }
+                .collect { this@channelFlow.send(it) }
+        }
+    }
+
     /**
      * Computes and returns the ending height (if it can be determined) tobe used when streaming historical blocks.
      *
@@ -176,4 +192,39 @@ class EventStream(
      */
     private suspend fun getEndingHeight(): Long? =
         options.toHeight ?: tendermintServiceClient.abciInfo().result?.response?.lastBlockHeight
+
+    /**
+     * Constructs a Flow of live and historical blocks, plus associated event data.
+     *
+     * If a starting height is provided, historical blocks will be included in the Flow from the starting height, up
+     * to the latest block height determined at the start of the collection of the Flow.
+     *
+     * @return A Flow of live and historical blocks, plus associated event data.
+     */
+    override fun streamBlocks(): Flow<StreamBlockImpl> = flow {
+        val startingHeight: Long? = options.fromHeight
+        emitAll(
+            if (startingHeight != null) {
+                log.info("Listening for live and historical blocks from height $startingHeight")
+                merge(
+                    streamHistoricalBlocks(),
+                    streamLiveBlocks()
+                )
+            } else {
+                log.info("Listening for live blocks only")
+                streamLiveBlocks()
+            }
+        )
+    }.cancellable().retryWhen { cause: Throwable, attempt: Long ->
+        log.warn("streamBlocks::error; recovering Flow (attempt ${attempt + 1})")
+        when (cause) {
+            is EOFException, is CompletionException, is ConnectException, is SocketTimeoutException, is SocketException -> {
+                val duration = backoff(attempt, jitter = false)
+                log.error("Reconnect attempt #$attempt; waiting ${duration.inWholeSeconds}s before trying again: $cause")
+                delay(duration)
+                true
+            }
+            else -> false
+        }
+    }
 }
