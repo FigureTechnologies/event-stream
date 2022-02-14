@@ -299,7 +299,7 @@ class StreamTests : TestBase() {
             dispatcherProvider.runBlockingTest {
 
                 // If not skipping empty blocks, we should get 100:
-                val collectedNoSkip = Builders.historicalStream()
+                val collectedNoSkip = Builders.eventStream()
                     .dispatchers(dispatcherProvider)
                     .fromHeight(MIN_HISTORICAL_BLOCK_HEIGHT)
                     .toHeight(MAX_HISTORICAL_BLOCK_HEIGHT)
@@ -312,12 +312,12 @@ class StreamTests : TestBase() {
                 assert(collectedNoSkip.all { it.historical })
 
                 // If skipping empty blocks, we should get EXPECTED_NONEMPTY_BLOCKS:
-                val collectedSkip = Builders.historicalStream()
+                val collectedSkip = Builders.eventStream()
                     .dispatchers(dispatcherProvider)
                     .fromHeight(MIN_HISTORICAL_BLOCK_HEIGHT)
                     .toHeight(MAX_HISTORICAL_BLOCK_HEIGHT)
                     .build()
-                    .streamHistoricalBlocks().toList()
+                    .streamHistoricalBlocks()
                     .toList()
 
                 assert(collectedSkip.size.toLong() == EXPECTED_NONEMPTY_BLOCKS)
@@ -332,25 +332,25 @@ class StreamTests : TestBase() {
             dispatcherProvider.runBlockingTest {
 
                 // If not skipping empty blocks, we should get 100:
-                val collectedNoSkip = Builders.metadataStream()
+                val collectedNoSkip = Builders.eventStream()
                     .dispatchers(dispatcherProvider)
                     .fromHeight(MIN_HISTORICAL_BLOCK_HEIGHT)
                     .toHeight(MAX_HISTORICAL_BLOCK_HEIGHT)
                     .skipIfEmpty(false)
                     .build()
-                    .streamBlocks()
+                    .streamMetaBlocks()
                     .toList()
 
                 assert(collectedNoSkip.size.toLong() == EXPECTED_TOTAL_BLOCKS)
 
                 // If skipping empty blocks, we should get EXPECTED_NONEMPTY_BLOCKS:
-                val collectedSkip = Builders.metadataStream()
+                val collectedSkip = Builders.eventStream()
                     .dispatchers(dispatcherProvider)
                     .fromHeight(MIN_HISTORICAL_BLOCK_HEIGHT)
                     .toHeight(MAX_HISTORICAL_BLOCK_HEIGHT)
                     .skipIfEmpty(true)
                     .build()
-                    .streamBlocks()
+                    .streamMetaBlocks()
                     .toList()
 
                 println(collectedSkip.size.toLong())

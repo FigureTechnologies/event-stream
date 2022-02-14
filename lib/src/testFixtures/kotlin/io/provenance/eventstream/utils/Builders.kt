@@ -6,8 +6,6 @@ import io.provenance.eventstream.coroutines.DispatcherProvider
 import io.provenance.eventstream.stream.EventStreamService
 import io.provenance.eventstream.stream.TendermintServiceClient
 import io.provenance.eventstream.stream.EventStream
-import io.provenance.eventstream.stream.MetadataStream
-import io.provenance.eventstream.stream.HistoricalStream
 import io.provenance.eventstream.stream.LiveStream
 import io.provenance.eventstream.stream.models.ABCIInfoResponse
 import io.provenance.eventstream.stream.models.BlockResponse
@@ -105,75 +103,6 @@ object Builders {
     /**
      * Create a mock of the Provenance block event stream.
      */
-    data class MetadataStreamBuilder(val builders: Builders) {
-        var dispatchers: DispatcherProvider? = null
-        var eventStreamService: EventStreamService? = null
-        var tendermintServiceClient: TendermintServiceClient? = null
-        var moshi: Moshi? = null
-        var options: Options.Builder = Options.Builder()
-
-        fun <T : TendermintServiceClient> tendermintService(value: T) = apply { tendermintServiceClient = value }
-        fun dispatchers(value: DispatcherProvider) = apply { dispatchers = value }
-        fun options(value: Options.Builder) = apply { options = value }
-
-        // shortcuts for options:
-        fun batchSize(value: Int) = apply { options.batchSize(value) }
-        fun fromHeight(value: Long) = apply { options.fromHeight(value) }
-        fun toHeight(value: Long) = apply { options.toHeight(value) }
-        fun skipIfEmpty(value: Boolean) = apply { options.skipIfEmpty(value) }
-        fun matchBlockEvent(predicate: (event: String) -> Boolean) = apply { options.matchBlockEvent(predicate) }
-        fun matchTxEvent(predicate: (event: String) -> Boolean) = apply { options.matchTxEvent(predicate) }
-        fun build(): MetadataStream {
-            val dispatchers = dispatchers ?: error("dispatchers must be provided")
-            return MetadataStream(
-                fromHeight = options.build().fromHeight!!,
-                toHeight = options.build().toHeight!!,
-                tendermintServiceClient = tendermintServiceClient
-                    ?: builders.tendermintService().build(MockTendermintServiceClient::class.java),
-                skipIfEmpty = options.build().skipIfEmpty,
-                batchSize = options.build().batchSize,
-                concurrencyLimit = options.build().concurrency
-            )
-        }
-    }
-
-    /**
-     * Create a mock of the Provenance block event stream.
-     */
-    data class HistoricalStreamBuilder(val builders: Builders) {
-        var dispatchers: DispatcherProvider? = null
-        var tendermintServiceClient: TendermintServiceClient? = null
-        var moshi: Moshi? = null
-        var options: Options.Builder = Options.Builder()
-        var includeLiveBlocks: Boolean = true
-
-        fun <T : TendermintServiceClient> tendermintService(value: T) = apply { tendermintServiceClient = value }
-        fun dispatchers(value: DispatcherProvider) = apply { dispatchers = value }
-        fun options(value: Options.Builder) = apply { options = value }
-        fun includeLiveBlocks(value: Boolean) = apply { includeLiveBlocks = value }
-
-        // shortcuts for options:
-        fun batchSize(value: Int) = apply { options.batchSize(value) }
-        fun fromHeight(value: Long) = apply { options.fromHeight(value) }
-        fun toHeight(value: Long) = apply { options.toHeight(value) }
-        fun skipIfEmpty(value: Boolean) = apply { options.skipIfEmpty(value) }
-        fun matchBlockEvent(predicate: (event: String) -> Boolean) = apply { options.matchBlockEvent(predicate) }
-        fun matchTxEvent(predicate: (event: String) -> Boolean) = apply { options.matchTxEvent(predicate) }
-
-        fun build(): HistoricalStream {
-            val dispatchers = dispatchers ?: error("dispatchers must be provided")
-            return HistoricalStream(
-                tendermintServiceClient = tendermintServiceClient
-                    ?: builders.tendermintService().build(MockTendermintServiceClient::class.java),
-                dispatchers = dispatchers,
-                options = options.build()
-            )
-        }
-    }
-
-    /**
-     * Create a mock of the Provenance block event stream.
-     */
     data class LiveStreamBuilder(val builders: Builders) {
         var dispatchers: DispatcherProvider? = null
         var eventStreamService: EventStreamService? = null
@@ -215,7 +144,5 @@ object Builders {
     }
 
     fun eventStream(): EventStreamBuilder = EventStreamBuilder(this)
-    fun metadataStream(): MetadataStreamBuilder = MetadataStreamBuilder((this))
-    fun historicalStream(): HistoricalStreamBuilder = HistoricalStreamBuilder((this))
     fun liveStream(): LiveStreamBuilder = LiveStreamBuilder((this))
 }

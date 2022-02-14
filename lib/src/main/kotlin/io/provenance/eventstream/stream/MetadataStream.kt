@@ -1,5 +1,6 @@
 package io.provenance.eventstream.stream
 
+import io.provenance.eventstream.config.Options
 import io.provenance.eventstream.stream.models.BlockMeta
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -15,11 +16,7 @@ import kotlin.math.max
 import kotlin.math.min
 
 class MetadataStream(
-    val fromHeight: Long,
-    val toHeight: Long,
-    val skipIfEmpty: Boolean,
-    val concurrencyLimit: Int,
-    val batchSize: Int,
+    val options: Options,
     val tendermintServiceClient: TendermintServiceClient
 ) {
 
@@ -30,17 +27,22 @@ class MetadataStream(
     }
 
     private fun queryMetadata() = flow {
-        log.info("metadata::streaming blocks from $fromHeight to $toHeight")
-        log.info("metadata::batch size = $batchSize")
+        log.info("metadata::streaming blocks from $options.fromHeight to $options.toHeight")
+        log.info("metadata::batch size = ${options.batchSize}")
 
         // We're only allowed to query  a block range of (highBlockHeight - lowBlockHeight) = `TENDERMINT_MAX_QUERY_RANGE`
         // max block heights in a single request. If `Options.batchSize` is greater than this value, then we need to
         // make N calls to tendermint to the Tendermint API to have enough blocks to meet batchSize.
         val limit1 = EventStream.TENDERMINT_MAX_QUERY_RANGE.toDouble()
-        val limit2 = batchSize.toDouble()
+        val limit2 = options.batchSize.toDouble()
         val numChunks: Int = floor(max(limit1, limit2) / min(limit1, limit2)).toInt()
+        val endHeight: Long = getEndingHeight() ?: error("Couldn't determine ending height")
+        val startHeight: Long = getStartingHeight() ?: run {
+            log.warn("No starting height provided; defaulting to 0")
+            0
+        }
 
-        emitAll(getBlockHeightQueryRanges(fromHeight, toHeight).chunked(numChunks).asFlow())
+        emitAll(getBlockHeightQueryRanges(startHeight, endHeight).chunked(numChunks).asFlow())
     }.flatMapConcat { heightPairChunk: List<Pair<Long, Long>> ->
         val availableBlocks: List<BlockMeta> = coroutineScope {
             heightPairChunk.map { (minHeight, maxHeight) -> async { getMetadataInRange(minHeight, maxHeight) } }
@@ -74,6 +76,21 @@ class MetadataStream(
     }
 
     /**
+     * Computes and returns the ending height (if it can be determined) tobe used when streaming historical blocks.
+     *
+     * @return Long? The ending block height to use, if it exists.
+     */
+    private suspend fun getEndingHeight(): Long? =
+        options.toHeight ?: tendermintServiceClient.abciInfo().result?.response?.lastBlockHeight
+
+    /**
+     * Computes and returns the starting height (if it can be determined) to be used when streaming historical blocks.
+     *
+     * @return Long? The starting block height to use, if it exists.
+     */
+    private fun getStartingHeight(): Long? = options.fromHeight
+
+    /**
      * Returns the metadata of all existing blocks in a height range [[low, high]], subject to certain conditions.
      *
      * - If [Options.skipIfEmpty] is true, only blocks which contain 1 or more transactions will be returned.
@@ -91,7 +108,7 @@ class MetadataStream(
         }
 
         val blocks = tendermintServiceClient.blockchain(minHeight, maxHeight).result?.blockMetas.let {
-            if (skipIfEmpty) {
+            if (options.skipIfEmpty) {
                 it?.filter { it.numTxs ?: 0 > 0 }
             } else {
                 it
