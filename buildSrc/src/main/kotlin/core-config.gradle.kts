@@ -8,11 +8,12 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
  * See https://docs.gradle.org/current/samples/sample_building_kotlin_applications_multi_project.html
  */
 plugins {
+    // Gradle plugins.
     kotlin("jvm")
-    id("org.jetbrains.kotlin.kapt")
-
-    id("generate-docs")
     id("java-library")
+
+    // Internal plugins.
+    id("with-docs")
     id("with-linter")
 }
 
@@ -33,7 +34,6 @@ dependencies {
     implementation("org.jetbrains.kotlin", "kotlin-reflect")
     implementation("org.jetbrains.kotlin", "kotlin-stdlib")
     implementation("org.jetbrains.kotlin", "kotlin-stdlib-jdk8")
-
     implementation("org.jetbrains.kotlinx", "kotlinx-datetime", Versions.Kotlinx.DateTime)
     implementation("org.jetbrains.kotlinx", "kotlinx-coroutines-core", Versions.Kotlinx.Core)
     implementation("org.jetbrains.kotlinx", "kotlinx-coroutines-jdk8", Versions.Kotlinx.Core)
@@ -42,6 +42,7 @@ dependencies {
     implementation("io.github.microutils", "kotlin-logging-jvm", Versions.KotlinLogging)
 
     testImplementation("org.jetbrains.kotlinx", "kotlinx-coroutines-test", Versions.Kotlinx.Core)
+
     testImplementation("org.junit.jupiter", "junit-jupiter-api", Versions.JUnit.Core)
     testImplementation("org.junit.jupiter", "junit-jupiter-engine", Versions.JUnit.Core)
     testImplementation("org.junit-pioneer", "junit-pioneer", Versions.JUnit.Pioneer)

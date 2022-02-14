@@ -1,5 +1,11 @@
 rootProject.name = "provenance-event-stream"
 
+pluginManagement {
+    repositories {
+        gradlePluginPortal()
+    }
+}
+
 // Adapted from https://stackoverflow.com/a/60456440
 gradle.rootProject {
     /**

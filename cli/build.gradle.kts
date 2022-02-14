@@ -18,6 +18,7 @@ dependencies {
     implementation(libs.bundles.logback)
     implementation(libs.bundles.moshi)
 
+    implementation(libs.kafka)
     implementation(libs.kotlinx.cli)
     implementation(libs.okhttp.client)
 }

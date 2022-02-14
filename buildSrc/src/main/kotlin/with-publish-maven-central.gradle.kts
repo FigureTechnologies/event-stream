@@ -7,7 +7,6 @@ import org.gradle.kotlin.dsl.repositories
 import org.gradle.plugins.signing.SigningExtension
 
 plugins {
-    id("java-library")
     id("signing")
     id("maven-publish")
     id("io.github.gradle-nexus.publish-plugin")
