@@ -1,9 +1,5 @@
 package io.provenance.eventstream.flow.kafka
 
-import io.provenance.blockchain.stream.api.BlockSink
-import io.provenance.eventstream.flow.kafka.toByteArray
-import io.provenance.eventstream.stream.models.StreamBlockImpl
-import io.provenance.eventstream.stream.models.StreamBlock
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
@@ -11,9 +7,7 @@ import kotlinx.coroutines.withContext
 import org.apache.kafka.clients.producer.ProducerRecord
 import org.apache.kafka.clients.producer.KafkaProducer
 import org.apache.kafka.clients.producer.Producer
-import org.apache.kafka.clients.producer.ProducerConfig
 import org.apache.kafka.clients.producer.RecordMetadata
-import org.apache.kafka.common.serialization.Serdes
 import java.time.Duration
 import java.util.concurrent.Future
 import java.util.concurrent.TimeUnit
@@ -39,13 +33,7 @@ class KafkaSink<K, V>(
         sendHelper(block, key).asDeferred().await()
     }
 
-    private fun sendHelper(block: V, key: K): Future<RecordMetadata> {
-        return kafkaProducer.send(ProducerRecord(topicName, key, block))
+    fun sendHelper(block: V, key: K): Future<RecordMetadata> {
+        return kafkaProducer!!.send(ProducerRecord(topicName, key, block))
     }
-
-
-//    override suspend fun invoke(block: StreamBlock) {
-//        val key = "${block.block.header!!.chainId}.${block.height}"
-//        send(block as StreamBlockImpl, key, kafkaProducer).asDeferred().await()
-//    }
 }

@@ -1,5 +1,6 @@
 package io.provenance.eventstream
 
+import io.provenance.eventstream.flow.kafka.toByteArray
 import io.provenance.eventstream.stream.kafkaBlockSink
 import io.provenance.eventstream.stream.models.BlockEvent
 import io.provenance.eventstream.stream.models.BlockResponse
@@ -51,7 +52,7 @@ class KafkaSinkTests : TestBase() {
 
         val expectedKey = "${blockResponse.result!!.block!!.header!!.chainId}.${blockResponse.result!!.block!!.header!!.height}"
 
-        val record = kafkaBlockSink(producerProps, "testTopic").send(streamBlock, expectedKey, mockProducer)
+        val record = kafkaBlockSink(producerProps, "testTopic", mockProducer).kafkaSink.sendHelper(streamBlock.toByteArray()!!, expectedKey.toByteArray())
 
         mockProducer.completeNext()
 
@@ -66,7 +67,6 @@ class KafkaSinkTests : TestBase() {
     fun testKafkaSinkSendFail() = dispatcherProvider.runBlockingTest {
 
         val serializer = Serdes.ByteArray().serializer()
-
         val producerProps = mapOf(
             CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG to "localhost:9092",
             CommonClientConfigs.CLIENT_ID_CONFIG to ("test0"),
@@ -74,7 +74,9 @@ class KafkaSinkTests : TestBase() {
             ProducerConfig.ENABLE_IDEMPOTENCE_CONFIG to true,
             ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG to serializer.javaClass,
             ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG to serializer.javaClass,
-        )
+            ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG to serializer.javaClass,
+            ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG to serializer.javaClass,
+            )
 
         val mockProducer: MockProducer<ByteArray, ByteArray> =
             MockProducer(false, serializer, serializer)
@@ -90,7 +92,7 @@ class KafkaSinkTests : TestBase() {
 
         val expectedKey = "${blockResponse.result!!.block!!.header!!.chainId}.${blockResponse.result!!.block!!.header!!.height}"
 
-        val record = kafkaBlockSink(producerProps, "testTopic").send(streamBlock, expectedKey, mockProducer)
+        val record = kafkaBlockSink(producerProps, "testTopic", mockProducer).kafkaSink.sendHelper(streamBlock.toByteArray()!!, expectedKey.toByteArray())
 
         val e = RuntimeException()
         mockProducer.errorNext(e)
