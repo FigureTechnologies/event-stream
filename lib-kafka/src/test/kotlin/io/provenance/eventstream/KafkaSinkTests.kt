@@ -1,11 +1,11 @@
 package io.provenance.eventstream
 
-import io.provenance.eventstream.flow.kafka.toByteArray
 import io.provenance.eventstream.stream.kafkaBlockSink
 import io.provenance.eventstream.stream.models.BlockEvent
 import io.provenance.eventstream.stream.models.BlockResponse
 import io.provenance.eventstream.stream.models.BlockResultsResponse
 import io.provenance.eventstream.stream.models.StreamBlockImpl
+import io.provenance.eventstream.stream.toByteArray
 import io.provenance.eventstream.test.base.TestBase
 import io.provenance.eventstream.test.utils.Defaults
 import junit.framework.Assert.assertEquals
@@ -50,9 +50,13 @@ class KafkaSinkTests : TestBase() {
         val streamBlock = StreamBlockImpl(blockResponse!!.result!!.block!!, blockEvents, mutableListOf())
         assert(mockProducer.history().isEmpty())
 
-        val expectedKey = "${blockResponse.result!!.block!!.header!!.chainId}.${blockResponse.result!!.block!!.header!!.height}"
+        val expectedKey =
+            "${blockResponse.result!!.block!!.header!!.chainId}.${blockResponse.result!!.block!!.header!!.height}"
 
-        val record = kafkaBlockSink(producerProps, "testTopic", mockProducer).kafkaSink.sendHelper(streamBlock.toByteArray()!!, expectedKey.toByteArray())
+        val record = kafkaBlockSink(producerProps, "testTopic", mockProducer).kafkaSink.sendHelper(
+            streamBlock.toByteArray()!!,
+            expectedKey.toByteArray()
+        )
 
         mockProducer.completeNext()
 
@@ -76,7 +80,7 @@ class KafkaSinkTests : TestBase() {
             ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG to serializer.javaClass,
             ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG to serializer.javaClass,
             ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG to serializer.javaClass,
-            )
+        )
 
         val mockProducer: MockProducer<ByteArray, ByteArray> =
             MockProducer(false, serializer, serializer)
@@ -90,9 +94,13 @@ class KafkaSinkTests : TestBase() {
         }
         val streamBlock = StreamBlockImpl(blockResponse!!.result!!.block!!, blockEvents, mutableListOf())
 
-        val expectedKey = "${blockResponse.result!!.block!!.header!!.chainId}.${blockResponse.result!!.block!!.header!!.height}"
+        val expectedKey =
+            "${blockResponse.result!!.block!!.header!!.chainId}.${blockResponse.result!!.block!!.header!!.height}"
 
-        val record = kafkaBlockSink(producerProps, "testTopic", mockProducer).kafkaSink.sendHelper(streamBlock.toByteArray()!!, expectedKey.toByteArray())
+        val record = kafkaBlockSink(producerProps, "testTopic", mockProducer).kafkaSink.sendHelper(
+            streamBlock.toByteArray()!!,
+            expectedKey.toByteArray()
+        )
 
         val e = RuntimeException()
         mockProducer.errorNext(e)

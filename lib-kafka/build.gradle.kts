@@ -1,6 +1,7 @@
 dependencies {
     api(project(":api"))
     api(project(":api-model"))
+    api(project(":kafka-coroutine"))
 
     // https://mvnrepository.com/artifact/org.apache.kafka/kafka-clients
     api("org.apache.kafka:kafka-clients:3.0.0")
