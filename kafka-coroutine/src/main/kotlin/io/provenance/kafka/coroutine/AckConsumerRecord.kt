@@ -1,4 +1,4 @@
-package io.provenance.eventstream.flow.kafka
+package io.provenance.kafka.coroutine
 
 import org.apache.kafka.clients.consumer.ConsumerRecord
 
