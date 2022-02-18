@@ -1,11 +1,10 @@
 package io.provenance.eventstream.stream
 
-import io.provenance.eventstream.flow.kafka.UnAckedConsumerRecord
-import io.provenance.eventstream.flow.kafka.toStreamBlock
 import io.provenance.eventstream.stream.models.Block
 import io.provenance.eventstream.stream.models.BlockEvent
 import io.provenance.eventstream.stream.models.StreamBlock
 import io.provenance.eventstream.stream.models.TxEvent
+import io.provenance.kafka.coroutine.UnAckedConsumerRecord
 
 data class KafkaStreamBlock<K, V>(
     val record: UnAckedConsumerRecord<ByteArray, ByteArray>,

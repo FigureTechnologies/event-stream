@@ -1,4 +1,4 @@
-package io.provenance.eventstream.flow.kafka
+package io.provenance.kafka.coroutine
 
 import java.time.Duration
 import kotlinx.coroutines.channels.SendChannel
