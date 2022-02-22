@@ -1,6 +1,5 @@
 package io.provenance.eventstream.stream
 
-import arrow.core.Either
 import com.squareup.moshi.JsonDataException
 import com.squareup.moshi.Moshi
 import com.tinder.scarlet.Message
@@ -304,14 +303,11 @@ class EventStream(
      *  be returned in its place.
      */
     private suspend fun queryBlock(
-        heightOrBlock: Either<Long, Block>,
+        height: Long,
         skipIfNoTxs: Boolean = true,
         historical: Boolean = false
     ): StreamBlockImpl? {
-        val block: Block? = when (heightOrBlock) {
-            is Either.Left<Long> -> tendermintServiceClient.block(heightOrBlock.value).result?.block
-            is Either.Right<Block> -> heightOrBlock.value
-        }
+        val block: Block? = tendermintServiceClient.block(height).result?.block
 
         if (skipIfNoTxs && (block?.data?.txs?.size ?: 0) == 0) {
             return null
@@ -350,7 +346,7 @@ class EventStream(
                 coroutineScope {
                     // Concurrently process <batch-size> blocks at a time:
                     chunkOfHeights.map { height ->
-                        async { queryBlock(Either.Left(height), skipIfNoTxs = options.skipIfEmpty, historical = true) }
+                        async { queryBlock(height, skipIfNoTxs = options.skipIfEmpty, historical = true) }
                     }.awaitAll().filterNotNull()
                 }.asFlow()
             )
@@ -434,7 +430,7 @@ class EventStream(
                                 is MessageType.NewBlock -> {
                                     val block = type.block.data.value.block
                                     log.info("live::received NewBlock message: #${block.header?.height}")
-                                    send(block)
+                                    send(block.header!!.height)
                                 }
                                 is MessageType.Error -> log.error("upstream error from RPC endpoint: ${type.error}")
                                 is MessageType.Panic -> {
@@ -453,13 +449,13 @@ class EventStream(
                     else -> throw Throwable("live::unexpected event type: $event")
                 }
             }
-        }.flowOn(dispatchers.io()).onStart { log.info("live::starting") }.mapNotNull { block: Block ->
-            val maybeBlock = queryBlock(Either.Right(block), skipIfNoTxs = false, historical = false)
+        }.flowOn(dispatchers.io()).onStart { log.info("live::starting") }.mapNotNull { height: Long ->
+            val maybeBlock = queryBlock(height, skipIfNoTxs = false, historical = false)
             if (maybeBlock != null) {
                 log.info("live::got block #${maybeBlock.height}")
                 maybeBlock
             } else {
-                log.info("live::skipping block #${block.header?.height}")
+                log.info("live::skipping block #${height}")
                 null
             }
         }.onCompletion {
