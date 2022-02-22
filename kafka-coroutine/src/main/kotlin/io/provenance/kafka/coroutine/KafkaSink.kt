@@ -13,10 +13,10 @@ import java.util.concurrent.Future
 import java.util.concurrent.TimeUnit
 import kotlin.coroutines.CoroutineContext
 
-suspend fun <T> Future<T>.asDeferred(timeout: Duration? = null, coroutineContext: CoroutineContext = Dispatchers.IO): Deferred<T> {
+suspend fun <T> Future<T>.asDeferred(timeout: Duration = Duration.ZERO, coroutineContext: CoroutineContext = Dispatchers.IO): Deferred<T> {
     return withContext(coroutineContext) {
         async {
-            if (timeout == null) get()
+            if (timeout == Duration.ZERO) get()
             else get(timeout.toMillis(), TimeUnit.MILLISECONDS)
         }
     }
