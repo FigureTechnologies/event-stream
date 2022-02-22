@@ -6,30 +6,39 @@ import org.gradle.kotlin.dsl.get
 import org.gradle.kotlin.dsl.repositories
 import org.gradle.plugins.signing.SigningExtension
 
-plugins {
-    id("signing")
-    id("maven-publish")
-    id("io.github.gradle-nexus.publish-plugin")
-}
 
 repositories {
     mavenCentral()
 }
 
+plugins {
+    `maven-publish`
+    `java-library`
+    signing
+    id("io.github.gradle-nexus.publish-plugin")
+}
+
+group = rootProject.group
+version = rootProject.version
+
+val nexusUser = findProperty("nexusUser")?.toString() ?: System.getenv("NEXUS_USER")
+val nexusPass = findProperty("nexusPass")?.toString() ?: System.getenv("NEXUS_PASS")
+
+
 val artifactName = if (name.startsWith("event-stream")) name else "event-stream-${name.replace("lib-", "")}"
 val projectVersion = version.toString()
 
-//nexusPublishing {
-//    repositories {
-//        sonatype {
-//            nexusUrl.set(uri("https://s01.oss.sonatype.org/service/local/"))
-//            snapshotRepositoryUrl.set(uri("https://s01.oss.sonatype.org/content/repositories/snapshots/"))
-//            username.set(findProject("ossrhUsername")?.toString() ?: System.getenv("OSSRH_USERNAME"))
-//            password.set(findProject("ossrhPassword")?.toString() ?: System.getenv("OSSRH_PASSWORD"))
-//            stagingProfileId.set("3180ca260b82a7") // prevents querying for the staging profile id, performance optimization
-//        }
-//    }
-//}
+configure<io.github.gradlenexus.publishplugin.NexusPublishExtension> {
+    repositories {
+        sonatype {
+            nexusUrl.set(uri("https://s01.oss.sonatype.org/service/local/"))
+            snapshotRepositoryUrl.set(uri("https://s01.oss.sonatype.org/content/repositories/snapshots/"))
+            username.set(findProject("ossrhUsername")?.toString() ?: System.getenv("OSSRH_USERNAME"))
+            password.set(findProject("ossrhPassword")?.toString() ?: System.getenv("OSSRH_PASSWORD"))
+            stagingProfileId.set("3180ca260b82a7") // prevents querying for the staging profile id, performance optimization
+        }
+    }
+}
 
 configure<PublishingExtension> {
     publications {
@@ -87,6 +96,6 @@ configure<PublishingExtension> {
     }
 
     configure<SigningExtension> {
-        sign(publishing.publications["maven"])
+        sign(publications["maven"])
     }
 }
