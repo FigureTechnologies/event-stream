@@ -27,6 +27,6 @@ class KafkaBlockSink(
 
     override suspend fun invoke(block: StreamBlock) {
         val key = "${block.block.header!!.chainId}.${block.height}"
-        kafkaSink.send((block as StreamBlockImpl).toByteArray()!!, key.toByteArray())
+        kafkaSink.send(key.toByteArray(), (block as StreamBlockImpl).toByteArray()!!)
     }
 }

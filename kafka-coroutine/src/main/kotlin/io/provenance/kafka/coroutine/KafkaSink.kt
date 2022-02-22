@@ -29,11 +29,11 @@ class KafkaSink<K, V>(
     val kafkaProducer: Producer<K, V> = KafkaProducer(producerProps)
 ) {
 
-    suspend fun send(block: V, key: K) {
-        sendHelper(block, key).asDeferred().await()
+    suspend fun send(key: K, block: V) {
+        sendHelper(key, block).asDeferred().await()
     }
 
-    fun sendHelper(block: V, key: K): Future<RecordMetadata> {
+    fun sendHelper(key: K, block: V): Future<RecordMetadata> {
         return kafkaProducer!!.send(ProducerRecord(topicName, key, block))
     }
 }
