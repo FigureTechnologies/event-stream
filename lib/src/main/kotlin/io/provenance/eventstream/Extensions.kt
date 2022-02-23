@@ -1,5 +1,9 @@
 package io.provenance.eventstream.extensions
 
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flatMapConcat
+import kotlinx.coroutines.flow.flatMapMerge
+import org.apache.commons.lang3.StringUtils
 import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
 import java.util.Base64
@@ -49,6 +53,17 @@ fun String.repeatDecodeBase64(): String {
  */
 fun OffsetDateTime.toISOString() = this.format(DateTimeFormatter.ISO_DATE_TIME).toString()
 
+fun <T, R> Flow<List<T>>.doFlatMap(
+    ordered: Boolean,
+    concurrency: Int,
+    block: (List<T>) -> Flow<R>
+): Flow<R> {
+    return if (ordered) {
+        flatMapConcat { block(it) }
+    } else {
+        flatMapMerge(concurrency) { block(it) }
+    }
+}
 // === ByteArray methods ===============================================================================================
 
 /**

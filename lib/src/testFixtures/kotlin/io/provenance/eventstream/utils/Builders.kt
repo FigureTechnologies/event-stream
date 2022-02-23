@@ -1,10 +1,11 @@
 package io.provenance.eventstream.test.utils
 
 import com.squareup.moshi.Moshi
+import io.provenance.eventstream.config.Options
 import io.provenance.eventstream.coroutines.DispatcherProvider
-import io.provenance.eventstream.stream.EventStream
 import io.provenance.eventstream.stream.EventStreamService
 import io.provenance.eventstream.stream.TendermintServiceClient
+import io.provenance.eventstream.stream.EventStream
 import io.provenance.eventstream.stream.models.ABCIInfoResponse
 import io.provenance.eventstream.stream.models.BlockResponse
 import io.provenance.eventstream.stream.models.BlockResultsResponse
@@ -63,14 +64,14 @@ object Builders {
         var eventStreamService: EventStreamService? = null
         var tendermintServiceClient: TendermintServiceClient? = null
         var moshi: Moshi? = null
-        var options: EventStream.Options.Builder = EventStream.Options.Builder()
+        var options: Options.Builder = Options.Builder()
         var includeLiveBlocks: Boolean = true
 
         fun <T : EventStreamService> eventStreamService(value: T) = apply { eventStreamService = value }
         fun <T : TendermintServiceClient> tendermintService(value: T) = apply { tendermintServiceClient = value }
         fun moshi(value: Moshi) = apply { moshi = value }
         fun dispatchers(value: DispatcherProvider) = apply { dispatchers = value }
-        fun options(value: EventStream.Options.Builder) = apply { options = value }
+        fun options(value: Options.Builder) = apply { options = value }
         fun includeLiveBlocks(value: Boolean) = apply { includeLiveBlocks = value }
 
         // shortcuts for options:

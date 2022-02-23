@@ -8,6 +8,7 @@ plugins {
 dependencies {
     implementation(projects.api)
     implementation(projects.apiModel)
+    implementation(projects.kafkaCoroutine)
     implementation(libs.kafka)
     implementation(libs.moshi.core)
 
