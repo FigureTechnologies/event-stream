@@ -1,6 +1,5 @@
 package io.provenance.eventstream.stream
 
-import arrow.core.Either
 import com.squareup.moshi.JsonDataException
 import com.squareup.moshi.Moshi
 import com.tinder.scarlet.Message
@@ -82,7 +81,7 @@ class LiveStream(
             }
         }.flowOn(dispatchers.io()).onStart { log.info("live::starting") }.mapNotNull { block: Block ->
             val maybeBlock = queryBlock(
-                Either.Right(block),
+                block.header!!.height,
                 skipIfNoTxs = false,
                 historical = false,
                 tendermintServiceClient,

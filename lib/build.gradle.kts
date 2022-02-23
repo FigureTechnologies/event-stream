@@ -13,7 +13,6 @@ dependencies {
     api(project(":api"))
     api(project(":api-model"))
 
-    implementation("io.arrow-kt", "arrow-core", Versions.Arrow)
     implementation("org.apache.commons", "commons-lang3", Versions.ApacheCommons.Lang3)
     implementation("com.tinder.scarlet", "scarlet", Versions.Scarlet)
     implementation("com.tinder.scarlet", "stream-adapter-coroutines", Versions.Scarlet)

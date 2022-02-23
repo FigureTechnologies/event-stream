@@ -1,6 +1,5 @@
 package io.provenance.eventstream.stream.transformers
 
-import arrow.core.Either
 import io.provenance.eventstream.config.Options
 import io.provenance.eventstream.stream.TendermintServiceClient
 import io.provenance.eventstream.stream.models.Block
@@ -21,16 +20,13 @@ import io.provenance.eventstream.stream.models.extensions.txHash
  *  be returned in its place.
  */
 suspend fun queryBlock(
-    heightOrBlock: Either<Long, Block>,
+    height: Long,
     skipIfNoTxs: Boolean = true,
     historical: Boolean = false,
     tendermintServiceClient: TendermintServiceClient,
     options: Options
 ): StreamBlockImpl? {
-    val block: Block? = when (heightOrBlock) {
-        is Either.Left<Long> -> tendermintServiceClient.block(heightOrBlock.value).result?.block
-        is Either.Right<Block> -> heightOrBlock.value
-    }
+    val block: Block? = tendermintServiceClient.block(height).result?.block
 
     if (skipIfNoTxs && (block?.data?.txs?.size ?: 0) == 0) {
         return null
