@@ -5,6 +5,7 @@ import com.tinder.scarlet.Scarlet
 import com.tinder.scarlet.lifecycle.LifecycleRegistry
 import io.provenance.eventstream.config.Config
 import io.provenance.eventstream.config.Environment
+import io.provenance.eventstream.config.Options
 import io.provenance.eventstream.coroutines.DefaultDispatcherProvider
 import io.provenance.eventstream.coroutines.DispatcherProvider
 import io.provenance.eventstream.stream.EventStream
@@ -43,7 +44,7 @@ class Factory(
         }
     }
 
-    private fun noop(_options: EventStream.Options.Builder) {}
+    private fun noop(_options: Options.Builder) {}
 
     /**
      * Creates a new event stream. Prior to the event stream being created, the closure will be passed an
@@ -65,8 +66,8 @@ class Factory(
      * @param setOptions The closure used to configure the [EventStream.Options.Builder] passed to it.
      * @return The created event stream instance.
      */
-    fun createStream(setOptions: (options: EventStream.Options.Builder) -> Unit = ::noop): EventStream {
-        val optionsBuilder = EventStream.Options.Builder()
+    fun createStream(setOptions: (options: Options.Builder) -> Unit = ::noop): EventStream {
+        val optionsBuilder = Options.Builder()
             .batchSize(config.eventStream.batch.size)
             .skipIfEmpty(config.eventStream.skipEmpty)
         setOptions(optionsBuilder)
@@ -79,7 +80,7 @@ class Factory(
      * @param options The event stream options [EventStream.Options] to use when creating the event stream.
      * @return The created event stream instance.
      */
-    fun createStream(options: EventStream.Options = EventStream.Options.DEFAULT): EventStream {
+    fun createStream(options: Options = Options.DEFAULT): EventStream {
         val lifecycle = LifecycleRegistry(config.eventStream.websocket.throttleDurationMs)
         val scarlet: Scarlet = eventStreamBuilder.lifecycle(lifecycle).build()
         val tendermintRpc: TendermintRPCStream = scarlet.create()

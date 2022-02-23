@@ -13,6 +13,7 @@ import com.tinder.streamadapter.coroutines.CoroutinesStreamAdapterFactory
 import io.provenance.eventstream.adapter.json.JSONObjectAdapter
 import io.provenance.eventstream.config.Config
 import io.provenance.eventstream.config.Environment
+import io.provenance.eventstream.config.Options
 import io.provenance.eventstream.stream.EventStream
 import io.provenance.eventstream.stream.TendermintServiceClient
 import io.provenance.eventstream.stream.clients.TendermintServiceOpenApiClient
@@ -89,7 +90,7 @@ fun defaultTendermintService(rpcUri: String): TendermintServiceClient =
  *
  */
 @OptIn(ExperimentalCoroutinesApi::class, ExperimentalTime::class)
-fun defaultEventStream(config: Config, options: EventStream.Options, okHttpClient: OkHttpClient = defaultOkHttpClient(), moshi: Moshi = defaultMoshi()): EventStream {
+fun defaultEventStream(config: Config, options: Options, okHttpClient: OkHttpClient = defaultOkHttpClient(), moshi: Moshi = defaultMoshi()): EventStream {
     val factory = Factory(
         config = config,
         moshi = moshi,

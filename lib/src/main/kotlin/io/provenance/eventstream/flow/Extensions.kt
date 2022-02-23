@@ -1,18 +1,20 @@
 package io.provenance.eventstream.flow.extensions
 
+import io.provenance.eventstream.stream.models.BlockMeta
+import kotlinx.coroutines.InternalCoroutinesApi
+import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.FlowPreview
-import kotlinx.coroutines.InternalCoroutinesApi
-import kotlinx.coroutines.cancel
-import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.FlowCollector
 import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.collect
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlin.math.max
@@ -63,6 +65,56 @@ fun <T> Flow<T>.cancelOnSignal(signal: Channel<Unit>): Flow<T> = flow {
 @OptIn(FlowPreview::class, ExperimentalTime::class)
 fun <T> Flow<T>.chunked(size: Int, timeout: Duration? = null): Flow<List<T>> =
     chunked(size = size, timeout = timeout) { it.toList() }
+
+private suspend fun <T> getChunk(channel: Channel<T>, maxChunkSize: Int): List<T> {
+    val received = channel.receive()
+    val chunk = mutableListOf(received)
+    while (chunk.size < maxChunkSize) {
+        val polled = channel.poll()
+        if (polled == null) {
+            return chunk
+        }
+        chunk.add(polled)
+    }
+    return chunk
+}
+
+/**
+ * Returns a flow of lists each not exceeding the given [size].
+ * The last list in the resulting flow may have less elements than the given [size].
+ *
+ * @param size the number of elements to take in each list, must be positive and can be greater than the number of elements in this flow.
+ * @param timeout If an element is not emitted in the specified duration, the buffer will be emitted downstream if
+ *  it is non-empty.
+ */
+@OptIn(InternalCoroutinesApi::class, ExperimentalCoroutinesApi::class)
+fun <T> Flow<T>.chunked(maxSize: Int, endHeight: Long): Flow<List<T>> {
+    val buffer = Channel<T>(maxSize)
+    return channelFlow {
+        coroutineScope {
+            launch {
+                this@chunked.collect {
+                    buffer.send(it)
+                }
+            }
+            launch {
+                while (!buffer.isClosedForReceive) {
+                    var chunk = getChunk(buffer, maxSize)
+                    var lastItem = chunk.last()
+                    // ugly
+                    while (chunk.size < maxSize && (lastItem is BlockMeta && lastItem.header!!.height != endHeight)) {
+                        chunk = chunk.plus(getChunk(buffer, maxSize - chunk.size))
+                        lastItem = chunk.last()
+                    }
+                    this@channelFlow.send(chunk)
+                    if (lastItem is BlockMeta && lastItem.header!!.height == endHeight) {
+                        buffer.close()
+                    }
+                }
+            }
+        }
+    }
+}
 
 /**
  * Chunks a flow of elements into flow of lists, each not exceeding the given [size]

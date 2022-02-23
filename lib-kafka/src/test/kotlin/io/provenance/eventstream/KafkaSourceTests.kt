@@ -1,17 +1,17 @@
 package io.provenance.eventstream
 
 import com.squareup.moshi.JsonAdapter
-import io.provenance.eventstream.flow.kafka.acking
-import io.provenance.eventstream.flow.kafka.kafkaChannel
-import io.provenance.eventstream.flow.kafka.toByteArray
-import io.provenance.eventstream.flow.kafka.toStreamBlock
 import io.provenance.eventstream.stream.KafkaStreamBlock
+import io.provenance.eventstream.stream.acking
 import io.provenance.eventstream.stream.models.Block
 import io.provenance.eventstream.stream.models.BlockEvent
 import io.provenance.eventstream.stream.models.BlockResponse
 import io.provenance.eventstream.stream.models.BlockResultsResponse
 import io.provenance.eventstream.stream.models.StreamBlockImpl
+import io.provenance.eventstream.stream.toByteArray
+import io.provenance.eventstream.stream.toStreamBlock
 import io.provenance.eventstream.test.base.TestBase
+import io.provenance.kafka.coroutine.kafkaChannel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.map
@@ -53,15 +53,15 @@ class KafkaSourceTests : TestBase() {
         templates.readAll("block").forEach {
             val adapter: JsonAdapter<BlockResponse> = moshi.adapter(BlockResponse::class.java)
             val blockResponse = adapter.fromJson(it)
-            blockResponses[blockResponse!!.result!!.block!!.header!!.height.toString()] = blockResponse!!
+            blockResponses[blockResponse!!.result!!.block!!.header!!.height.toString()] = blockResponse
         }
         templates.readAll("block_results").forEach {
             val adapter: JsonAdapter<BlockResultsResponse> = moshi.adapter(BlockResultsResponse::class.java)
             val blockResultsResponse = adapter.fromJson(it)
-            blockResultsResponses[blockResultsResponse!!.result.height.toString()] = blockResultsResponse!!
+            blockResultsResponses[blockResultsResponse!!.result.height.toString()] = blockResultsResponse
         }
         blockResultsResponses.forEach { k, v ->
-            val blockEvents = v!!.result.beginBlockEvents!!.map {
+            val blockEvents = v.result.beginBlockEvents!!.map {
                 BlockEvent(v.result.height, OffsetDateTime.now(), it.type!!, it.attributes!!)
             }
             streamBlocks[k] = StreamBlockImpl(blockResponses[k]!!.result!!.block!!, blockEvents, mutableListOf())
@@ -89,7 +89,7 @@ class KafkaSourceTests : TestBase() {
     fun testStreamBlockByteArrayExtensionsIncompatibleValue() {
         val streamBytes = "failStrin".toByteArray()
         assertThrows<SerializationException> {
-            streamBytes!!.toStreamBlock()
+            streamBytes.toStreamBlock()
         }
     }
 
