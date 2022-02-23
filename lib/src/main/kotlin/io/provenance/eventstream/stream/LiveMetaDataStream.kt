@@ -3,9 +3,6 @@ package io.provenance.eventstream.stream
 import com.squareup.moshi.Moshi
 import com.tinder.scarlet.Message
 import com.tinder.scarlet.WebSocket
-import io.provenance.eventstream.config.Options
-import io.provenance.eventstream.coroutines.DefaultDispatcherProvider
-import io.provenance.eventstream.coroutines.DispatcherProvider
 import io.provenance.eventstream.stream.models.Block
 import io.provenance.eventstream.stream.models.rpc.request.Subscribe
 import io.provenance.eventstream.stream.models.rpc.response.MessageType
@@ -17,10 +14,7 @@ import mu.KotlinLogging
 
 class LiveMetaDataStream(
     private val eventStreamService: EventStreamService,
-    private val tendermintServiceClient: TendermintServiceClient,
     private val moshi: Moshi,
-    private val dispatchers: DispatcherProvider = DefaultDispatcherProvider(),
-    private val options: Options = Options.DEFAULT
 ) {
 
     private val log = KotlinLogging.logger { }

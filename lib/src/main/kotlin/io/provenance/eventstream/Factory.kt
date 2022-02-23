@@ -11,7 +11,7 @@ import io.provenance.eventstream.coroutines.DispatcherProvider
 import io.provenance.eventstream.stream.EventStream
 import io.provenance.eventstream.stream.TendermintEventStreamService
 import io.provenance.eventstream.stream.TendermintRPCStream
-import io.provenance.eventstream.stream.TendermintServiceClient
+import io.provenance.eventstream.stream.clients.TendermintBlockFetcher
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 
 @ExperimentalCoroutinesApi
@@ -19,7 +19,7 @@ class Factory(
     private val config: Config,
     private val moshi: Moshi,
     private val eventStreamBuilder: Scarlet.Builder,
-    private val tendermintServiceClient: TendermintServiceClient,
+    private val fetcher: TendermintBlockFetcher,
     private val dispatchers: DispatcherProvider = DefaultDispatcherProvider(),
 ) {
     companion object {
@@ -39,7 +39,7 @@ class Factory(
                 config = config,
                 moshi = defaultMoshi(),
                 eventStreamBuilder = defaultEventStreamBuilder(config.eventStream.websocket.uri),
-                tendermintServiceClient = defaultTendermintService(config.eventStream.rpc.uri)
+                fetcher = TendermintBlockFetcher(defaultTendermintService(config.eventStream.rpc.uri))
             )
         }
     }
@@ -87,7 +87,11 @@ class Factory(
         val eventStreamService = TendermintEventStreamService(tendermintRpc, lifecycle)
 
         return EventStream(
-            eventStreamService, tendermintServiceClient, moshi, options = options, dispatchers = dispatchers
+            eventStreamService,
+            fetcher,
+            moshi,
+            options = options,
+            dispatchers = dispatchers
         )
     }
 }

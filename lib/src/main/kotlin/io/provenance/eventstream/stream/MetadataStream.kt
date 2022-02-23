@@ -1,6 +1,7 @@
 package io.provenance.eventstream.stream
 
 import io.provenance.eventstream.config.Options
+import io.provenance.eventstream.stream.clients.TendermintBlockFetcher
 import io.provenance.eventstream.stream.models.BlockMeta
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -17,7 +18,7 @@ import kotlin.math.min
 
 class MetadataStream(
     val options: Options,
-    val tendermintServiceClient: TendermintServiceClient
+    val fetcher: TendermintBlockFetcher
 ) {
 
     private val log = KotlinLogging.logger { }
@@ -81,7 +82,7 @@ class MetadataStream(
      * @return Long? The ending block height to use, if it exists.
      */
     private suspend fun getEndingHeight(): Long? =
-        options.toHeight ?: tendermintServiceClient.abciInfo().result?.response?.lastBlockHeight
+        options.toHeight ?: fetcher.getCurrentHeight()
 
     /**
      * Computes and returns the starting height (if it can be determined) to be used when streaming historical blocks.
@@ -107,7 +108,7 @@ class MetadataStream(
             "Difference between (minHeight, maxHeight) can be at maximum ${EventStream.TENDERMINT_MAX_QUERY_RANGE}"
         }
 
-        val blocks = tendermintServiceClient.blockchain(minHeight, maxHeight).result?.blockMetas.let {
+        val blocks = fetcher.getBlocksMeta(minHeight, maxHeight).let {
             if (options.skipIfEmpty) {
                 it?.filter { it.numTxs ?: 0 > 0 }
             } else {

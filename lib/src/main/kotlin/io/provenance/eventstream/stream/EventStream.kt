@@ -8,6 +8,7 @@ import io.provenance.eventstream.coroutines.DefaultDispatcherProvider
 import io.provenance.eventstream.coroutines.DispatcherProvider
 import io.provenance.eventstream.extensions.doFlatMap
 import io.provenance.eventstream.flow.extensions.chunked
+import io.provenance.eventstream.stream.clients.TendermintBlockFetcher
 import io.provenance.eventstream.stream.models.Block
 import io.provenance.eventstream.stream.models.BlockMeta
 import io.provenance.eventstream.stream.models.StreamBlockImpl
@@ -46,7 +47,7 @@ import java.util.concurrent.CompletionException
 @ExperimentalCoroutinesApi
 class EventStream(
     private val eventStreamService: EventStreamService,
-    private val tendermintServiceClient: TendermintServiceClient,
+    private val fetcher: TendermintBlockFetcher,
     private val moshi: Moshi,
     private val dispatchers: DispatcherProvider = DefaultDispatcherProvider(),
     private val options: Options = Options.DEFAULT
@@ -95,7 +96,7 @@ class EventStream(
                                 height,
                                 skipIfNoTxs = options.skipIfEmpty,
                                 historical = true,
-                                tendermintServiceClient,
+                                fetcher,
                                 options
                             )
                         }
@@ -115,11 +116,11 @@ class EventStream(
     }
 
     fun streamLiveMetaBlocks(): Flow<Block> {
-        return LiveMetaDataStream(eventStreamService, tendermintServiceClient, moshi, dispatchers, options).streamBlocks()
+        return LiveMetaDataStream(eventStreamService, moshi).streamBlocks()
     }
 
     fun streamMetaBlocks(): Flow<BlockMeta> {
-        return MetadataStream(options, tendermintServiceClient).streamBlocks()
+        return MetadataStream(options, fetcher).streamBlocks()
     }
 
     @OptIn(InternalCoroutinesApi::class, ExperimentalCoroutinesApi::class)
@@ -157,7 +158,7 @@ class EventStream(
                         block.header!!.height,
                         skipIfNoTxs = false,
                         historical = false,
-                        tendermintServiceClient,
+                        fetcher,
                         options
                     )
                     if (maybeBlock != null) {
@@ -190,7 +191,7 @@ class EventStream(
      * @return Long? The ending block height to use, if it exists.
      */
     private suspend fun getEndingHeight(): Long? =
-        options.toHeight ?: tendermintServiceClient.abciInfo().result?.response?.lastBlockHeight
+        options.toHeight ?: fetcher.getCurrentHeight()
 
     /**
      * Constructs a Flow of live and historical blocks, plus associated event data.

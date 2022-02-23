@@ -16,6 +16,7 @@ import io.provenance.eventstream.config.Environment
 import io.provenance.eventstream.config.Options
 import io.provenance.eventstream.stream.EventStream
 import io.provenance.eventstream.stream.TendermintServiceClient
+import io.provenance.eventstream.stream.clients.TendermintBlockFetcher
 import io.provenance.eventstream.stream.clients.TendermintServiceOpenApiClient
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import okhttp3.OkHttpClient
@@ -90,12 +91,15 @@ fun defaultTendermintService(rpcUri: String): TendermintServiceClient =
  *
  */
 @OptIn(ExperimentalCoroutinesApi::class, ExperimentalTime::class)
-fun defaultEventStream(config: Config, options: Options, okHttpClient: OkHttpClient = defaultOkHttpClient(), moshi: Moshi = defaultMoshi()): EventStream {
+fun defaultEventStream(config: Config, options: Options, okHttpClient: OkHttpClient = defaultOkHttpClient(), moshi: Moshi = defaultMoshi(), tendermint: Boolean = true): EventStream {
     val factory = Factory(
         config = config,
         moshi = moshi,
         eventStreamBuilder = defaultEventStreamBuilder(config.eventStream.websocket.uri, okHttpClient),
-        tendermintServiceClient = defaultTendermintService(config.eventStream.rpc.uri)
+        fetcher = if (tendermint)
+            TendermintBlockFetcher(defaultTendermintService(config.eventStream.rpc.uri))
+        else
+            TendermintBlockFetcher(defaultTendermintService(config.eventStream.rpc.uri))
     )
 
     return factory.createStream(options)

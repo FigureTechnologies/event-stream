@@ -1,7 +1,7 @@
 package io.provenance.eventstream.stream.transformers
 
 import io.provenance.eventstream.config.Options
-import io.provenance.eventstream.stream.TendermintServiceClient
+import io.provenance.eventstream.stream.clients.TendermintBlockFetcher
 import io.provenance.eventstream.stream.models.Block
 import io.provenance.eventstream.stream.models.StreamBlockImpl
 import io.provenance.eventstream.stream.models.BlockEvent
@@ -23,10 +23,10 @@ suspend fun queryBlock(
     height: Long,
     skipIfNoTxs: Boolean = true,
     historical: Boolean = false,
-    tendermintServiceClient: TendermintServiceClient,
+    fetcher: TendermintBlockFetcher,
     options: Options
 ): StreamBlockImpl? {
-    val block: Block? = tendermintServiceClient.block(height).result?.block
+    val block: Block? = fetcher.getBlock(height)
 
     if (skipIfNoTxs && (block?.data?.txs?.size ?: 0) == 0) {
         return null
@@ -34,7 +34,7 @@ suspend fun queryBlock(
 
     return block?.run {
         val blockDatetime = header?.dateTime()
-        val blockResponse = tendermintServiceClient.blockResults(header?.height).result
+        val blockResponse = fetcher.getBlockResults(header!!.height)!!.result
         val blockEvents: List<BlockEvent> = blockResponse.blockEvents(blockDatetime)
         val txEvents: List<TxEvent> = blockResponse.txEvents(blockDatetime) { index: Int -> txHash(index) ?: "" }
         val streamBlock = StreamBlockImpl(this, blockEvents, txEvents, historical)
