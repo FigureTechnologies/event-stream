@@ -1,6 +1,5 @@
 package io.provenance.eventstream.stream
 
-import arrow.core.Either
 import com.squareup.moshi.JsonDataException
 import com.squareup.moshi.Moshi
 import io.provenance.blockchain.stream.api.BlockSource
@@ -93,7 +92,7 @@ class EventStream(
                     chunkOfHeights.map { height ->
                         async {
                             queryBlock(
-                                Either.Left(height),
+                                height,
                                 skipIfNoTxs = options.skipIfEmpty,
                                 historical = true,
                                 tendermintServiceClient,
@@ -155,7 +154,7 @@ class EventStream(
                 .onStart { log.info("live::starting") }
                 .mapNotNull { block: Block ->
                     val maybeBlock = queryBlock(
-                        Either.Right(block),
+                        block.header!!.height,
                         skipIfNoTxs = false,
                         historical = false,
                         tendermintServiceClient,
@@ -165,7 +164,7 @@ class EventStream(
                         log.info("live::got block #${maybeBlock.height}")
                         maybeBlock
                     } else {
-                        log.info("live::skipping block #${block.header?.height}")
+                        log.info("live::skipping block #${block.header!!.height}")
                         null
                     }
                 }.onCompletion {
