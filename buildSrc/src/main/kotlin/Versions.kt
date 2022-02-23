@@ -30,5 +30,5 @@ object Versions {
     }
     const val Provenance = "1.5.0"
     const val Scarlet = "0.1.12"
-    const val kafka = ""
+    const val Kafka = "3.0.0"
 }

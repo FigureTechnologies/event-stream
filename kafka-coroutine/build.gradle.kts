@@ -1,4 +1,10 @@
+plugins {
+    kotlin("jvm")
+
+    id("core-config")
+    id("with-test-fixtures")
+}
+
 dependencies {
-    // https://mvnrepository.com/artifact/org.apache.kafka/kafka-clients
-    api("org.apache.kafka:kafka-clients:3.0.0")
+    implementation(libs.kafka)
 }

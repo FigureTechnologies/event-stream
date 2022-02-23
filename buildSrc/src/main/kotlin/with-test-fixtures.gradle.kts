@@ -21,6 +21,7 @@ dependencies {
     testFixturesImplementation("com.tinder.scarlet", "stream-adapter-coroutines", Versions.Scarlet)
     testFixturesImplementation("com.tinder.scarlet", "websocket-okhttp", Versions.Scarlet)
     testFixturesImplementation("com.tinder.scarlet", "message-adapter-moshi", Versions.Scarlet)
+    testFixturesImplementation("org.apache.kafka", "kafka-clients", Versions.Kafka)
 }
 
 /**
