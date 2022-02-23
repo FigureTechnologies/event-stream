@@ -90,7 +90,7 @@ private object StringUtils {
      * StringUtils.isAsciiPrintable("\u007e") = true
      * StringUtils.isAsciiPrintable("\u007f") = false
      * StringUtils.isAsciiPrintable("Ceki G\u00fclc\u00fc") = false
-    </pre> *
+     </pre> *
      *
      * @param cs the CharSequence to check, may be null
      * @return `true` if every character is in the range
@@ -128,7 +128,7 @@ private object CharUtils {
      * CharUtils.isAsciiPrintable('-')  = true
      * CharUtils.isAsciiPrintable('\n') = false
      * CharUtils.isAsciiPrintable('') = false
-    </pre> *
+     </pre> *
      *
      * @param ch  the character to check
      * @return true if between 32 and 126 inclusive
