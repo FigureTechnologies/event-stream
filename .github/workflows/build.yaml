@@ -3,28 +3,16 @@ on:
   pull_request:
     branches:
       - main
-  workflow_dispatch:
 jobs:
   build:
     name: Build and test
-    runs-on: [ linux, self-hosted ]
+    runs-on: ubuntu-latest
     env:
       NEXUS_USER: ${{ secrets.NEXUS_USER }}
       NEXUS_PASS: ${{ secrets.NEXUS_PASS }}
     steps:
       - name: Checkout Code
         uses: actions/checkout@v2
-      - name: Checkout Figure Shared Actions
-        uses: actions/checkout@v2
-        with:
-          repository: FigureTechnologies/shared-actions
-          ref: main
-          token: ${{ secrets.PAT }}
-          path: shared-actions
-      - name: Setup Figure Shared Actions Env
-        uses: ./shared-actions/set-env-action
-        with:
-          prod_ref: refs/heads/master
       - name: Setup JDK 11
         uses: actions/setup-java@v2
         with:
