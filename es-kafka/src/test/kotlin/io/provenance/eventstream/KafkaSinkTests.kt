@@ -64,7 +64,6 @@ class KafkaSinkTests : TestBase() {
 
         assertEquals(mockProducer.history().size, 1)
         assertEquals(mockProducer.history()[0].key().decodeToString(), expectedKey)
-
     }
 
     @OptIn(ExperimentalCoroutinesApi::class)

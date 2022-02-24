@@ -38,7 +38,7 @@ project.afterEvaluate {
     tasks.get("kaptGenerateStubsKotlin").dependsOn("generateTendermintAPI")
 }
 
-val tendermintOpenApiYaml = "$rootDir/api-model/src/main/resources/tendermint-v0.34.12-rpc-openapi-FIXED.yaml"
+val tendermintOpenApiYaml = "$rootDir/es-api-model/src/main/resources/tendermint-v0.34.12-rpc-openapi-FIXED.yaml"
 
 /**
  * See the following links for information about generating models from an OpenAPI spec:
