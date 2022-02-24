@@ -6,6 +6,7 @@ import io.provenance.eventstream.coroutines.DispatcherProvider
 import io.provenance.eventstream.stream.EventStreamService
 import io.provenance.eventstream.stream.TendermintServiceClient
 import io.provenance.eventstream.stream.EventStream
+import io.provenance.eventstream.stream.clients.TendermintBlockFetcher
 import io.provenance.eventstream.stream.models.ABCIInfoResponse
 import io.provenance.eventstream.stream.models.BlockResponse
 import io.provenance.eventstream.stream.models.BlockResultsResponse
@@ -90,8 +91,8 @@ object Builders {
                         .eventStreamService(includeLiveBlocks = includeLiveBlocks)
                         .dispatchers(dispatchers)
                         .build(),
-                tendermintServiceClient = tendermintServiceClient
-                    ?: builders.tendermintService().build(MockTendermintServiceClient::class.java),
+                fetcher = TendermintBlockFetcher(tendermintServiceClient
+                    ?: builders.tendermintService().build(MockTendermintServiceClient::class.java)),
                 moshi = moshi ?: Defaults.moshi,
                 dispatchers = dispatchers,
                 options = options.build()
