@@ -6,11 +6,11 @@ plugins {
 }
 
 dependencies {
-    implementation(projects.api)
-    implementation(projects.apiModel)
+    implementation(projects.esApi)
+    implementation(projects.esApiModel)
     implementation(projects.kafkaCoroutine)
     implementation(libs.kafka)
     implementation(libs.moshi.core)
 
-    testImplementation(testFixtures(projects.lib))
+    testImplementation(testFixtures(projects.esCore))
 }

@@ -3,5 +3,5 @@ plugins {
 }
 
 dependencies {
-    implementation(projects.apiModel)
+    implementation(projects.esApiModel)
 }

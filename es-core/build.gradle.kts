@@ -6,8 +6,8 @@ plugins {
 }
 
 dependencies {
-    implementation(projects.api)
-    implementation(projects.apiModel)
+    implementation(projects.esApi)
+    implementation(projects.esApiModel)
 
     implementation(libs.bundles.hoplite)
     implementation(libs.bundles.scarlet)
@@ -16,5 +16,5 @@ dependencies {
     implementation(libs.json)
     implementation(libs.moshi.kotlin.codegen)
 
-    testFixturesImplementation(projects.apiModel)
+    testFixturesImplementation(projects.esApiModel)
 }

@@ -10,10 +10,10 @@ repositories {
 }
 
 dependencies {
-    implementation(projects.api)
-    implementation(projects.apiModel)
-    implementation(projects.lib)
-    implementation(projects.libKafka)
+    implementation(projects.esApi)
+    implementation(projects.esApiModel)
+    implementation(projects.esCore)
+    implementation(projects.esKafka)
 
     implementation(libs.bundles.logback)
     implementation(libs.bundles.moshi)
