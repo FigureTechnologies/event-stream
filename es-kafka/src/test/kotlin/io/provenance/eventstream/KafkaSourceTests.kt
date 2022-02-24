@@ -48,8 +48,8 @@ class KafkaSourceTests : TestBase() {
 
     @BeforeAll
     override fun setup() {
-        var blockResponses = mutableMapOf<String, BlockResponse>()
-        var blockResultsResponses = mutableMapOf<String, BlockResultsResponse>()
+        val blockResponses = mutableMapOf<String, BlockResponse>()
+        val blockResultsResponses = mutableMapOf<String, BlockResultsResponse>()
         templates.readAll("block").forEach {
             val adapter: JsonAdapter<BlockResponse> = moshi.adapter(BlockResponse::class.java)
             val blockResponse = adapter.fromJson(it)

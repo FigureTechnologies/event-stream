@@ -1,5 +1,3 @@
-import gradle.kotlin.dsl.accessors._2b14ebf94391b8ef847267dae5e01cce.implementation
-
 plugins {
     kotlin("jvm")
     id("java-test-fixtures")
@@ -23,6 +21,7 @@ dependencies {
     testFixturesImplementation("com.tinder.scarlet", "stream-adapter-coroutines", Versions.Scarlet)
     testFixturesImplementation("com.tinder.scarlet", "websocket-okhttp", Versions.Scarlet)
     testFixturesImplementation("com.tinder.scarlet", "message-adapter-moshi", Versions.Scarlet)
+    testFixturesImplementation("org.apache.kafka", "kafka-clients", Versions.Kafka)
 }
 
 /**

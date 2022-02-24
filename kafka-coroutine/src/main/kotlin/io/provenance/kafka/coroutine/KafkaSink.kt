@@ -34,6 +34,6 @@ class KafkaSink<K, V>(
     }
 
     fun sendHelper(key: K, block: V): Future<RecordMetadata> {
-        return kafkaProducer!!.send(ProducerRecord(topicName, key, block))
+        return kafkaProducer.send(ProducerRecord(topicName, key, block))
     }
 }

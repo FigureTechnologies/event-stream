@@ -4,12 +4,12 @@
 .EXPORT_ALL_VARIABLES:
 
 GRADLEW   ?= ./gradlew
-NAME      := provenance-event-stream
+NAME      := event-stream
 CLI_BUILD := $(PWD)/cli/build
 LIB_BUILD := $(PWD)/lib/build
 HTML_DOCS := $(LIB_BUILD)/dokka/html
 
-all: run-local
+all: clean build
 
 clean:
 	$(GRADLEW) clean
@@ -17,10 +17,17 @@ clean:
 clean-test:
 	$(GRADLEW) cleanTest
 
-build-dist:
+build:
+	$(GRADLEW) build
+
+install: build-dist
+
+cli/build/install/$(NAME)/bin/$(NAME):
 	$(GRADLEW) installDist
 
-run-cli:  build-dist
+build-dist: cli/build/install/$(NAME)/bin/$(NAME)
+
+run:  build-dist
 	@echo "*** PORT 26657 is expected to be open on localhost! ***"
 	AWS_REGION=us-east-1 ENVIRONMENT=local $(CLI_BUILD)/install/$(NAME)/bin/$(NAME) $(ARGS)
 

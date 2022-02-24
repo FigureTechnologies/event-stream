@@ -1,0 +1,63 @@
+[versions]
+arrow = "1.0.1"
+bouncyCastle = "1.70"
+commonsLang = "3.12.0"
+commonsText = "1.9"
+grpc = "1.39.0"
+hoplite = "1.4.15"
+junitCore = "5.3.1"
+junitPioneer = "1.4.2"
+json = "20210307"
+kafka = "3.1.0"
+kotlinxCore = "1.5.2"
+kotlinxCli = "0.3.3"
+kotlinxDateTime = "0.3.0"
+kotlinLogging = "2.0.11"
+logback = "1.2.3"
+moshi = "1.13.0"
+okHttp = "4.9.3"
+provenanceProtos = "1.5.0"
+scarlet = "0.1.12"
+
+pluginProtobuf = "0.18.7"
+pluginNexusPublishPlugin = "1.1.0"
+pluginOpenAPI = "5.2.1"
+
+[libraries]
+arrow = { module = "io.arrow-kt:arrow-core", version.ref = "arrow" }
+commons-lang = { module = "org.apache.commons:commons-lang3", version.ref = "commonsLang" }
+commons-text = { module = "org.apache.commons:commons-text", version.ref = "commonsText" }
+grpc-alts = { module = "io.grpc:grpc-alts", version.ref = "grpc" }
+grpc-netty = { module = "io.grpc:grpc-netty", version.ref = "grpc" }
+grpc-protobuf = { module = "io.grpc:grpc-protobuf", version.ref = "grpc" }
+grpc-stub = { module = "io.grpc:grpc-stub", version.ref = "grpc" }
+hoplite-core = { module = "com.sksamuel.hoplite:hoplite-core", version.ref = "hoplite" }
+hoplite-yaml = { module = "com.sksamuel.hoplite:hoplite-yaml", version.ref = "hoplite" }
+json = { module = "org.json:json", version.ref = "json" }
+kafka = { module = "org.apache.kafka:kafka-clients", version.ref = "kafka" }
+kotlin-logging = { module = "io.github.microutils:kotlin-logging-jvm", version.ref = "kotlinLogging" }
+kotlinx-cli = { module = "org.jetbrains.kotlinx:kotlinx-cli-jvm", version.ref = "kotlinxCli" }
+logback-core = { module = "ch.qos.logback:logback-core", version.ref = "logback" }
+logback-classic = { module = "ch.qos.logback:logback-classic", version.ref = "logback" }
+moshi-kotlin-codegen = { module = "com.squareup.moshi:moshi-kotlin-codegen", version.ref = "moshi" }
+moshi-core = { module = "com.squareup.moshi:moshi", version.ref = "moshi" }
+moshi-kotlin = { module = "com.squareup.moshi:moshi-kotlin", version.ref = "moshi" }
+okhttp-client = { module = "com.squareup.okhttp3:okhttp", version.ref = "okHttp" }
+provenance-protos = { module = "io.provenance.protobuf:pb-proto-java", version.ref = "provenanceProtos" }
+scarlet-core = { module = "com.tinder.scarlet:scarlet", version.ref = "scarlet" }
+scarlet-stream = { module = "com.tinder.scarlet:stream-adapter-coroutines", version.ref = "scarlet" }
+scarlet-websocket = { module = "com.tinder.scarlet:websocket-okhttp", version.ref = "scarlet" }
+scarlet-moshi = { module = "com.tinder.scarlet:message-adapter-moshi", version.ref = "scarlet" }
+
+[plugins]
+publish-nexus = { id = "io.github.gradle-nexus.publish-plugin", version.ref = "pluginNexusPublishPlugin" }
+protobuf = { id = "com.google.protobuf", version.ref = "pluginProtobuf" }
+openapi-generator = { id = "org.openapi.generator", version.ref = "pluginOpenAPI" }
+
+[bundles]
+apache-commons = ["commons-lang", "commons-text"]
+grpc = ["grpc-alts", "grpc-netty", "grpc-protobuf", "grpc-stub"]
+hoplite = ["hoplite-core", "hoplite-yaml"]
+logback = ["logback-core", "logback-classic"]
+scarlet = ["scarlet-core", "scarlet-stream", "scarlet-websocket", "scarlet-moshi"]
+moshi = ["moshi-core", "moshi-kotlin", "moshi-kotlin-codegen"]
