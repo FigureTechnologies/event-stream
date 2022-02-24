@@ -1,38 +1,55 @@
 name: Publish
+
 on:
-#  push:
-#    tags:
-#      - 'v*'
   release:
-    types: [published]
-  workflow_dispatch:
+    types: [created]
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
 jobs:
-  publish:
-    name: Publish JAR
-    runs-on: [ linux, self-hosted ]
-    env:
-      NEXUS_USER: ${{ secrets.NEXUS_USER }}
-      NEXUS_PASS: ${{ secrets.NEXUS_PASS }}
+  java_build:
+    name: Build and Publish Jar
+    runs-on: ubuntu-latest
     steps:
-      - name: Checkout Code
+      - name: Checkout
         uses: actions/checkout@v2
-      - name: Checkout Figure Shared Actions
-        uses: actions/checkout@v2
+
+      - name: Get Version
+        run: |
+          # Strip git prefix from version.
+          VERSION=$(echo "${{ github.ref }}" | sed -e 's,.*/\(.*\),\1,')
+          # Strip "v" prefix from tag name.
+          [[ "${{ github.ref }}" == "refs/tags/"* ]] && VERSION=$(echo $VERSION | sed -e 's/^v//')
+          # Store version for later use.
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+      - name: Set up JDK 11
+        uses: actions/setup-java@v1
         with:
-          repository: FigureTechnologies/shared-actions
-          ref: main
-          token: ${{ secrets.PAT }}
-          path: shared-actions
-      - name: Setup Figure Shared Actions Env
-        uses: ./shared-actions/set-env-action
-        with:
-          prod_ref: refs/heads/master
-      - name: Setup JDK 11
-        uses: actions/setup-java@v2
-        with:
-          java-version: '11'
-          distribution: 'adopt'
-      - name: Build
-        run: ./gradlew clean build --refresh-dependencies --parallel
-      - name: Publish Jars
-        run: ./gradlew clean publish
+          java-version: 11
+          server-id: github
+
+      - name: Build with Gradle
+        run: ./gradlew clean build --refresh-dependencies -Pversion=$VERSION
+
+      - name: Install gpg secret key
+        run: |
+          export GPG_TTY=$(tty)
+          echo -n "${{ secrets.OSSRH_GPG_SECRET_KEY }}" | base64 --decode | gpg --batch --import
+          gpg --list-secret-keys --keyid-format LONG
+          echo -n "${{ secrets.OSSRH_GPG_SECRET_KEY }}" | base64 --decode > $GITHUB_WORKSPACE/release.gpg
+        if: github.event_name == 'release'
+
+      - name: Publish to Maven Central
+        run: |
+          ./gradlew publishToSonatype $(if [ "${{github.event.release.prerelease}}" = "true" ]; then echo 'closeSonatypeStagingRepository'; else echo 'closeAndReleaseSonatypeStagingRepository'; fi) \
+            -Pversion=$VERSION \
+            -Psigning.keyId=B7D30ABE -Psigning.password="${{ secrets.OSSRH_GPG_SECRET_KEY_PASSWORD }}" -Psigning.secretKeyRingFile=$GITHUB_WORKSPACE/release.gpg \
+            --info
+        env:
+          OSSRH_USERNAME: ${{ secrets.OSSRH_USERNAME }}
+          OSSRH_PASSWORD: ${{ secrets.OSSRH_PASSWORD }}
+        if: github.event_name == 'release'
