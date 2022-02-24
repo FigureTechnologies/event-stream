@@ -54,16 +54,17 @@ class KafkaSinkTests : TestBase() {
             "${blockResponse.result!!.block!!.header!!.chainId}.${blockResponse.result!!.block!!.header!!.height}"
 
         val record = kafkaBlockSink(producerProps, "testTopic", mockProducer).kafkaSink.sendHelper(
-            streamBlock.toByteArray()!!,
-            expectedKey.toByteArray()
+            expectedKey.toByteArray(),
+            streamBlock.toByteArray()!!
         )
 
         mockProducer.completeNext()
 
         record.get()
 
-        assert(mockProducer.history().size == 1)
-        assert(mockProducer.history()[0].key().decodeToString() == expectedKey)
+        assertEquals(mockProducer.history().size, 1)
+        assertEquals(mockProducer.history()[0].key().decodeToString(), expectedKey)
+
     }
 
     @OptIn(ExperimentalCoroutinesApi::class)
