@@ -5,6 +5,7 @@ import org.gradle.kotlin.dsl.create
 import org.gradle.kotlin.dsl.get
 import org.gradle.kotlin.dsl.repositories
 import org.gradle.plugins.signing.SigningExtension
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 
 repositories {
@@ -25,9 +26,6 @@ val nexusUser = findProperty("nexusUser")?.toString() ?: System.getenv("NEXUS_US
 val nexusPass = findProperty("nexusPass")?.toString() ?: System.getenv("NEXUS_PASS")
 
 
-val artifactName = if (name.startsWith("event-stream")) name else "event-stream-${name.replace("lib-", "")}"
-val projectVersion = version.toString()
-
 configure<io.github.gradlenexus.publishplugin.NexusPublishExtension> {
     repositories {
         sonatype {
@@ -40,62 +38,94 @@ configure<io.github.gradlenexus.publishplugin.NexusPublishExtension> {
     }
 }
 
-configure<PublishingExtension> {
-    publications {
-        create<MavenPublication>("maven") {
-            groupId = project.group.toString()
-            artifactId = artifactName
-            version = projectVersion
+subprojects {
+    apply {
+        plugin("maven-publish")
+        plugin("kotlin")
+        plugin("java-library")
+        plugin("signing")
+        plugin("core-config")
+    }
 
-            from(components["java"])
+    java {
+        withSourcesJar()
+        withJavadocJar()
+    }
 
-            pom {
-                name.set("Provenance EventStream Implementation")
-                description.set("A collection of libraries to connect and stream blocks from a node")
-                url.set("https://provenance.io")
-                licenses {
-                    license {
-                        name.set("The Apache License, Version 2.0")
-                        url.set("http://www.apache.org/licenses/LICENSE-2.0.txt")
-                    }
-                }
-
-                developers {
-                    developer {
-                        id.set("mtps")
-                        name.set("Phil Story")
-                        email.set("phil@figure.com")
-                    }
-
-                    developer {
-                        id.set("wbaker-figure")
-                        name.set("Wyatt Baker")
-                        email.set("wbaker@figure.com")
-                    }
-
-                    developer {
-                        id.set("mwoods-figure")
-                        name.set("Mike Woods")
-                        email.set("mwoods@figure.com")
-                    }
-
-                    developer {
-                        id.set("rchaing-figure")
-                        name.set("Robert Chaing")
-                        email.set("rchaing@figure.com")
-                    }
-                }
-
-                scm {
-                    developerConnection.set("git@github.com:provenance.io/event-stream.git")
-                    connection.set("https://github.com/provenance-io/event-stream.git")
-                    url.set("https://github.com/provenance-io/event-stream")
-                }
-            }
+    tasks.withType<KotlinCompile> {
+        kotlinOptions {
+            freeCompilerArgs = listOf("-Xjsr305=strict", "-Xopt-in=kotlin.RequiresOptIn")
+            jvmTarget = "11"
         }
     }
 
-    configure<SigningExtension> {
-        sign(publications["maven"])
+
+    configure<JavaPluginExtension> {
+        sourceCompatibility = JavaVersion.VERSION_11
+        targetCompatibility = JavaVersion.VERSION_11
+    }
+
+    val artifactName = if (name.startsWith("es")) name else "es-$name"
+    val projectVersion = version.toString()
+
+    configure<PublishingExtension> {
+        publications {
+            create<MavenPublication>("maven") {
+                groupId = project.group.toString()
+                artifactId = artifactName
+                version = projectVersion
+
+                from(components["java"])
+
+                pom {
+                    name.set("Provenance EventStream Implementation")
+                    description.set("A collection of libraries to connect and stream blocks from a node")
+                    url.set("https://provenance.io")
+                    licenses {
+                        license {
+                            name.set("The Apache License, Version 2.0")
+                            url.set("http://www.apache.org/licenses/LICENSE-2.0.txt")
+                        }
+                    }
+
+                    developers {
+                        developer {
+                            id.set("mtps")
+                            name.set("Phil Story")
+                            email.set("phil@figure.com")
+                        }
+
+                        developer {
+                            id.set("wbaker-figure")
+                            name.set("Wyatt Baker")
+                            email.set("wbaker@figure.com")
+                        }
+
+                        developer {
+                            id.set("mwoods-figure")
+                            name.set("Mike Woods")
+                            email.set("mwoods@figure.com")
+                        }
+
+                        developer {
+                            id.set("rchaing-figure")
+                            name.set("Robert Chaing")
+                            email.set("rchaing@figure.com")
+                        }
+                    }
+
+                    scm {
+                        developerConnection.set("git@github.com:provenance.io/event-stream.git")
+                        connection.set("https://github.com/provenance-io/event-stream.git")
+                        url.set("https://github.com/provenance-io/event-stream")
+                    }
+                }
+            }
+        }
+
+        configure<SigningExtension> {
+            sign(publications["maven"])
+        }
     }
 }
+
