@@ -26,9 +26,6 @@ val nexusUser = findProperty("nexusUser")?.toString() ?: System.getenv("NEXUS_US
 val nexusPass = findProperty("nexusPass")?.toString() ?: System.getenv("NEXUS_PASS")
 
 
-val projectGroup = "io.provenance.hdwallet"
-val projectVersion = version.toString()
-
 configure<io.github.gradlenexus.publishplugin.NexusPublishExtension> {
     repositories {
         sonatype {
