@@ -1,9 +1,11 @@
 package io.provenance.eventstream.stream.models
 
 import com.squareup.moshi.JsonClass
+import tendermint.types.BlockOuterClass
+import java.io.Serializable
 
 interface StreamBlock {
-    val block: Block
+    val block: BlockOuterClass.Block
     val blockEvents: List<BlockEvent>
     val txEvents: List<TxEvent>
     val historical: Boolean
@@ -16,8 +18,8 @@ interface StreamBlock {
  */
 @JsonClass(generateAdapter = true)
 open class StreamBlockImpl(
-    override val block: Block,
+    override val block: BlockOuterClass.Block,
     override val blockEvents: List<BlockEvent>,
     override val txEvents: List<TxEvent>,
     override val historical: Boolean = false
-) : StreamBlock
+) : StreamBlock, Serializable

@@ -1,6 +1,8 @@
 package io.provenance.eventstream.stream.transformers
 
 import io.provenance.eventstream.config.Options
+import io.provenance.eventstream.extensions.dateTime
+import io.provenance.eventstream.extensions.txHash
 import io.provenance.eventstream.stream.clients.TendermintBlockFetcher
 import io.provenance.eventstream.stream.models.Block
 import io.provenance.eventstream.stream.models.StreamBlockImpl
@@ -11,6 +13,7 @@ import io.provenance.eventstream.stream.models.extensions.blockEvents
 import io.provenance.eventstream.stream.models.extensions.dateTime
 import io.provenance.eventstream.stream.models.extensions.txEvents
 import io.provenance.eventstream.stream.models.extensions.txHash
+import tendermint.types.BlockOuterClass
 
 /**
  * Query a block by height, returning any events associated with the block.
@@ -26,9 +29,9 @@ suspend fun queryBlock(
     fetcher: TendermintBlockFetcher,
     options: Options
 ): StreamBlockImpl? {
-    val block: Block? = fetcher.getBlock(height)
+    val block: BlockOuterClass.Block = fetcher.getBlock(height)
 
-    if (skipIfNoTxs && (block?.data?.txs?.size ?: 0) == 0) {
+    if (skipIfNoTxs && (block?.data?.txsList?.size ?: 0) == 0) {
         return null
     }
 

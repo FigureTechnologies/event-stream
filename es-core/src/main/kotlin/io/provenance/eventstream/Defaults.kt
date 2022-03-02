@@ -85,7 +85,7 @@ fun defaultMoshi(): Moshi = Moshi.Builder()
  * @return The [TendermintServiceClient] instance to use for the event stream.
  */
 fun defaultTendermintService(rpcUri: String): TendermintServiceClient =
-    TendermintServiceOpenApiClient(rpcUri)
+    TendermintServiceOpenApiClient(URI(rpcUri))
 
 /**
  * Create the default [TendermintServiceClient] to use with the event stream.
@@ -94,7 +94,7 @@ fun defaultTendermintService(rpcUri: String): TendermintServiceClient =
  * @return The [TendermintServiceClient] instance to use for the event stream.
  */
 fun defaultTendermintFetcher(rpcUri: String): TendermintBlockFetcher =
-    TendermintBlockFetcher(TendermintServiceOpenApiClient(rpcUri))
+    TendermintBlockFetcher(TendermintServiceOpenApiClient(URI(rpcUri)))
 
 /**
  *

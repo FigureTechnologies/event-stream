@@ -14,7 +14,7 @@ fun fileOutput(dir: String, decoder: Moshi): FileOutput = FileOutput(dir, decode
 
 @OptIn(ExperimentalStdlibApi::class)
 class FileOutput(dir: String, decoder: Moshi) : BlockSink {
-    private val adapter: JsonAdapter<StreamBlockImpl> = decoder.adapter()
+//    private val adapter: JsonAdapter<StreamBlockImpl> = decoder.adapter()
     private val dirname = { name: String -> "$dir/$name" }
 
     init {
@@ -31,7 +31,7 @@ class FileOutput(dir: String, decoder: Moshi) : BlockSink {
         val filename = "$dirname/${block.height.toString().padStart(10, '0')}.json"
         val file = File(filename)
         if (!file.exists()) {
-            file.writeText(adapter.toJson(block as StreamBlockImpl))
+            file.writeText((block as StreamBlockImpl).toString())
         }
     }
 }

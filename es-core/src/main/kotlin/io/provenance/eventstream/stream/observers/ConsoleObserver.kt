@@ -1,6 +1,7 @@
 package io.provenance.eventstream.stream.observers
 
 import io.provenance.blockchain.stream.api.BlockSink
+import io.provenance.eventstream.extensions.dateTime
 import io.provenance.eventstream.extensions.decodeBase64
 import io.provenance.eventstream.extensions.isAsciiPrintable
 import io.provenance.eventstream.stream.models.Event
@@ -8,7 +9,6 @@ import io.provenance.eventstream.stream.models.TxEvent
 import io.provenance.eventstream.stream.models.BlockEvent
 import io.provenance.eventstream.stream.models.StreamBlockImpl
 import io.provenance.eventstream.stream.models.StreamBlock
-import io.provenance.eventstream.stream.models.extensions.dateTime
 import mu.KotlinLogging
 
 fun consoleOutput(verbose: Boolean, nth: Int = 100): ConsoleOutput = ConsoleOutput(verbose, nth)

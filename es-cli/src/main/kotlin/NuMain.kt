@@ -202,7 +202,7 @@ fun main(args: Array<String>) {
             .buffer()
             .catch { log.error("", it) }
             .onEach {
-                kafkaFileOutput("../pio-testnet-1-kafka/json-data", moshi).invoke(it)
+                kafkaFileOutput("../pio-testnet-1-kafka/json-data").invoke(it)
             }
             .acking {
                 log.info("successfully acked:$it")

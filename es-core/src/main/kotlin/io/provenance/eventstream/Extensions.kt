@@ -1,9 +1,16 @@
 package io.provenance.eventstream.extensions
 
+import com.google.common.io.BaseEncoding
+import io.provenance.eventstream.stream.models.Block
+import io.provenance.eventstream.stream.models.extensions.hash
+import io.provenance.eventstream.stream.models.extensions.sha256
+import io.provenance.eventstream.stream.models.extensions.toHexString
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flatMapConcat
 import kotlinx.coroutines.flow.flatMapMerge
 import org.apache.commons.lang3.StringUtils
+import tendermint.types.BlockOuterClass
+import tendermint.types.Types
 import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
 import java.util.Base64
@@ -135,3 +142,13 @@ private object CharUtils {
      */
     fun isAsciiPrintable(ch: Char): Boolean = ch.code in 32..126
 }
+
+fun BlockOuterClass.Block.dateTime() = this.header?.dateTime()
+
+fun Types.Header.dateTime(): OffsetDateTime? =
+    runCatching { OffsetDateTime.parse(this.time.toString(), DateTimeFormatter.ISO_DATE_TIME) }.getOrNull()
+
+fun BlockOuterClass.Block.txHash(index: Int): String? = this.data.txsList[index].toStringUtf8().hash() //this.data?.txs?.get(index)?.hash()
+
+fun String.hash(): String = sha256(BaseEncoding.base64().decode(this)).toHexString()
+
