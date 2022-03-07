@@ -8,10 +8,13 @@ import io.provenance.eventstream.coroutines.DefaultDispatcherProvider
 import io.provenance.eventstream.coroutines.DispatcherProvider
 import io.provenance.eventstream.extensions.doFlatMap
 import io.provenance.eventstream.flow.extensions.chunked
+import io.provenance.eventstream.stream.clients.BlockData
 import io.provenance.eventstream.stream.clients.TendermintBlockFetcher
-import io.provenance.eventstream.stream.models.Block
-import io.provenance.eventstream.stream.models.BlockMeta
-import io.provenance.eventstream.stream.models.StreamBlockImpl
+import io.provenance.eventstream.stream.models.*
+import io.provenance.eventstream.stream.models.extensions.blockEvents
+import io.provenance.eventstream.stream.models.extensions.dateTime
+import io.provenance.eventstream.stream.models.extensions.txEvents
+import io.provenance.eventstream.stream.models.extensions.txHash
 import io.provenance.eventstream.stream.transformers.queryBlock
 import io.provenance.eventstream.utils.backoff
 import kotlinx.coroutines.FlowPreview
@@ -21,20 +24,7 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.InternalCoroutinesApi
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.cancellable
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.emitAll
-import kotlinx.coroutines.flow.merge
-import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.retryWhen
-import kotlinx.coroutines.flow.asFlow
-import kotlinx.coroutines.flow.transform
-import kotlinx.coroutines.flow.flowOn
-import kotlinx.coroutines.flow.channelFlow
-import kotlinx.coroutines.flow.onCompletion
-import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.flow.onStart
-import kotlinx.coroutines.flow.mapNotNull
+import kotlinx.coroutines.flow.*
 import kotlin.time.ExperimentalTime
 import mu.KotlinLogging
 import java.io.EOFException
@@ -85,34 +75,17 @@ class EventStream(
      *  block data.
      * @return A Flow of found historical blocks along with events associated with each block, if any.
      */
-    fun queryBlocks(blockHeights: Iterable<Long>): Flow<StreamBlockImpl> =
-        blockHeights.chunked(options.batchSize).asFlow().transform { chunkOfHeights: List<Long> ->
-            emitAll(
-                coroutineScope {
-                    // Concurrently process <batch-size> blocks at a time:
-                    chunkOfHeights.map { height ->
-                        async {
-                            queryBlock(
-                                height,
-                                skipIfNoTxs = options.skipIfEmpty,
-                                historical = true,
-                                fetcher,
-                                options
-                            )
-                        }
-                    }.awaitAll().filterNotNull()
-                }.asFlow()
-            )
-        }.flowOn(dispatchers.io())
+    private suspend fun queryBlocks(blockHeights: List<Long>): Flow<StreamBlockImpl> =
+        fetcher.getBlocks(blockHeights).map { it.toStreamBlock() }
 
     fun streamLiveBlocks(): Flow<StreamBlockImpl> {
         return streamLiveMetaBlocks()
             .toLiveStream()
     }
 
-    fun streamHistoricalBlocks(): Flow<StreamBlockImpl> {
+    suspend fun streamHistoricalBlocks(startingHeight: Long): Flow<StreamBlockImpl> {
         return streamMetaBlocks()
-            .toHistoricalStream()
+            .toHistoricalStream(startingHeight)
     }
 
     fun streamLiveMetaBlocks(): Flow<Block> {
@@ -123,28 +96,45 @@ class EventStream(
         return MetadataStream(options, fetcher).streamBlocks()
     }
 
-    @OptIn(InternalCoroutinesApi::class, ExperimentalCoroutinesApi::class)
-    fun Flow<BlockMeta>.toHistoricalStream(): Flow<StreamBlockImpl> {
-
-        return channelFlow {
-            val endHeight: Long = getEndingHeight() ?: error("Couldn't determine ending height")
-
-            this@toHistoricalStream
-                .chunked(options.batchSize, endHeight)
-                .flowOn(dispatchers.io())
-                .transform { blockmetas -> emit(blockmetas.map { it.header!!.height }) }
-                .doFlatMap(options.ordered, concurrency = options.concurrency) { queryBlocks(it) }
-                .flowOn(dispatchers.io())
-                .onCompletion { cause: Throwable? ->
-                    if (cause == null) {
-                        log.info("historical::exhausted historical block stream ok")
-                    } else {
-                        log.error("historical::exhausted block stream with error: ${cause.message}")
-                    }
-                }
-                .collect { this@channelFlow.send(it) }
+    private suspend fun <T, R> Flow<T>.doFlatmap(transform: suspend (value: T) -> Flow<R>): Flow<R> {
+        return if (options.ordered) {
+            flatMapConcat { transform(it) }
+        } else {
+            flatMapMerge(options.concurrency) { transform(it) }
         }
     }
+
+    private fun StreamBlock.isEmpty() = block.data?.txs?.isEmpty() ?: true
+
+    private fun Flow<StreamBlock>.filterNonEmptyIfSet(): Flow<StreamBlock> =
+        filter { !(options.skipEmptyBlocks && it.isEmpty()) }
+
+    private fun Flow<StreamBlock>.filterByEvents(): Flow<StreamBlock> =
+        filter { keepBlock(it.txEvents + it.blockEvents) }
+
+    private fun <T : EncodedBlockchainEvent> keepBlock(events: List<T>): Boolean {
+        if (options.txEventPredicate.isEmpty() && options.blockEvents.isEmpty()) {
+            return true
+        }
+
+        if (options.txEvents.isNotEmpty() && events.any { it.eventType in options.txEvents }) {
+            return true
+        }
+
+        if (options.blockEvents.isNotEmpty() && events.any { it.eventType in options.blockEvents }) {
+            return true
+        }
+
+        return false
+    }
+
+    suspend fun Flow<BlockMeta>.toHistoricalStream(startingHeight: Long): Flow<StreamBlockImpl> =
+        (startingHeight..getEndingHeight()!!)
+            .chunked(options.batchSize)
+            .asFlow()
+            .doFlatmap { queryBlocks(it).map { b -> b.copy(historical = true) } }
+            .filterNonEmptyIfSet()
+            .filterByEvents()
 
     @OptIn(InternalCoroutinesApi::class, ExperimentalCoroutinesApi::class)
     fun Flow<Block>.toLiveStream(): Flow<StreamBlockImpl> {
@@ -154,20 +144,9 @@ class EventStream(
                 .flowOn(dispatchers.io())
                 .onStart { log.info("live::starting") }
                 .mapNotNull { block: Block ->
-                    val maybeBlock = queryBlock(
-                        block.header!!.height,
-                        skipIfNoTxs = false,
-                        historical = false,
-                        fetcher,
-                        options
-                    )
-                    if (maybeBlock != null) {
-                        log.info("live::got block #${maybeBlock.height}")
-                        maybeBlock
-                    } else {
-                        log.info("live::skipping block #${block.header!!.height}")
-                        null
-                    }
+                   fetcher.getBlock(block.header?.height!!).toStreamBlock().also {
+                       log.debug("live::got block #${it.height}")
+                   }
                 }.onCompletion {
                     log.info("live::stopping event stream")
                     eventStreamService.stopListening()
@@ -193,6 +172,13 @@ class EventStream(
     private suspend fun getEndingHeight(): Long? =
         options.toHeight ?: fetcher.getCurrentHeight()
 
+
+    private fun BlockData.toStreamBlock(): StreamBlockImpl {
+        val blockDatetime = block.header?.dateTime()
+        val blockEvents = blockResult.blockEvents(blockDatetime)
+        val txEvents = blockResult.txEvents(blockDatetime) { index: Int -> block.txHash(index).orEmpty() }
+        return StreamBlockImpl(block, blockEvents, txEvents)
+    }
     /**
      * Constructs a Flow of live and historical blocks, plus associated event data.
      *
