@@ -148,7 +148,9 @@ fun BlockOuterClass.Block.dateTime() = this.header?.dateTime()
 fun Types.Header.dateTime(): OffsetDateTime? =
     runCatching { OffsetDateTime.parse(this.time.toString(), DateTimeFormatter.ISO_DATE_TIME) }.getOrNull()
 
-fun BlockOuterClass.Block.txHash(index: Int): String? = this.data.txsList[index].toStringUtf8().hash() //this.data?.txs?.get(index)?.hash()
+fun BlockOuterClass.Block.txHash(index: Int): String? = let {
+    this.data?.txsList?.get(index)?.hash() ?: null
+}
 
 fun String.hash(): String = sha256(BaseEncoding.base64().decode(this)).toHexString()
 

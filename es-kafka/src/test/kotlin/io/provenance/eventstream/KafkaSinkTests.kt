@@ -16,6 +16,7 @@ import org.apache.kafka.common.serialization.Serdes
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
+import tendermint.types.BlockOuterClass
 import java.lang.RuntimeException
 import java.time.OffsetDateTime
 
@@ -41,17 +42,17 @@ class KafkaSinkTests : TestBase() {
             MockProducer(false, serializer, serializer)
 
         val templates = Defaults.templates
-        val blockResponse = templates.readAs(BlockResponse::class.java, "block/2270370.json")
+        val blockResponse = templates.readAs(BlockOuterClass.Block.newBuilder(), "block/2270370.json")
         val blockResultsResponse = templates.readAs(BlockResultsResponse::class.java, "block_results/2270370.json")
 
         val blockEvents = blockResultsResponse!!.result.beginBlockEvents!!.map {
             BlockEvent(blockResultsResponse.result.height, OffsetDateTime.now(), it.type!!, it.attributes!!)
         }
-        val streamBlock = StreamBlockImpl(blockResponse!!.result!!.block!!, blockEvents, mutableListOf())
+        val streamBlock = StreamBlockImpl(blockResponse!!, blockEvents, mutableListOf())
         assert(mockProducer.history().isEmpty())
 
         val expectedKey =
-            "${blockResponse.result!!.block!!.header!!.chainId}.${blockResponse.result!!.block!!.header!!.height}"
+            "${blockResponse!!.header!!.chainId}.${blockResponse.header!!.height}"
 
         val record = kafkaBlockSink(producerProps, "testTopic", mockProducer).kafkaSink.sendHelper(
             expectedKey.toByteArray(),
@@ -86,16 +87,16 @@ class KafkaSinkTests : TestBase() {
             MockProducer(false, serializer, serializer)
 
         val templates = Defaults.templates
-        val blockResponse = templates.readAs(BlockResponse::class.java, "block/2270370.json")
+        val blockResponse = templates.readAs(BlockOuterClass.Block.newBuilder(), "block/2270370.json")
         val blockResultsResponse = templates.readAs(BlockResultsResponse::class.java, "block_results/2270370.json")
 
         val blockEvents = blockResultsResponse!!.result.beginBlockEvents!!.map {
             BlockEvent(blockResultsResponse.result.height, OffsetDateTime.now(), it.type!!, it.attributes!!)
         }
-        val streamBlock = StreamBlockImpl(blockResponse!!.result!!.block!!, blockEvents, mutableListOf())
+        val streamBlock = StreamBlockImpl(blockResponse!!, blockEvents, mutableListOf())
 
         val expectedKey =
-            "${blockResponse.result!!.block!!.header!!.chainId}.${blockResponse.result!!.block!!.header!!.height}"
+            "${blockResponse.header!!.chainId}.${blockResponse.header!!.height}"
 
         val record = kafkaBlockSink(producerProps, "testTopic", mockProducer).kafkaSink.sendHelper(
             streamBlock.toByteArray()!!,
