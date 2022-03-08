@@ -1,13 +1,15 @@
 package io.provenance.eventstream.stream.models
 
 import com.squareup.moshi.JsonClass
+import cosmos.base.abci.v1beta1.Abci
+import tendermint.abci.Types
 import tendermint.types.BlockOuterClass
 import java.io.Serializable
 
 interface StreamBlock {
     val block: BlockOuterClass.Block
-    val blockEvents: List<BlockEvent>
-    val txEvents: List<TxEvent>
+    val blockEvents: List<Types.Event>
+    val txEvents: List<Abci.StringEvent>
     val historical: Boolean
     val height: Long? get() = block.header?.height
 }
@@ -19,7 +21,7 @@ interface StreamBlock {
 @JsonClass(generateAdapter = true)
 open class StreamBlockImpl(
     override val block: BlockOuterClass.Block,
-    override val blockEvents: List<BlockEvent>,
-    override val txEvents: List<TxEvent>,
+    override val blockEvents: List<Types.Event>,
+    override val txEvents: List<Abci.StringEvent>,
     override val historical: Boolean = false
 ) : StreamBlock, Serializable

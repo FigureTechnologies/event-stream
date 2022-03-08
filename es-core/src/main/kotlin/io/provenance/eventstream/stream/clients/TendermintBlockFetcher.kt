@@ -21,7 +21,7 @@ class TendermintBlockFetcher(
     override suspend fun getBlock(height: Long): BlockOuterClass.Block {
         return tendermintServiceClient.block(height)
     }
-    override suspend fun getBlockResults(height: Long): BlockResultsResponse? {
-        return tendermintServiceClient.blockResults(height)
+    override suspend fun getBlockResults(block: BlockOuterClass.Block): io.provenance.eventstream.stream.clients.BlockResultsResponse? {
+        return tendermintServiceClient.blockResults(block)
     }
 }

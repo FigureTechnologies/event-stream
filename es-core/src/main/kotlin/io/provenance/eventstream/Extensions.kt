@@ -1,10 +1,15 @@
 package io.provenance.eventstream.extensions
 
 import com.google.common.io.BaseEncoding
-import io.provenance.eventstream.stream.models.Block
+import cosmos.base.abci.v1beta1.Abci
+import io.provenance.eventstream.stream.clients.BlockResultsResponse
+import io.provenance.eventstream.stream.models.BlockEvent
+import io.provenance.eventstream.stream.models.BlockResultsResponseResultEvents
+import io.provenance.eventstream.stream.models.TxEvent
 import io.provenance.eventstream.stream.models.extensions.hash
 import io.provenance.eventstream.stream.models.extensions.sha256
 import io.provenance.eventstream.stream.models.extensions.toHexString
+import io.provenance.eventstream.stream.models.extensions.toTxEvent
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flatMapConcat
 import kotlinx.coroutines.flow.flatMapMerge

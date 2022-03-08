@@ -154,7 +154,7 @@ fun main(args: Array<String>) {
         eventStream = EventStreamConfig(
             skipEmpty = !keepEmpty,
             websocket = WebsocketStreamConfig("ws://$node"),
-            rpc = RpcStreamConfig("http://$node", chainId),
+            rpc = RpcStreamConfig("grpc://$node", chainId),
             filter = StreamEventsFilterConfig(
                 txEvents = txFilter.split(",").filter { it.isNotBlank() }.toSet(),
                 blockEvents = blockFilter.split(",").filter { it.isNotBlank() }.toSet()
