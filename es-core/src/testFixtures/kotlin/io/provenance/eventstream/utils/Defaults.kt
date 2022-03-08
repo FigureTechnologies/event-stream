@@ -3,8 +3,8 @@ package io.provenance.eventstream.test.utils
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import io.provenance.eventstream.adapter.json.JSONObjectAdapter
-import io.provenance.eventstream.adapter.json.decoder.DecoderEngine
 import io.provenance.eventstream.adapter.json.decoder.MoshiDecoderEngine
+import io.provenance.eventstream.stream.infrastructure.Serializer
 import io.provenance.eventstream.stream.models.BlockResponse
 import io.provenance.eventstream.stream.models.BlockResultsResponse
 import io.provenance.eventstream.stream.models.BlockchainResponse
@@ -13,10 +13,11 @@ object Defaults {
 
     val moshi: Moshi = newMoshi()
 
-    private fun newMoshi(): Moshi = Moshi.Builder()
-        .add(KotlinJsonAdapterFactory())
+    private fun newMoshi(): Moshi = Serializer.moshiBuilder
+        .addLast(KotlinJsonAdapterFactory())
         .add(JSONObjectAdapter())
         .build()
+
 
     fun decoderEngine() = MoshiDecoderEngine(moshi)
 
