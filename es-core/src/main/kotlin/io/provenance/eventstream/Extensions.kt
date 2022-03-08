@@ -153,4 +153,3 @@ fun BlockOuterClass.Block.txHash(index: Int): String? = let {
 }
 
 fun String.hash(): String = sha256(BaseEncoding.base64().decode(this)).toHexString()
-

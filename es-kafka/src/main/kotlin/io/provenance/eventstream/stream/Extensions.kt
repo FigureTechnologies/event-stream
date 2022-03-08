@@ -5,8 +5,13 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.flow
 import org.apache.kafka.common.errors.SerializationException
-import java.io.*
-
+import java.io.ByteArrayOutputStream
+import java.io.ObjectOutputStream
+import java.io.InputStream
+import java.io.ByteArrayInputStream
+import java.io.ObjectInputStream
+import java.io.ObjectInputFilter
+import java.io.IOException
 
 fun Flow<KafkaStreamBlock<String, StreamBlockImpl>>.acking(block: (KafkaStreamBlock<String, StreamBlockImpl>) -> Unit): Flow<AckedKafkaStreamBlock<ByteArray, ByteArray>> {
     return flow {
@@ -41,7 +46,6 @@ fun ByteArray.toStreamBlock(): StreamBlockImpl? {
         throw SerializationException(e)
     }
 }
-
 
 // Convert object to byte[]
 @Throws(IOException::class)

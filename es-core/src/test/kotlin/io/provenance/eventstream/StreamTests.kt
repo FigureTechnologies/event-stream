@@ -159,7 +159,8 @@ class StreamTests : TestBase() {
 
             val tendermint: TendermintServiceClient = ServiceMocker.Builder()
                 .doFor("block") {
-                    templates.readAs(Block.newBuilder(), "block/${it[0]}.json") }
+                    templates.readAs(Block.newBuilder(), "block/${it[0]}.json")
+                }
                 .build(MockTendermintServiceClient::class.java)
 
             val expectedHeight = MIN_HISTORICAL_BLOCK_HEIGHT

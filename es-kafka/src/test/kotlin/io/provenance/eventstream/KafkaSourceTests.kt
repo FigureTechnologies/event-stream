@@ -4,9 +4,7 @@ import com.google.protobuf.util.JsonFormat
 import com.squareup.moshi.JsonAdapter
 import io.provenance.eventstream.stream.KafkaStreamBlock
 import io.provenance.eventstream.stream.acking
-import io.provenance.eventstream.stream.models.Block
 import io.provenance.eventstream.stream.models.BlockEvent
-import io.provenance.eventstream.stream.models.BlockResponse
 import io.provenance.eventstream.stream.models.BlockResultsResponse
 import io.provenance.eventstream.stream.models.StreamBlockImpl
 import io.provenance.eventstream.stream.toByteArray

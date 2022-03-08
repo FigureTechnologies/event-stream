@@ -1,8 +1,6 @@
 package io.provenance.eventstream.stream.observers
 
-import com.squareup.moshi.JsonAdapter
 import com.squareup.moshi.Moshi
-import com.squareup.moshi.adapter
 import io.provenance.blockchain.stream.api.BlockSink
 import io.provenance.eventstream.stream.models.StreamBlockImpl
 import io.provenance.eventstream.stream.models.StreamBlock

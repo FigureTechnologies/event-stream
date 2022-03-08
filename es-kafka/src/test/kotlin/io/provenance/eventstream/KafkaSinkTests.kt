@@ -2,7 +2,6 @@ package io.provenance.eventstream
 
 import io.provenance.eventstream.stream.kafkaBlockSink
 import io.provenance.eventstream.stream.models.BlockEvent
-import io.provenance.eventstream.stream.models.BlockResponse
 import io.provenance.eventstream.stream.models.BlockResultsResponse
 import io.provenance.eventstream.stream.models.StreamBlockImpl
 import io.provenance.eventstream.stream.toByteArray

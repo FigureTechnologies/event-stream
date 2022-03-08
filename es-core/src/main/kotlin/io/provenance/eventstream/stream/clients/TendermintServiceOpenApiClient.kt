@@ -7,7 +7,8 @@ import io.provenance.client.grpc.GasEstimationMethod
 import io.provenance.client.grpc.PbClient
 import io.provenance.eventstream.stream.TendermintServiceClient
 import io.provenance.eventstream.stream.apis.InfoApi
-import io.provenance.eventstream.stream.models.*
+import io.provenance.eventstream.stream.models.BlockResultsResponse
+import io.provenance.eventstream.stream.models.BlockchainResponse
 import tendermint.abci.ABCIApplicationGrpc
 import tendermint.abci.Types
 import tendermint.types.BlockOuterClass
@@ -22,9 +23,9 @@ import java.net.URI
  */
 class TendermintServiceOpenApiClient(rpcUrlBase: URI, chainId: String) : TendermintServiceClient {
     private val pbClient = PbClient(
-            chainId = chainId,
-            channelUri = URI("http://localhost:9090"),
-            gasEstimationMethod = GasEstimationMethod.MSG_FEE_CALCULATION
+        chainId = chainId,
+        channelUri = URI("http://localhost:9090"),
+        gasEstimationMethod = GasEstimationMethod.MSG_FEE_CALCULATION
     )
 
     private val abciApi = ABCIApplicationGrpc.newFutureStub(
@@ -55,7 +56,9 @@ class TendermintServiceOpenApiClient(rpcUrlBase: URI, chainId: String) : Tenderm
     override suspend fun abciInfo(): Types.ResponseInfo = abciApi.info(Types.RequestInfo.getDefaultInstance()).get()
 
     override suspend fun block(height: Long?): BlockOuterClass.Block =
-        pbClient.tendermintService.getBlockByHeight(Query.GetBlockByHeightRequest.newBuilder().setHeight(height!!).build()).block
+        pbClient.tendermintService.getBlockByHeight(
+            Query.GetBlockByHeightRequest.newBuilder().setHeight(height!!).build()
+        ).block
 
     override suspend fun blockResults(height: Long?): BlockResultsResponse = infoApi.blockResults(height)
 
