@@ -9,6 +9,7 @@ import io.provenance.eventstream.config.StreamEventsFilterConfig
 import io.provenance.eventstream.config.BatchConfig
 import io.provenance.eventstream.config.Options
 import io.provenance.eventstream.observers.kafkaFileOutput
+import io.provenance.eventstream.stream.BlockStreamOptions
 import io.provenance.eventstream.stream.acking
 import io.provenance.eventstream.stream.infrastructure.Serializer.moshi
 import io.provenance.eventstream.stream.models.StreamBlock
@@ -153,8 +154,10 @@ fun main(args: Array<String>) {
                 txEvents = txFilter.split(",").filter { it.isNotBlank() }.toSet(),
                 blockEvents = blockFilter.split(",").filter { it.isNotBlank() }.toSet()
             ),
-            batch = BatchConfig(batchSize, timeoutMillis = timeout.toLong())
+            batch = BatchConfig(batchSize, timeoutMillis = timeout.toLong()),
+            ordered = ordered
         ),
+        node = node
     )
 
     val log = KotlinLogging.logger {}
@@ -172,13 +175,13 @@ fun main(args: Array<String>) {
         }
     }
 
-    val options = Options(
+    val options = BlockStreamOptions(
         batchSize = batchSize,
         fromHeight = fromHeight?.toLong(),
         toHeight = toHeight?.toLong(),
-        skipIfEmpty = config.eventStream.skipEmptyBlocks!!,
-        txEventPredicate = { config.eventStream.filter.txEvents.isEmpty() || it in config.eventStream.filter.txEvents },
-        blockEventPredicate = { config.eventStream.filter.blockEvents.isEmpty() || it in config.eventStream.filter.blockEvents },
+        skipEmptyBlocks = config.eventStream.skipEmptyBlocks!!,
+        txEvents = config.eventStream.filter.txEvents,
+        blockEvents = config.eventStream.filter.blockEvents,
         concurrency = concurrency,
     )
 
@@ -194,7 +197,7 @@ fun main(args: Array<String>) {
             .buffer()
             .catch { log.error("", it) }
             .onCompletion { log.info("stream fetch complete", it) }
-            .onEach(fileOutput("../pio-testnet-1/json-data", moshi))
+            .onEach(fileOutput("../pio-testnet-1/json-data", decoderEngine()))
             .onEach(kafkaBlockSink(producerProps("producer"), "test"))
 
         val kafkaStreamFlow = kafkaBlockSource(consumerProps("test"), "test").streamBlocks()

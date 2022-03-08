@@ -67,13 +67,7 @@ class Factory(
      * @param setOptions The closure used to configure the [EventStream.Options.Builder] passed to it.
      * @return The created event stream instance.
      */
-    fun createStream(setOptions: (options: Options.Builder) -> Unit = ::noop): EventStream {
-        val optionsBuilder = Options.Builder()
-            .batchSize(config.eventStream.batch.size)
-            .skipIfEmpty(config.eventStream.skipEmptyBlocks ?: false)
-        setOptions(optionsBuilder)
-        return createStream(optionsBuilder.build())
-    }
+
 
     /**
      * Creates a new event stream. The event stream is configured using a supplied [EventStream.Options] instance.

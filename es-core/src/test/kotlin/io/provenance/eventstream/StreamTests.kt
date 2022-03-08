@@ -1,10 +1,8 @@
-package io.provenance.eventstream.test
+package io.provenance.eventstream
 
-import com.squareup.moshi.JsonEncodingException
 import com.tinder.scarlet.Message
 import com.tinder.scarlet.WebSocket
 import io.provenance.eventstream.adapter.json.decoder.DecoderEncodingException
-import io.provenance.eventstream.adapter.json.decoder.adapter
 import io.provenance.eventstream.stream.TendermintServiceClient
 import io.provenance.eventstream.stream.models.*
 import io.provenance.eventstream.stream.rpc.response.MessageType
@@ -17,7 +15,6 @@ import io.provenance.eventstream.test.utils.EXPECTED_TOTAL_BLOCKS
 import io.provenance.eventstream.test.utils.MAX_HISTORICAL_BLOCK_HEIGHT
 import io.provenance.eventstream.test.utils.MIN_HISTORICAL_BLOCK_HEIGHT
 import io.provenance.eventstream.test.utils.Builders
-import io.provenance.eventstream.test.utils.Defaults.decoderEngine
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.count
@@ -32,7 +29,7 @@ import org.junit.jupiter.api.assertThrows
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class StreamTests : TestBase() {
-    private val decoder = MessageType.Decoder(decoderEngine)
+    private val decoder = MessageType.Decoder(decoderEngine())
 
     @BeforeAll
     override fun setup() {
@@ -298,11 +295,9 @@ class StreamTests : TestBase() {
                 // If not skipping empty blocks, we should get EXPECTED_TOTAL_BLOCKS:
                 val collectedNoSkip = Builders.eventStream()
                     .dispatchers(dispatcherProvider)
-                    .fromHeight(MIN_HISTORICAL_BLOCK_HEIGHT)
-                    .toHeight(MAX_HISTORICAL_BLOCK_HEIGHT)
-                    .skipIfEmpty(false)
+                    .skipEmptyBlocks(false)
                     .build()
-                    .streamHistoricalBlocks()
+                    .streamHistoricalBlocks(MIN_HISTORICAL_BLOCK_HEIGHT, MAX_HISTORICAL_BLOCK_HEIGHT)
                     .toList()
 
                 assert(collectedNoSkip.size.toLong() == EXPECTED_TOTAL_BLOCKS)
@@ -311,10 +306,8 @@ class StreamTests : TestBase() {
                 // If skipping empty blocks, we should get EXPECTED_NONEMPTY_BLOCKS:
                 val collectedSkip = Builders.eventStream()
                     .dispatchers(dispatcherProvider)
-                    .fromHeight(MIN_HISTORICAL_BLOCK_HEIGHT)
-                    .toHeight(MAX_HISTORICAL_BLOCK_HEIGHT)
                     .build()
-                    .streamHistoricalBlocks()
+                    .streamHistoricalBlocks(MIN_HISTORICAL_BLOCK_HEIGHT, MAX_HISTORICAL_BLOCK_HEIGHT)
                     .toList()
 
                 assert(collectedSkip.size.toLong() == EXPECTED_NONEMPTY_BLOCKS)
@@ -331,9 +324,7 @@ class StreamTests : TestBase() {
                 // If not skipping empty blocks, we should get 100:
                 val collectedNoSkip = Builders.eventStream()
                     .dispatchers(dispatcherProvider)
-                    .fromHeight(MIN_HISTORICAL_BLOCK_HEIGHT)
-                    .toHeight(MAX_HISTORICAL_BLOCK_HEIGHT)
-                    .skipIfEmpty(false)
+                    .skipEmptyBlocks(false)
                     .build()
                     .streamMetaBlocks()
                     .toList()
@@ -343,9 +334,7 @@ class StreamTests : TestBase() {
                 // If skipping empty blocks, we should get EXPECTED_NONEMPTY_BLOCKS:
                 val collectedSkip = Builders.eventStream()
                     .dispatchers(dispatcherProvider)
-                    .fromHeight(MIN_HISTORICAL_BLOCK_HEIGHT)
-                    .toHeight(MAX_HISTORICAL_BLOCK_HEIGHT)
-                    .skipIfEmpty(true)
+                    .skipEmptyBlocks(true)
                     .build()
                     .streamMetaBlocks()
                     .toList()
@@ -372,7 +361,7 @@ class StreamTests : TestBase() {
                     .dispatchers(dispatcherProvider)
                     .eventStreamService(eventStreamService)
                     .tendermintService(tendermintService)
-                    .skipIfEmpty(false)
+                    .skipEmptyBlocks(false)
                     .build()
 
                 val collected = eventStream
@@ -404,9 +393,7 @@ class StreamTests : TestBase() {
                     .dispatchers(dispatcherProvider)
                     .eventStreamService(eventStreamService)
                     .tendermintService(tendermintService)
-                    .fromHeight(MIN_HISTORICAL_BLOCK_HEIGHT)
-                    .toHeight(MAX_HISTORICAL_BLOCK_HEIGHT)
-                    .skipIfEmpty(true)
+                    .skipEmptyBlocks(true)
                     .build()
 
                 val expectTotal = EXPECTED_NONEMPTY_BLOCKS + eventStreamService.expectedResponseCount()
@@ -442,8 +429,7 @@ class StreamTests : TestBase() {
                         .dispatchers(dispatcherProvider)
                         .eventStreamService(eventStreamService)
                         .tendermintService(tendermintService)
-                        .fromHeight(MIN_HISTORICAL_BLOCK_HEIGHT)
-                        .skipIfEmpty(true)
+                        .skipEmptyBlocks(true)
                         .build()
 
                     eventStream.streamBlocks().toList()
@@ -473,9 +459,8 @@ class StreamTests : TestBase() {
                     .dispatchers(dispatcherProvider)
                     .eventStreamService(eventStreamService)
                     .tendermintService(tendermintService)
-                    .fromHeight(MIN_HISTORICAL_BLOCK_HEIGHT)
-                    .skipIfEmpty(true)
-                    .matchTxEvent { it == requireTxEvent }
+                    .skipEmptyBlocks(true)
+                    .matchTxEvents(setOf(requireTxEvent))
                     .build()
 
                 assert(eventStream.streamBlocks().count() == 0)
@@ -500,9 +485,8 @@ class StreamTests : TestBase() {
                     .dispatchers(dispatcherProvider)
                     .eventStreamService(eventStreamService)
                     .tendermintService(tendermintService)
-                    .fromHeight(MIN_HISTORICAL_BLOCK_HEIGHT)
-                    .skipIfEmpty(true)
-                    .matchTxEvent { it == requireTxEvent }
+                    .skipEmptyBlocks(true)
+                    .matchTxEvents(setOf(requireTxEvent))
                     .build()
 
                 val collected = eventStream

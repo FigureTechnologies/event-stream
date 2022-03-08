@@ -14,7 +14,8 @@ sealed interface MessageType {
     /**
      * Decode the supplied input into one of the variants of [MessageType].
      */
-    class Decoder(val engine: DecoderEngine) {
+    class Decoder(private val engine: DecoderEngine) {
+
         // Decoders are attempted according to their assigned priority in descending order:
         private val decoders =
             TDecoder::class.sealedSubclasses.mapNotNull { clazz -> clazz.primaryConstructor?.call(engine) }
