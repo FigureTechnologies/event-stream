@@ -3,6 +3,7 @@ package io.provenance.eventstream
 import com.squareup.moshi.JsonAdapter
 import io.provenance.eventstream.stream.KafkaStreamBlock
 import io.provenance.eventstream.stream.acking
+import io.provenance.eventstream.stream.infrastructure.Serializer.moshi
 import io.provenance.eventstream.stream.models.Block
 import io.provenance.eventstream.stream.models.BlockEvent
 import io.provenance.eventstream.stream.models.BlockResponse
