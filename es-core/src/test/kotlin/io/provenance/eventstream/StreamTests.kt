@@ -3,14 +3,11 @@ package io.provenance.eventstream.test
 import com.squareup.moshi.JsonEncodingException
 import com.tinder.scarlet.Message
 import com.tinder.scarlet.WebSocket
+import io.provenance.eventstream.adapter.json.decoder.DecoderEncodingException
+import io.provenance.eventstream.adapter.json.decoder.adapter
 import io.provenance.eventstream.stream.TendermintServiceClient
-import io.provenance.eventstream.stream.models.Event
-import io.provenance.eventstream.stream.models.toDecodedMap
-import io.provenance.eventstream.stream.models.BlockResultsResponse
-import io.provenance.eventstream.stream.models.ABCIInfoResponse
-import io.provenance.eventstream.stream.models.BlockResponse
-import io.provenance.eventstream.stream.models.BlockchainResponse
-import io.provenance.eventstream.stream.models.rpc.response.MessageType
+import io.provenance.eventstream.stream.models.*
+import io.provenance.eventstream.stream.rpc.response.MessageType
 import io.provenance.eventstream.test.base.TestBase
 import io.provenance.eventstream.test.mocks.MockEventStreamService
 import io.provenance.eventstream.test.mocks.MockTendermintServiceClient
@@ -20,6 +17,7 @@ import io.provenance.eventstream.test.utils.EXPECTED_TOTAL_BLOCKS
 import io.provenance.eventstream.test.utils.MAX_HISTORICAL_BLOCK_HEIGHT
 import io.provenance.eventstream.test.utils.MIN_HISTORICAL_BLOCK_HEIGHT
 import io.provenance.eventstream.test.utils.Builders
+import io.provenance.eventstream.test.utils.Defaults.decoderEngine
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.count
@@ -34,8 +32,7 @@ import org.junit.jupiter.api.assertThrows
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class StreamTests : TestBase() {
-
-    val decoder = MessageType.Decoder(moshi)
+    private val decoder = MessageType.Decoder(decoderEngine)
 
     @BeforeAll
     override fun setup() {
@@ -65,7 +62,7 @@ class StreamTests : TestBase() {
 
         @Test
         fun testTryDecodeMalformedMessage() {
-            assertThrows<JsonEncodingException> {
+            assertThrows<DecoderEncodingException> {
                 decoder.decode(templates.read("rpc/responses/malformed.json"))
             }
         }
@@ -286,7 +283,7 @@ class StreamTests : TestBase() {
                     val event = receiver.receive()
                     assert(event is WebSocket.Event.OnMessageReceived)
                     val payload = ((event as WebSocket.Event.OnMessageReceived).message as Message.Text).value
-                    val response: BlockResponse? = moshi.adapter(BlockResponse::class.java).fromJson(payload)
+                    val response: BlockResponse? = decoderEngine.adapter<BlockResponse>(BlockResponse::class.java).fromJson(payload)
                     assert(response?.result?.block?.header?.height in heights)
                 }
             }
@@ -298,7 +295,7 @@ class StreamTests : TestBase() {
 
             dispatcherProvider.runBlockingTest {
 
-                // If not skipping empty blocks, we should get 100:
+                // If not skipping empty blocks, we should get EXPECTED_TOTAL_BLOCKS:
                 val collectedNoSkip = Builders.eventStream()
                     .dispatchers(dispatcherProvider)
                     .fromHeight(MIN_HISTORICAL_BLOCK_HEIGHT)

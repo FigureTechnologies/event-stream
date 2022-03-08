@@ -46,6 +46,14 @@ dependencies {
     testImplementation("org.junit.jupiter", "junit-jupiter-api", Versions.JUnit.Core)
     testImplementation("org.junit.jupiter", "junit-jupiter-engine", Versions.JUnit.Core)
     testImplementation("org.junit-pioneer", "junit-pioneer", Versions.JUnit.Pioneer)
+
+    implementation("com.tinder.scarlet", "scarlet", Versions.Scarlet)
+    implementation("com.tinder.scarlet", "stream-adapter-coroutines", Versions.Scarlet)
+    implementation("com.tinder.scarlet", "websocket-okhttp", Versions.Scarlet)
+    implementation("com.tinder.scarlet", "message-adapter-moshi", Versions.Scarlet)
+
+    implementation("com.sksamuel.hoplite", "hoplite-core", Versions.Hoplite)
+    implementation("com.sksamuel.hoplite", "hoplite-yaml", Versions.Hoplite)
 }
 
 // Compilation:

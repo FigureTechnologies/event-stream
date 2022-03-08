@@ -15,6 +15,7 @@ import io.provenance.eventstream.adapter.json.decoder.MoshiDecoderEngine
 import io.provenance.eventstream.config.Config
 import io.provenance.eventstream.config.Environment
 import io.provenance.eventstream.config.Options
+import io.provenance.eventstream.stream.BlockStreamOptions
 import io.provenance.eventstream.stream.EventStream
 import io.provenance.eventstream.stream.TendermintServiceClient
 import io.provenance.eventstream.stream.clients.TendermintBlockFetcher
@@ -104,7 +105,7 @@ fun defaultTendermintFetcher(rpcUri: String): TendermintBlockFetcher =
  *
  */
 @OptIn(ExperimentalCoroutinesApi::class, ExperimentalTime::class)
-fun defaultEventStream(config: Config, options: Options, okHttpClient: OkHttpClient = defaultOkHttpClient(), moshi: Moshi = defaultMoshi(), fetcher: TendermintBlockFetcher = defaultTendermintFetcher(config.eventStream.rpc.uri)): EventStream {
+fun defaultEventStream(config: Config, options: BlockStreamOptions, okHttpClient: OkHttpClient = defaultOkHttpClient(), moshi: Moshi = defaultMoshi(), fetcher: TendermintBlockFetcher = defaultTendermintFetcher(config.eventStream.rpc.uri)): EventStream {
     val factory = Factory(
         config = config,
         moshi = moshi,

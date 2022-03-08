@@ -6,10 +6,6 @@ import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.DEFAULT_CONCURRENCY
 import kotlinx.coroutines.flow.Flow
 
-interface BlockSource {
-    suspend fun streamBlocks(from: Long?, toInclusive: Long? = Long.MAX_VALUE): Flow<StreamBlock>
-}
-
 data class BlockData(val block: Block, val blockResult: BlockResultsResponseResult)
 
 open class BlockFetchException(m: String) : Exception(m)

@@ -1,14 +1,10 @@
 package io.provenance.eventstream.stream
 
 import com.squareup.moshi.JsonDataException
-import com.squareup.moshi.Moshi
 import io.provenance.blockchain.stream.api.BlockSource
 import io.provenance.eventstream.adapter.json.decoder.DecoderEngine
-import io.provenance.eventstream.config.Options
 import io.provenance.eventstream.coroutines.DefaultDispatcherProvider
 import io.provenance.eventstream.coroutines.DispatcherProvider
-import io.provenance.eventstream.extensions.doFlatMap
-import io.provenance.eventstream.flow.extensions.chunked
 import io.provenance.eventstream.stream.clients.BlockData
 import io.provenance.eventstream.stream.clients.TendermintBlockFetcher
 import io.provenance.eventstream.stream.models.*
@@ -16,7 +12,6 @@ import io.provenance.eventstream.stream.models.extensions.blockEvents
 import io.provenance.eventstream.stream.models.extensions.dateTime
 import io.provenance.eventstream.stream.models.extensions.txEvents
 import io.provenance.eventstream.stream.models.extensions.txHash
-import io.provenance.eventstream.stream.transformers.queryBlock
 import io.provenance.eventstream.utils.backoff
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
@@ -80,7 +75,7 @@ class EventStream(
             .toLiveStream()
     }
 
-    suspend fun streamHistoricalBlocks(startingHeight: Long, endingHeight: Long): Flow<StreamBlockImpl> {
+    suspend fun streamHistoricalBlocks(startingHeight: Long, endingHeight: Long): Flow<StreamBlock> {
         return streamMetaBlocks()
             .toHistoricalStream(startingHeight, endingHeight)
     }
@@ -125,7 +120,7 @@ class EventStream(
         return false
     }
 
-    suspend fun Flow<BlockMeta>.toHistoricalStream(startingHeight: Long, endingHeight: Long): Flow<StreamBlockImpl> =
+    private suspend fun Flow<BlockMeta>.toHistoricalStream(startingHeight: Long, endingHeight: Long): Flow<StreamBlock> =
         (startingHeight..endingHeight)
             .chunked(options.batchSize)
             .asFlow()
@@ -187,7 +182,7 @@ class EventStream(
      *
      * @return A Flow of live and historical blocks, plus associated event data.
      */
-    override fun streamBlocks(): Flow<StreamBlockImpl> = flow {
+    override fun streamBlocks(): Flow<StreamBlock> = flow {
         val startingHeight: Long? = options.fromHeight
         emitAll(
             if (startingHeight != null) {

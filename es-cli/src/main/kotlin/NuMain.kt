@@ -146,7 +146,7 @@ fun main(args: Array<String>) {
 
     val config = Config(
         eventStream = EventStreamConfig(
-            skipEmpty = !keepEmpty,
+            skipEmptyBlocks = !keepEmpty,
             websocket = WebsocketStreamConfig("ws://$node"),
             rpc = RpcStreamConfig("http://$node"),
             filter = StreamEventsFilterConfig(
@@ -176,7 +176,7 @@ fun main(args: Array<String>) {
         batchSize = batchSize,
         fromHeight = fromHeight?.toLong(),
         toHeight = toHeight?.toLong(),
-        skipIfEmpty = config.eventStream.skipEmpty,
+        skipIfEmpty = config.eventStream.skipEmptyBlocks!!,
         txEventPredicate = { config.eventStream.filter.txEvents.isEmpty() || it in config.eventStream.filter.txEvents },
         blockEventPredicate = { config.eventStream.filter.blockEvents.isEmpty() || it in config.eventStream.filter.blockEvents },
         concurrency = concurrency,

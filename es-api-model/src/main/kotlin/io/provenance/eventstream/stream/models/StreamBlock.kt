@@ -15,7 +15,7 @@ interface StreamBlock {
  * block is "historical" (not live streamed), and metadata, if any.
  */
 @JsonClass(generateAdapter = true)
-open class StreamBlockImpl(
+data class StreamBlockImpl(
     override val block: Block,
     override val blockEvents: List<BlockEvent>,
     override val txEvents: List<TxEvent>,
