@@ -68,7 +68,6 @@ class Factory(
      * @return The created event stream instance.
      */
 
-
     /**
      * Creates a new event stream. The event stream is configured using a supplied [EventStream.Options] instance.
      *

@@ -13,8 +13,7 @@ class InMemoryCheckpoint(override val checkEvery: Long = 20) : Checkpoint(checkE
 
     override fun checkpoint(at: Long) = currentBlock.set(at)
     override fun lastCheckpoint(): Long? = currentBlock.get().let {
-        if (it == 0L) { null }
-        else { it }
+        if (it == 0L) { null } else { it }
     }
 }
 

@@ -1,6 +1,12 @@
 package io.provenance.eventstream
 
-import com.sksamuel.hoplite.*
+// linting is giving a hard time on these kotlinx packages that cannot be auto-corrected,
+// IntelliJ is also giving linting errors if the imports are changed to individual imports.
+// ktlint-disable no-wildcard-imports
+import com.sksamuel.hoplite.ConfigLoader
+import com.sksamuel.hoplite.PropertySource
+import com.sksamuel.hoplite.addCommandLineSource
+import com.sksamuel.hoplite.addEnvironmentSource
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import com.tinder.scarlet.Scarlet
 import com.tinder.scarlet.messageadapter.moshi.MoshiMessageAdapter
@@ -11,7 +17,8 @@ import io.provenance.blockchain.stream.api.BlockSource
 import io.provenance.eventstream.adapter.json.JSONObjectAdapter
 import io.provenance.eventstream.adapter.json.decoder.MoshiDecoderEngine
 import io.provenance.eventstream.config.Config
-import io.provenance.eventstream.stream.*
+import io.provenance.eventstream.stream.BlockStreamFactory
+import io.provenance.eventstream.stream.DefaultBlockStreamFactory
 import io.provenance.eventstream.stream.clients.TendermintBlockFetcher
 import io.provenance.eventstream.stream.clients.TendermintServiceOpenApiClient
 import io.provenance.eventstream.stream.infrastructure.Serializer
@@ -19,8 +26,17 @@ import io.provenance.eventstream.stream.models.StreamBlock
 import io.provenance.eventstream.stream.models.StreamBlockImpl
 import io.provenance.eventstream.stream.observers.consoleOutput
 import io.provenance.eventstream.stream.observers.fileOutput
-import kotlinx.coroutines.*
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.buffer
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.onCompletion
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.runBlocking
 import mu.KotlinLogging
 import okhttp3.OkHttpClient
 import java.net.URI
@@ -93,7 +109,6 @@ fun main(args: Array<String>) {
             .observe(fileOutput("../pio-testnet-1/json-data", decoderEngine))
             .onCompletion { log.info("stream fetch complete", it) }
             .collect()
-
     }
 
     // OkHttp leaves a non-daemon executor running in the background. Have to explicitly shut down
@@ -103,3 +118,6 @@ fun main(args: Array<String>) {
 }
 
 private fun Flow<StreamBlock>.observe(block: BlockSink) = onEach { block(it) }
+
+private fun Flow<StreamBlock>.onEach(block: BlockSink) =
+    onEach { block(it) }

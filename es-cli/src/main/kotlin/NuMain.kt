@@ -7,7 +7,6 @@ import io.provenance.eventstream.config.WebsocketStreamConfig
 import io.provenance.eventstream.config.RpcStreamConfig
 import io.provenance.eventstream.config.StreamEventsFilterConfig
 import io.provenance.eventstream.config.BatchConfig
-import io.provenance.eventstream.config.Options
 import io.provenance.eventstream.observers.kafkaFileOutput
 import io.provenance.eventstream.stream.BlockStreamOptions
 import io.provenance.eventstream.stream.acking

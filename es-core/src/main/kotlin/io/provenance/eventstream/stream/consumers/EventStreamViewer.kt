@@ -1,7 +1,6 @@
 package io.provenance.eventstream.stream.consumers
 
 import io.provenance.eventstream.Factory
-import io.provenance.eventstream.config.Options
 import io.provenance.eventstream.stream.BlockStreamOptions
 import io.provenance.eventstream.stream.EventStream
 import io.provenance.eventstream.stream.models.StreamBlock

@@ -2,7 +2,6 @@ package io.provenance.eventstream.test.utils
 
 import com.squareup.moshi.Moshi
 import io.provenance.eventstream.adapter.json.decoder.MoshiDecoderEngine
-import io.provenance.eventstream.config.Options
 import io.provenance.eventstream.coroutines.DispatcherProvider
 import io.provenance.eventstream.stream.BlockStreamOptions
 import io.provenance.eventstream.stream.EventStreamService

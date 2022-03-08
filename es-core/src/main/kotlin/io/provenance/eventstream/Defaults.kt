@@ -14,7 +14,6 @@ import io.provenance.eventstream.adapter.json.JSONObjectAdapter
 import io.provenance.eventstream.adapter.json.decoder.MoshiDecoderEngine
 import io.provenance.eventstream.config.Config
 import io.provenance.eventstream.config.Environment
-import io.provenance.eventstream.config.Options
 import io.provenance.eventstream.stream.BlockStreamOptions
 import io.provenance.eventstream.stream.EventStream
 import io.provenance.eventstream.stream.TendermintServiceClient
@@ -80,7 +79,6 @@ fun defaultMoshi(): Moshi = Moshi.Builder()
     .add(KotlinJsonAdapterFactory())
     .add(JSONObjectAdapter())
     .build()
-
 
 fun decoderEngine() = MoshiDecoderEngine(moshi)
 /**

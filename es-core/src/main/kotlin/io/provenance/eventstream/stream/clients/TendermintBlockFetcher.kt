@@ -1,7 +1,6 @@
 package io.provenance.eventstream.stream.clients
 
 import io.provenance.eventstream.stream.TendermintServiceClient
-import io.provenance.eventstream.stream.models.Block
 import io.provenance.eventstream.stream.models.BlockMeta
 import io.provenance.eventstream.stream.models.BlockResultsResponse
 import kotlinx.coroutines.FlowPreview

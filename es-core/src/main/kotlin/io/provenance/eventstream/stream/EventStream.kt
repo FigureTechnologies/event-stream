@@ -7,15 +7,43 @@ import io.provenance.eventstream.coroutines.DefaultDispatcherProvider
 import io.provenance.eventstream.coroutines.DispatcherProvider
 import io.provenance.eventstream.stream.clients.BlockData
 import io.provenance.eventstream.stream.clients.TendermintBlockFetcher
-import io.provenance.eventstream.stream.models.*
+import io.provenance.eventstream.stream.models.Block
+import io.provenance.eventstream.stream.models.BlockMeta
+import io.provenance.eventstream.stream.models.EncodedBlockchainEvent
+import io.provenance.eventstream.stream.models.StreamBlock
+import io.provenance.eventstream.stream.models.StreamBlockImpl
 import io.provenance.eventstream.stream.models.extensions.blockEvents
 import io.provenance.eventstream.stream.models.extensions.dateTime
 import io.provenance.eventstream.stream.models.extensions.txEvents
 import io.provenance.eventstream.stream.models.extensions.txHash
 import io.provenance.eventstream.utils.backoff
-import kotlinx.coroutines.*
+import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.InternalCoroutinesApi
+import kotlinx.coroutines.async
 import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.asFlow
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.buffer
+import kotlinx.coroutines.flow.cancellable
+import kotlinx.coroutines.flow.channelFlow
+import kotlinx.coroutines.flow.consumeAsFlow
+import kotlinx.coroutines.flow.emitAll
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.flatMapConcat
+import kotlinx.coroutines.flow.flatMapMerge
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.mapNotNull
+import kotlinx.coroutines.flow.merge
+import kotlinx.coroutines.flow.onCompletion
+import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.onStart
+import kotlinx.coroutines.flow.retryWhen
 import kotlin.time.ExperimentalTime
 import mu.KotlinLogging
 import java.io.EOFException
@@ -67,7 +95,7 @@ class EventStream(
      *  block data.
      * @return A Flow of found historical blocks along with events associated with each block, if any.
      */
-    private suspend fun queryBlocks(blockHeights: List<Long>): Flow<StreamBlockImpl> =
+    private suspend fun queryBlocks(blockHeights: List<Long>): kotlinx.coroutines.flow.Flow<StreamBlockImpl> =
         fetcher.getBlocks(blockHeights).map { it.toStreamBlock() }
 
     fun streamLiveBlocks(): Flow<StreamBlockImpl> {
@@ -133,8 +161,6 @@ class EventStream(
             .filterNonEmptyIfSet()
             .filterByEvents()
 
-
-
     @OptIn(InternalCoroutinesApi::class, ExperimentalCoroutinesApi::class)
     fun Flow<Block>.toLiveStream(): Flow<StreamBlockImpl> {
 
@@ -143,9 +169,9 @@ class EventStream(
                 .flowOn(dispatchers.io())
                 .onStart { log.info("live::starting") }
                 .mapNotNull { block: Block ->
-                   fetcher.getBlock(block.header?.height!!).toStreamBlock().also {
-                       log.debug("live::got block #${it.height}")
-                   }
+                    fetcher.getBlock(block.header?.height!!).toStreamBlock().also {
+                        log.debug("live::got block #${it.height}")
+                    }
                 }.onCompletion {
                     log.info("live::stopping event stream")
                     eventStreamService.stopListening()
@@ -163,7 +189,6 @@ class EventStream(
         }
     }
 
-
     /**
      * Computes and returns the ending height (if it can be determined) tobe used when streaming historical blocks.
      *
@@ -171,7 +196,6 @@ class EventStream(
      */
     private suspend fun getEndingHeight(): Long? =
         options.toHeight ?: fetcher.getCurrentHeight()
-
 
     private fun BlockData.toStreamBlock(): StreamBlockImpl {
         val blockDatetime = block.header?.dateTime()

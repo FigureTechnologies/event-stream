@@ -1,7 +1,6 @@
 package io.provenance.eventstream.stream.transformers
 
 import io.provenance.eventstream.config.Options
-import io.provenance.eventstream.stream.clients.BlockData
 import io.provenance.eventstream.stream.clients.TendermintBlockFetcher
 import io.provenance.eventstream.stream.models.Block
 import io.provenance.eventstream.stream.models.StreamBlockImpl

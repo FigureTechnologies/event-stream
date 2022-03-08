@@ -18,7 +18,6 @@ object Defaults {
         .add(JSONObjectAdapter())
         .build()
 
-
     fun decoderEngine() = MoshiDecoderEngine(moshi)
 
     val templates = newTemplate()
