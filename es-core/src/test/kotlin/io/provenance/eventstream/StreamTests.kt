@@ -398,6 +398,8 @@ class StreamTests : TestBase() {
                     .dispatchers(dispatcherProvider)
                     .eventStreamService(eventStreamService)
                     .tendermintService(tendermintService)
+                    .fromHeight(MIN_HISTORICAL_BLOCK_HEIGHT)
+                    .toHeight(MAX_HISTORICAL_BLOCK_HEIGHT)
                     .skipEmptyBlocks(true)
                     .build()
 
@@ -434,6 +436,7 @@ class StreamTests : TestBase() {
                         .dispatchers(dispatcherProvider)
                         .eventStreamService(eventStreamService)
                         .tendermintService(tendermintService)
+                        .fromHeight(MIN_HISTORICAL_BLOCK_HEIGHT)
                         .skipEmptyBlocks(true)
                         .build()
 
@@ -464,11 +467,13 @@ class StreamTests : TestBase() {
                     .dispatchers(dispatcherProvider)
                     .eventStreamService(eventStreamService)
                     .tendermintService(tendermintService)
+                    .fromHeight(MIN_HISTORICAL_BLOCK_HEIGHT)
                     .skipEmptyBlocks(true)
                     .matchTxEvents(setOf(requireTxEvent))
                     .build()
 
-                assert(eventStream.streamBlocks().count() == 0)
+                val count = eventStream.streamBlocks().count()
+                assert(count == 0)
             }
         }
 
@@ -490,6 +495,7 @@ class StreamTests : TestBase() {
                     .dispatchers(dispatcherProvider)
                     .eventStreamService(eventStreamService)
                     .tendermintService(tendermintService)
+                    .fromHeight(MIN_HISTORICAL_BLOCK_HEIGHT)
                     .skipEmptyBlocks(true)
                     .matchTxEvents(setOf(requireTxEvent))
                     .build()

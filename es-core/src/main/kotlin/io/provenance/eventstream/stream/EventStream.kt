@@ -193,12 +193,12 @@ class EventStream(
             if (startingHeight != null) {
                 log.info("Listening for live and historical blocks from height $startingHeight")
                 merge(
-                    streamHistoricalBlocks(startingHeight, getEndingHeight()!!),
-                    streamLiveBlocks()
+                    streamHistoricalBlocks(startingHeight),
+                    streamLiveBlocks().filterByEvents()
                 )
             } else {
                 log.info("Listening for live blocks only")
-                streamLiveBlocks()
+                streamLiveBlocks().filterByEvents()
             }
         )
     }.cancellable().retryWhen { cause: Throwable, attempt: Long ->
