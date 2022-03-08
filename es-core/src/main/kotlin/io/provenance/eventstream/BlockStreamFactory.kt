@@ -7,7 +7,8 @@ import io.provenance.eventstream.coroutines.DefaultDispatcherProvider
 import io.provenance.eventstream.coroutines.DispatcherProvider
 import io.provenance.eventstream.adapter.json.decoder.DecoderEngine
 import io.provenance.eventstream.stream.clients.TendermintBlockFetcher
-import io.provenance.eventstream.stream.clients.BlockSource
+import io.provenance.blockchain.stream.api.BlockSource
+import io.provenance.eventstream.stream.models.StreamBlockImpl
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import org.slf4j.LoggerFactory
 
@@ -31,7 +32,7 @@ interface BlockStreamFactory {
 
     fun createSource(vararg cfg: BlockStreamCfg) = createSource(BlockStreamOptions.create(*cfg))
 
-    fun createSource(options: BlockStreamOptions): BlockSource
+    fun createSource(options: BlockStreamOptions): BlockSource<StreamBlockImpl>
 }
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -44,7 +45,7 @@ class DefaultBlockStreamFactory(
 ) : BlockStreamFactory {
     private val log = LoggerFactory.getLogger(javaClass)
 
-    override fun createSource(options: BlockStreamOptions): EventStream {
+    override fun createSource(options: BlockStreamOptions): BlockSource<StreamBlockImpl> {
         log.info("Connecting stream instance to ${config.node}")
         val lifecycle = LifecycleRegistry(config.eventStream.websocket.throttleDurationMs)
         val scarlet: Scarlet = eventStreamBuilder.lifecycle(lifecycle).build()

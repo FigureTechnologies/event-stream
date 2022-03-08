@@ -5,4 +5,5 @@ import kotlinx.coroutines.flow.Flow
 
 interface BlockSource<T : StreamBlock> {
     fun streamBlocks(): Flow<T>
+    suspend fun streamBlocks(from: Long?, toInclusive: Long?): Flow<StreamBlock>
 }

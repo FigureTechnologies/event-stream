@@ -18,13 +18,8 @@ import io.provenance.eventstream.stream.models.extensions.txEvents
 import io.provenance.eventstream.stream.models.extensions.txHash
 import io.provenance.eventstream.stream.transformers.queryBlock
 import io.provenance.eventstream.utils.backoff
-import kotlinx.coroutines.FlowPreview
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.InternalCoroutinesApi
-import kotlinx.coroutines.delay
+import kotlinx.coroutines.*
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.*
 import kotlin.time.ExperimentalTime
 import mu.KotlinLogging
@@ -33,6 +28,7 @@ import java.net.ConnectException
 import java.net.SocketException
 import java.net.SocketTimeoutException
 import java.util.concurrent.CompletionException
+import kotlin.system.exitProcess
 
 @OptIn(FlowPreview::class, ExperimentalTime::class)
 @ExperimentalCoroutinesApi
@@ -84,9 +80,9 @@ class EventStream(
             .toLiveStream()
     }
 
-    suspend fun streamHistoricalBlocks(startingHeight: Long): Flow<StreamBlockImpl> {
+    suspend fun streamHistoricalBlocks(startingHeight: Long, endingHeight: Long): Flow<StreamBlockImpl> {
         return streamMetaBlocks()
-            .toHistoricalStream(startingHeight)
+            .toHistoricalStream(startingHeight, endingHeight)
     }
 
     fun streamLiveMetaBlocks(): Flow<Block> {
@@ -107,14 +103,14 @@ class EventStream(
 
     private fun StreamBlock.isEmpty() = block.data?.txs?.isEmpty() ?: true
 
-    private fun Flow<StreamBlock>.filterNonEmptyIfSet(): Flow<StreamBlock> =
+    private fun Flow<StreamBlockImpl>.filterNonEmptyIfSet(): Flow<StreamBlockImpl> =
         filter { !(options.skipEmptyBlocks && it.isEmpty()) }
 
     private fun Flow<StreamBlock>.filterByEvents(): Flow<StreamBlock> =
         filter { keepBlock(it.txEvents + it.blockEvents) }
 
     private fun <T : EncodedBlockchainEvent> keepBlock(events: List<T>): Boolean {
-        if (options.txEventPredicate.isEmpty() && options.blockEvents.isEmpty()) {
+        if (options.txEvents.isEmpty() && options.blockEvents.isEmpty()) {
             return true
         }
 
@@ -129,13 +125,15 @@ class EventStream(
         return false
     }
 
-    suspend fun Flow<BlockMeta>.toHistoricalStream(startingHeight: Long): Flow<StreamBlockImpl> =
-        (startingHeight..getEndingHeight()!!)
+    suspend fun Flow<BlockMeta>.toHistoricalStream(startingHeight: Long, endingHeight: Long): Flow<StreamBlockImpl> =
+        (startingHeight..endingHeight)
             .chunked(options.batchSize)
             .asFlow()
             .doFlatmap { queryBlocks(it).map { b -> b.copy(historical = true) } }
             .filterNonEmptyIfSet()
             .filterByEvents()
+
+
 
     @OptIn(InternalCoroutinesApi::class, ExperimentalCoroutinesApi::class)
     fun Flow<Block>.toLiveStream(): Flow<StreamBlockImpl> {
@@ -164,6 +162,7 @@ class EventStream(
                 .collect { this@channelFlow.send(it) }
         }
     }
+
 
     /**
      * Computes and returns the ending height (if it can be determined) tobe used when streaming historical blocks.
@@ -194,7 +193,7 @@ class EventStream(
             if (startingHeight != null) {
                 log.info("Listening for live and historical blocks from height $startingHeight")
                 merge(
-                    streamHistoricalBlocks(),
+                    streamHistoricalBlocks(startingHeight, getEndingHeight()!!),
                     streamLiveBlocks()
                 )
             } else {
@@ -214,4 +213,75 @@ class EventStream(
             else -> false
         }
     }
+
+    /*
+    * @return A Flow of live and historical blocks, plus associated event data.
+    */
+    override suspend fun streamBlocks(from: Long?, toInclusive: Long?): Flow<StreamBlock> = channelFlow {
+        val liveChannel = Channel<StreamBlockImpl>(720)
+        val liveJob = async {
+            streamLiveBlocks()
+                .buffer()
+                .onCompletion { liveChannel.close(it) }
+                .collect { liveChannel.send(it) }
+        }
+
+        val currentHeight = fetcher.getCurrentHeight()!!
+        val needHistory = from != null && from <= currentHeight
+        val needLive = toInclusive == null || toInclusive > currentHeight
+        if (!needLive) {
+            liveJob.cancel()
+            log.trace("streamblocks::live cancelled: not needed")
+        }
+
+        val historyChannel = Channel<StreamBlock>()
+        val historyJob = async(start = CoroutineStart.LAZY) {
+            val calculatedFrom = checkpoint.lastCheckpoint() ?: (from ?: currentHeight)
+            val calculatedTo = toInclusive ?: currentHeight
+
+            log.info("hist::calculated-from:$calculatedFrom calculated-to:$calculatedTo need-history:$needHistory need-live:$needLive")
+            streamHistoricalBlocks(calculatedFrom, calculatedTo)
+                .buffer()
+                .onCompletion { historyChannel.close(it) }
+                .collect { historyChannel.send(it) }
+        }
+
+        if (needHistory) {
+            historyJob.start()
+            historyChannel.consumeAsFlow().collect { send(it) }
+        }
+
+        if (needLive) {
+            // Make sure we pull anything between the last history and the first live
+            // TODO
+            // val liveStart = liveChannel.consumeAsFlow().peek().height
+            liveChannel.consumeAsFlow().collect { send(it) }
+        }
+    }
+        .buffer()
+        .onEach {
+            if (it.height!! % checkpoint.checkEvery == 0L) {
+                checkpoint.checkpoint(it.height!!)
+            }
+        }
+        .retryWhen { cause: Throwable, attempt: Long ->
+            log.warn("streamBlocks::error; recovering Flow (attempt ${attempt + 1})", cause)
+            when (cause) {
+                is EOFException,
+                is CompletionException,
+                is ConnectException,
+                is SocketTimeoutException,
+                is SocketException -> {
+                    val duration = backoff(attempt, jitter = false)
+                    log.error("streamblocks::Reconnect attempt #$attempt; waiting ${duration.inWholeSeconds}s before trying again: $cause")
+                    delay(duration)
+                    true
+                }
+                else -> {
+                    // temporary need better exit conditions
+                    log.error("something went wrong: $cause")
+                    exitProcess(1)
+                }
+            }
+        }
 }
