@@ -23,7 +23,7 @@ import java.net.URI
 class TendermintServiceOpenApiClient(rpcUrlBase: URI, chainId: String) : TendermintServiceClient {
     private val pbClient = PbClient(
             chainId = chainId,
-            channelUri = rpcUrlBase,
+            channelUri = URI("http://localhost:9090"),
             gasEstimationMethod = GasEstimationMethod.MSG_FEE_CALCULATION
     )
 
@@ -33,6 +33,20 @@ class TendermintServiceOpenApiClient(rpcUrlBase: URI, chainId: String) : Tenderm
             .useTransportSecurity()
             .build()
     )
+
+    private val serviceApi = let {
+        var port = rpcUrlBase.port
+        if (rpcUrlBase.host in mutableListOf("localhost", "127.0.0.1", "0.0.0.0")) {
+            port = 9090
+        }
+
+        ServiceGrpc.newFutureStub(
+            ManagedChannelBuilder
+                .forAddress(rpcUrlBase.host, port)
+                .usePlaintext()
+                .build()
+        )
+    }
 
     private val infoApi = let {
         InfoApi(rpcUrlBase.scheme + "://" + rpcUrlBase.host + ":" + rpcUrlBase.port)
