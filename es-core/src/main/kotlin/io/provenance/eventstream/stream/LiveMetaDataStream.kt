@@ -1,8 +1,8 @@
 package io.provenance.eventstream.stream
 
-import com.squareup.moshi.Moshi
 import com.tinder.scarlet.Message
 import com.tinder.scarlet.WebSocket
+import io.provenance.eventstream.adapter.json.decoder.DecoderEngine
 import io.provenance.eventstream.stream.models.Block
 import io.provenance.eventstream.stream.models.rpc.request.Subscribe
 import io.provenance.eventstream.stream.models.rpc.response.MessageType
@@ -14,7 +14,7 @@ import mu.KotlinLogging
 
 class LiveMetaDataStream(
     private val eventStreamService: EventStreamService,
-    private val moshi: Moshi,
+    private val decoder: DecoderEngine,
 ) {
 
     private val log = KotlinLogging.logger { }
@@ -72,7 +72,7 @@ class LiveMetaDataStream(
     /**
      * A decoder for Tendermint RPC API messages.
      */
-    private val responseMessageDecoder: MessageType.Decoder = MessageType.Decoder(moshi)
+    private val responseMessageDecoder: MessageType.Decoder = MessageType.Decoder(decoder)
 
     fun streamBlocks(): Flow<Block> = streamLiveBlocks()
 }

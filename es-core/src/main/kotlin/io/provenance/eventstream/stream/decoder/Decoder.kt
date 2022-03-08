@@ -1,7 +1,7 @@
 package io.provenance.eventstream.stream.decoder
 
 import io.provenance.eventstream.adapter.json.decoder.DecoderEngine
-import io.provenance.eventstream.stream.models.MessageType
+import io.provenance.eventstream.stream.rpc.response.MessageType
 
 sealed class Decoder(val decoderEngine: DecoderEngine) {
     abstract val priority: Int

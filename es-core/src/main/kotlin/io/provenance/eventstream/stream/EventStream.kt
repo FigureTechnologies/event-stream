@@ -3,6 +3,7 @@ package io.provenance.eventstream.stream
 import com.squareup.moshi.JsonDataException
 import com.squareup.moshi.Moshi
 import io.provenance.blockchain.stream.api.BlockSource
+import io.provenance.eventstream.adapter.json.decoder.DecoderEngine
 import io.provenance.eventstream.config.Options
 import io.provenance.eventstream.coroutines.DefaultDispatcherProvider
 import io.provenance.eventstream.coroutines.DispatcherProvider
@@ -38,16 +39,16 @@ import java.util.concurrent.CompletionException
 class EventStream(
     private val eventStreamService: EventStreamService,
     private val fetcher: TendermintBlockFetcher,
-    private val moshi: Moshi,
+    private val decoder: DecoderEngine,
     private val dispatchers: DispatcherProvider = DefaultDispatcherProvider(),
-    private val options: Options = Options.DEFAULT
+    private val checkpoint: Checkpoint = FileCheckpoint(),
+    private val options: BlockStreamOptions = BlockStreamOptions()
 ) : BlockSource<StreamBlockImpl> {
     companion object {
         /**
          * The default number of blocks that will be contained in a batch.
          */
-        const val DEFAULT_BATCH_SIZE = 8
-
+        const val DEFAULT_BATCH_SIZE = 128
         /**
          * The maximum size of the query range for block heights allowed by the Tendermint API.
          * This means, for a given block height `H`, we can ask for blocks in the range [`H`, `H` + `TENDERMINT_MAX_QUERY_RANGE`].
@@ -63,8 +64,8 @@ class EventStream(
      *
      * @return (StreamBlock) -> String
      */
-    val serializer: (StreamBlockImpl) -> String =
-        { block: StreamBlockImpl -> moshi.adapter(StreamBlockImpl::class.java).toJson(block) }
+    val serializer: (StreamBlock) -> String =
+        { block: StreamBlock -> decoder.adapter(StreamBlock::class).toJson(block) }
 
     /***
      * Query a collections of blocks by their heights.
@@ -89,7 +90,7 @@ class EventStream(
     }
 
     fun streamLiveMetaBlocks(): Flow<Block> {
-        return LiveMetaDataStream(eventStreamService, moshi).streamBlocks()
+        return LiveMetaDataStream(eventStreamService, decoder).streamBlocks()
     }
 
     fun streamMetaBlocks(): Flow<BlockMeta> {

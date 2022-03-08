@@ -11,6 +11,7 @@ import com.tinder.scarlet.messageadapter.moshi.MoshiMessageAdapter
 import com.tinder.scarlet.websocket.okhttp.newWebSocketFactory
 import com.tinder.streamadapter.coroutines.CoroutinesStreamAdapterFactory
 import io.provenance.eventstream.adapter.json.JSONObjectAdapter
+import io.provenance.eventstream.adapter.json.decoder.MoshiDecoderEngine
 import io.provenance.eventstream.config.Config
 import io.provenance.eventstream.config.Environment
 import io.provenance.eventstream.config.Options
@@ -18,6 +19,7 @@ import io.provenance.eventstream.stream.EventStream
 import io.provenance.eventstream.stream.TendermintServiceClient
 import io.provenance.eventstream.stream.clients.TendermintBlockFetcher
 import io.provenance.eventstream.stream.clients.TendermintServiceOpenApiClient
+import io.provenance.eventstream.stream.infrastructure.Serializer.moshi
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import okhttp3.OkHttpClient
 import java.net.URI
@@ -78,6 +80,8 @@ fun defaultMoshi(): Moshi = Moshi.Builder()
     .add(JSONObjectAdapter())
     .build()
 
+
+fun decoderEngine() = MoshiDecoderEngine(moshi)
 /**
  * Create the default [TendermintServiceClient] to use with the event stream.
  *
