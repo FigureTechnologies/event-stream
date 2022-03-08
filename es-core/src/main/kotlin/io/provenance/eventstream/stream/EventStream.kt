@@ -75,6 +75,11 @@ class EventStream(
             .toLiveStream()
     }
 
+    suspend fun streamHistoricalBlocks(startingHeight: Long): Flow<StreamBlock> {
+        val endingHeight = getEndingHeight() ?: error("Could not find ending height")
+        return streamMetaBlocks().toHistoricalStream(startingHeight, endingHeight)
+    }
+
     suspend fun streamHistoricalBlocks(startingHeight: Long, endingHeight: Long): Flow<StreamBlock> {
         return streamMetaBlocks()
             .toHistoricalStream(startingHeight, endingHeight)

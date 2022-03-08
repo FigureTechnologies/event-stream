@@ -79,6 +79,8 @@ object Builders {
 
         // shortcuts for options:
         fun batchSize(value: Int) = apply { options = options.copy(batchSize = value) }
+        fun fromHeight(value: Long) = apply { options = options.copy(fromHeight = value) }
+        fun toHeight(value: Long) = apply { options = options.copy(toHeight = value) }
         fun skipEmptyBlocks(value: Boolean) = apply { options = options.copy(skipEmptyBlocks = value) }
         fun matchBlockEvents(events: Set<String>) = apply { options = options.copy(blockEvents = events) }
         fun matchTxEvents(events: Set<String>) = apply { options = options.copy(txEvents = events) }

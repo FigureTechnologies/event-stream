@@ -297,7 +297,7 @@ class StreamTests : TestBase() {
                     .dispatchers(dispatcherProvider)
                     .skipEmptyBlocks(false)
                     .build()
-                    .streamHistoricalBlocks(MIN_HISTORICAL_BLOCK_HEIGHT, MAX_HISTORICAL_BLOCK_HEIGHT)
+                    .streamHistoricalBlocks(MIN_HISTORICAL_BLOCK_HEIGHT)
                     .toList()
 
                 assert(collectedNoSkip.size.toLong() == EXPECTED_TOTAL_BLOCKS)
@@ -306,8 +306,9 @@ class StreamTests : TestBase() {
                 // If skipping empty blocks, we should get EXPECTED_NONEMPTY_BLOCKS:
                 val collectedSkip = Builders.eventStream()
                     .dispatchers(dispatcherProvider)
+                    .skipEmptyBlocks(true)
                     .build()
-                    .streamHistoricalBlocks(MIN_HISTORICAL_BLOCK_HEIGHT, MAX_HISTORICAL_BLOCK_HEIGHT)
+                    .streamHistoricalBlocks(MIN_HISTORICAL_BLOCK_HEIGHT)
                     .toList()
 
                 assert(collectedSkip.size.toLong() == EXPECTED_NONEMPTY_BLOCKS)
@@ -324,6 +325,8 @@ class StreamTests : TestBase() {
                 // If not skipping empty blocks, we should get 100:
                 val collectedNoSkip = Builders.eventStream()
                     .dispatchers(dispatcherProvider)
+                    .fromHeight(MIN_HISTORICAL_BLOCK_HEIGHT)
+                    .toHeight(MAX_HISTORICAL_BLOCK_HEIGHT)
                     .skipEmptyBlocks(false)
                     .build()
                     .streamMetaBlocks()
@@ -334,6 +337,8 @@ class StreamTests : TestBase() {
                 // If skipping empty blocks, we should get EXPECTED_NONEMPTY_BLOCKS:
                 val collectedSkip = Builders.eventStream()
                     .dispatchers(dispatcherProvider)
+                    .fromHeight(MIN_HISTORICAL_BLOCK_HEIGHT)
+                    .toHeight(MAX_HISTORICAL_BLOCK_HEIGHT)
                     .skipEmptyBlocks(true)
                     .build()
                     .streamMetaBlocks()
