@@ -1,6 +1,6 @@
 package io.provenance.eventstream.stream.consumers
 
-import io.provenance.eventstream.Factory
+import io.provenance.eventstream.stream.BlockStreamFactory
 import io.provenance.eventstream.stream.BlockStreamOptions
 import io.provenance.eventstream.stream.EventStream
 import io.provenance.eventstream.stream.models.StreamBlock
@@ -25,9 +25,9 @@ class EventStreamViewer(
     private val options: BlockStreamOptions
 ) {
     constructor(
-        eventStreamFactory: Factory,
+        eventStreamFactory: BlockStreamFactory,
         options: BlockStreamOptions
-    ) : this(eventStreamFactory.createStream(options), options)
+    ) : this(eventStreamFactory.createSource(options) as EventStream, options)
 
     private val log = KotlinLogging.logger { }
 

@@ -51,7 +51,6 @@ import java.net.ConnectException
 import java.net.SocketException
 import java.net.SocketTimeoutException
 import java.util.concurrent.CompletionException
-import kotlin.system.exitProcess
 
 @OptIn(FlowPreview::class, ExperimentalTime::class)
 @ExperimentalCoroutinesApi
@@ -303,8 +302,8 @@ class EventStream(
                 }
                 else -> {
                     // temporary need better exit conditions
-                    log.error("something went wrong: $cause")
-                    exitProcess(1)
+                    log.error("unexpected error:  $cause")
+                    throw error(cause)
                 }
             }
         }
