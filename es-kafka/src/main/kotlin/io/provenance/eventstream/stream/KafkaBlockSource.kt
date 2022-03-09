@@ -1,6 +1,7 @@
 package io.provenance.eventstream.stream
 
 import io.provenance.blockchain.stream.api.BlockSource
+import io.provenance.eventstream.stream.models.StreamBlock
 import io.provenance.eventstream.stream.models.StreamBlockImpl
 import io.provenance.kafka.coroutine.KafkaSource
 import kotlinx.coroutines.flow.Flow
@@ -25,5 +26,9 @@ open class KafkaBlockSource(consumerProps: Map<String, Any>, topic: String) : Bl
 
     override fun streamBlocks(): Flow<KafkaStreamBlock<String, StreamBlockImpl>> {
         return kafkaSource.beginFlow().map { KafkaStreamBlock(it) }
+    }
+
+    override suspend fun streamBlocks(from: Long?, toInclusive: Long?): Flow<StreamBlock> {
+        TODO("Needs implementation")
     }
 }

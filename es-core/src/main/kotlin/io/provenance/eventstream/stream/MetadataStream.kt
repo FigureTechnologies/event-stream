@@ -17,7 +17,7 @@ import kotlin.math.max
 import kotlin.math.min
 
 class MetadataStream(
-    val options: Options,
+    val options: BlockStreamOptions,
     val fetcher: TendermintBlockFetcher
 ) {
 
@@ -109,7 +109,7 @@ class MetadataStream(
         }
 
         val blocks = fetcher.getBlocksMeta(minHeight, maxHeight).let {
-            if (options.skipIfEmpty) {
+            if (options.skipEmptyBlocks) {
                 it?.filter { it.numTxs ?: 0 > 0 }
             } else {
                 it

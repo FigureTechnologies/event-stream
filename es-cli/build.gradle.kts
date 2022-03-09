@@ -25,5 +25,5 @@ dependencies {
 
 application {
     applicationName = "event-stream"
-    mainClass.set("io.provenance.eventstream.NuMainKt")
+    mainClass.set("io.provenance.eventstream.MainKt")
 }

@@ -12,6 +12,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.FlowCollector
+import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.collect
@@ -63,8 +64,8 @@ fun <T> Flow<T>.cancelOnSignal(signal: Channel<Unit>): Flow<T> = flow {
  *  it is non-empty.
  */
 @OptIn(FlowPreview::class, ExperimentalTime::class)
-fun <T> Flow<T>.chunked(size: Int, timeout: Duration? = null): Flow<List<T>> =
-    chunked(size = size, timeout = timeout) { it.toList() }
+fun <T> Flow<T>.chunked(size: Int, timeout: Duration? = null): Flow<Flow<T>> =
+    chunked(size = size, timeout = timeout) { it }
 
 private suspend fun <T> getChunk(channel: Channel<T>, maxChunkSize: Int): List<T> {
     val received = channel.receive()
@@ -131,7 +132,7 @@ fun <T> Flow<T>.chunked(maxSize: Int, endHeight: Long): Flow<List<T>> {
  *  it is non-empty.
  */
 @OptIn(FlowPreview::class, ExperimentalTime::class)
-fun <T, R> Flow<T>.chunked(size: Int, timeout: Duration? = null, transform: suspend (List<T>) -> R): Flow<R> {
+fun <T, R> Flow<T>.chunked(size: Int, timeout: Duration? = null, transform: suspend (Flow<T>) -> R): Flow<R> {
     require(size > 0) { "Size should be greater than 0, but was $size" }
     return windowed(size = size, step = size, partialWindows = true, timeout = timeout, transform = transform)
 }
@@ -151,8 +152,8 @@ fun <T, R> Flow<T>.chunked(size: Int, timeout: Duration? = null, transform: susp
  *  it is non-empty.
  */
 @OptIn(FlowPreview::class, ExperimentalTime::class)
-fun <T> Flow<T>.windowed(size: Int, step: Int, partialWindows: Boolean, timeout: Duration? = null): Flow<List<T>> =
-    windowed(size = size, step = step, partialWindows = partialWindows, timeout = timeout) { it.toList() }
+fun <T> Flow<T>.windowed(size: Int, step: Int, partialWindows: Boolean, timeout: Duration? = null): Flow<Flow<T>> =
+    windowed(size = size, step = step, partialWindows = partialWindows, timeout = timeout) { it }
 
 /**
  * Returns a flow of results of applying the given [transform] function to
@@ -184,15 +185,15 @@ fun <T, R> Flow<T>.windowed(
     step: Int,
     partialWindows: Boolean,
     timeout: Duration? = null,
-    transform: suspend (List<T>) -> R
+    transform: suspend (Flow<T>) -> R
 ): Flow<R> {
     require(size > 0 && step > 0) { "Size and step should be greater than 0, but was size: $size, step: $step" }
 
     // Using a channelFlow as opposed to a flow allows for up to emit elements from a different coroutine context
     // and is necessary to allow for the use of `launch { ... }` below as a watcher for emission activity.
     return channelFlow {
+        val buffer: ArrayDeque<T> = ArrayDeque(size)
 
-        val buffer: ArrayDeque<T> = ArrayDeque<T>(size)
         val toDrop: Int = min(step, size)
         val toSkip: Int = max(step - size, 0)
         var skipped: Int = toSkip
@@ -216,7 +217,7 @@ fun <T, R> Flow<T>.windowed(
                     elapsedEmissionTime()
                         ?.also { elapsed: Duration ->
                             if (elapsed >= timeout && buffer.isNotEmpty()) {
-                                send(transform(buffer))
+                                send(transform(buffer.asFlow()))
                                 updateEmissionTime()
                                 repeat(min(toDrop, buffer.size)) {
                                     buffer.removeFirst()
@@ -237,7 +238,7 @@ fun <T, R> Flow<T>.windowed(
                 }
 
                 if (buffer.size == size) {
-                    send(transform(buffer))
+                    send(transform(buffer.asFlow()))
                     updateEmissionTime()
                     repeat(toDrop) {
                         buffer.removeFirst()
@@ -248,7 +249,7 @@ fun <T, R> Flow<T>.windowed(
         })
 
         while (partialWindows && buffer.isNotEmpty()) {
-            send(transform(buffer))
+            send(transform(buffer.asFlow()))
             updateEmissionTime()
             repeat(min(toDrop, buffer.size)) {
                 buffer.removeFirst()

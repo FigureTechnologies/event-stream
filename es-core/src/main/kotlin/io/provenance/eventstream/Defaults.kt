@@ -10,14 +10,18 @@ import com.tinder.scarlet.Scarlet
 import com.tinder.scarlet.messageadapter.moshi.MoshiMessageAdapter
 import com.tinder.scarlet.websocket.okhttp.newWebSocketFactory
 import com.tinder.streamadapter.coroutines.CoroutinesStreamAdapterFactory
+import io.provenance.blockchain.stream.api.BlockSource
 import io.provenance.eventstream.adapter.json.JSONObjectAdapter
+import io.provenance.eventstream.adapter.json.decoder.MoshiDecoderEngine
 import io.provenance.eventstream.config.Config
 import io.provenance.eventstream.config.Environment
-import io.provenance.eventstream.config.Options
-import io.provenance.eventstream.stream.EventStream
+import io.provenance.eventstream.stream.BlockStreamOptions
+import io.provenance.eventstream.stream.DefaultBlockStreamFactory
 import io.provenance.eventstream.stream.TendermintServiceClient
 import io.provenance.eventstream.stream.clients.TendermintBlockFetcher
 import io.provenance.eventstream.stream.clients.TendermintServiceOpenApiClient
+import io.provenance.eventstream.stream.infrastructure.Serializer.moshi
+import io.provenance.eventstream.stream.models.StreamBlockImpl
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import okhttp3.OkHttpClient
 import java.net.URI
@@ -78,6 +82,7 @@ fun defaultMoshi(): Moshi = Moshi.Builder()
     .add(JSONObjectAdapter())
     .build()
 
+fun decoderEngine() = MoshiDecoderEngine(moshi)
 /**
  * Create the default [TendermintServiceClient] to use with the event stream.
  *
@@ -100,13 +105,13 @@ fun defaultTendermintFetcher(rpcUri: String): TendermintBlockFetcher =
  *
  */
 @OptIn(ExperimentalCoroutinesApi::class, ExperimentalTime::class)
-fun defaultEventStream(config: Config, options: Options, okHttpClient: OkHttpClient = defaultOkHttpClient(), moshi: Moshi = defaultMoshi(), fetcher: TendermintBlockFetcher = defaultTendermintFetcher(config.eventStream.rpc.uri)): EventStream {
-    val factory = Factory(
+fun defaultEventStream(config: Config, options: BlockStreamOptions, okHttpClient: OkHttpClient = defaultOkHttpClient(), moshi: Moshi = defaultMoshi(), fetcher: TendermintBlockFetcher = defaultTendermintFetcher(config.eventStream.rpc.uri)): BlockSource<StreamBlockImpl> {
+    val factory = DefaultBlockStreamFactory(
         config = config,
-        moshi = moshi,
+        decoderEngine = decoderEngine(),
         eventStreamBuilder = defaultEventStreamBuilder(config.eventStream.websocket.uri, okHttpClient),
-        fetcher = fetcher
+        blockFetcher = fetcher
     )
 
-    return factory.createStream(options)
+    return factory.createSource(options)
 }

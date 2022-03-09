@@ -27,9 +27,12 @@ cli/build/install/$(NAME)/bin/$(NAME):
 
 build-dist: cli/build/install/$(NAME)/bin/$(NAME)
 
-run:  build-dist
+run-local:  build-dist
 	@echo "*** PORT 26657 is expected to be open on localhost! ***"
 	AWS_REGION=us-east-1 ENVIRONMENT=local $(CLI_BUILD)/install/$(NAME)/bin/$(NAME) $(ARGS)
+
+run:
+	./gradlew compileKotlin installDist && ./build/install/provenance-event-stream/bin/provenance-event-stream --event-stream.websocket.uri=ws://rpc-0.test.provenance.io:26657 --event-stream.rpc.uri=http://rpc-1.test.provenance.io:26657 --event-stream.height.from=1 --event-stream.height.to=100
 
 test: clean-test
 	$(GRADLEW) test -i
