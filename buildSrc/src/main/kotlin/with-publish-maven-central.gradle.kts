@@ -19,8 +19,8 @@ plugins {
     id("io.github.gradle-nexus.publish-plugin")
 }
 
-group = rootProject.group
-version = rootProject.version
+val esGroup = rootProject.group
+val esVersion = project.property("version")?.takeIf { it != "unspecified" } ?: "1.0-SNAPSHOT"
 
 val nexusUser = findProperty("nexusUser")?.toString() ?: System.getenv("NEXUS_USER")
 val nexusPass = findProperty("nexusPass")?.toString() ?: System.getenv("NEXUS_PASS")
@@ -66,7 +66,7 @@ subprojects {
     }
 
     val artifactName = if (name.startsWith("es")) name else "es-$name"
-    val projectVersion = version.toString()
+    val projectVersion = esVersion.toString()
 
     configure<PublishingExtension> {
         publications {
