@@ -5,8 +5,8 @@ import com.squareup.moshi.Moshi
 import com.tinder.scarlet.Message
 import com.tinder.scarlet.WebSocket
 import io.provenance.eventstream.coroutines.DispatcherProvider
+import io.provenance.eventstream.rpc.request.Subscribe
 import io.provenance.eventstream.stream.EventStreamService
-import io.provenance.eventstream.stream.rpc.request.Subscribe
 import io.provenance.eventstream.test.utils.Defaults
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.Channel

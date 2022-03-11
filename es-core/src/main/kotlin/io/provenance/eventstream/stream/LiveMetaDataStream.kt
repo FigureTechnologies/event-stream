@@ -3,8 +3,8 @@ package io.provenance.eventstream.stream
 import com.tinder.scarlet.Message
 import com.tinder.scarlet.WebSocket
 import io.provenance.eventstream.adapter.json.decoder.DecoderEngine
+import io.provenance.eventstream.rpc.request.Subscribe
 import io.provenance.eventstream.stream.models.Block
-import io.provenance.eventstream.stream.rpc.request.Subscribe
 import io.provenance.eventstream.stream.rpc.response.MessageType
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi

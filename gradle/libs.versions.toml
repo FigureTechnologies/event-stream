@@ -9,6 +9,7 @@ junitCore = "5.3.1"
 junitPioneer = "1.4.2"
 json = "20210307"
 kafka = "3.1.0"
+kafkaCoroutines = "1.0-SNAPSHOT"
 kotlinxCore = "1.5.2"
 kotlinxCli = "0.3.3"
 kotlinxDateTime = "0.3.0"
@@ -35,6 +36,7 @@ hoplite-core = { module = "com.sksamuel.hoplite:hoplite-core", version.ref = "ho
 hoplite-yaml = { module = "com.sksamuel.hoplite:hoplite-yaml", version.ref = "hoplite" }
 json = { module = "org.json:json", version.ref = "json" }
 kafka = { module = "org.apache.kafka:kafka-clients", version.ref = "kafka" }
+kafka-coroutines = { module = "io.provenance.kafka-coroutine:kafka-coroutines-core", version.ref = "kafkaCoroutines" }
 kotlin-logging = { module = "io.github.microutils:kotlin-logging-jvm", version.ref = "kotlinLogging" }
 kotlinx-cli = { module = "org.jetbrains.kotlinx:kotlinx-cli-jvm", version.ref = "kotlinxCli" }
 logback-core = { module = "ch.qos.logback:logback-core", version.ref = "logback" }

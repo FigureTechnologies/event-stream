@@ -25,6 +25,7 @@ val nexusPass = findProperty("nexusPass")?.toString() ?: System.getenv("NEXUS_PA
 
 repositories {
     mavenCentral()
+    mavenLocal()
 }
 
 dependencies {
