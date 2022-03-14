@@ -1,11 +1,15 @@
+import org.jetbrains.kotlin.kapt3.base.Kapt.kapt
+
 plugins {
     kotlin("jvm")
+    kotlin("kapt")
 
     id("core-config")
     id("with-test-fixtures")
 }
 
 dependencies {
+    kapt(libs.moshi.kotlin.codegen)
     implementation(projects.esApi)
     implementation(projects.esApiModel)
 
@@ -17,4 +21,8 @@ dependencies {
     implementation(libs.moshi.kotlin.codegen)
 
     testFixturesImplementation(projects.esApiModel)
+}
+
+kapt {
+    correctErrorTypes = true
 }
