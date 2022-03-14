@@ -349,7 +349,6 @@ class StreamTests : TestBase() {
                     .streamMetaBlocks()
                     .toList()
 
-                println(collectedSkip.size.toLong())
                 assert(collectedSkip.size.toLong() == EXPECTED_NONEMPTY_BLOCKS)
             }
         }
@@ -415,8 +414,6 @@ class StreamTests : TestBase() {
                     .toList()
 
                 assert(collected.size == expectTotal.toInt())
-                println(collected)
-                println(collected.filter { it.historical }.size)
                 assert(collected.filter { it.historical }.size.toLong() == EXPECTED_NONEMPTY_BLOCKS)
                 assert(collected.filter { !it.historical }.size.toLong() == eventStreamService.expectedResponseCount())
             }

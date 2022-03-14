@@ -32,6 +32,7 @@ dependencies {
     // Align versions of all Kotlin components.
     // See https://medium.com/@gabrielshanahan/a-deep-dive-into-an-initial-kotlin-build-gradle-kts-8950b81b214
     implementation(platform("org.jetbrains.kotlin:kotlin-bom"))
+
     implementation("org.jetbrains.kotlin", "kotlin-reflect")
     implementation("org.jetbrains.kotlin", "kotlin-stdlib")
     implementation("org.jetbrains.kotlin", "kotlin-stdlib-jdk8")
