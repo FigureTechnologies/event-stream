@@ -5,7 +5,7 @@ import com.tinder.scarlet.WebSocket
 import com.tinder.scarlet.lifecycle.LifecycleRegistry
 import com.tinder.scarlet.ws.Receive
 import com.tinder.scarlet.ws.Send
-import io.provenance.eventstream.rpc.request.Subscribe
+import io.provenance.eventstream.stream.rpc.request.Subscribe
 import kotlinx.coroutines.channels.ReceiveChannel
 
 /**
