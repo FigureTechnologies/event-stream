@@ -3,12 +3,12 @@ event-stream:
     size: 16
     timeoutMillis: 30000
   websocket:
-    uri: http://localhost:26657
-  uri: ws://localhost:26657
+    uri: ws://localhost:26657
+  uri: http://localhost:26657
   rpc:
     uri: http://localhost:26657
   height:
     from: 0
     to: 100
   skipEmptyBlocks: false
-node: localhost:26657
+node: http://localhost:26657
