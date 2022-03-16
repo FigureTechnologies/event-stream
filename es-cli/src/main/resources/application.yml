@@ -1,0 +1,14 @@
+event-stream:
+  batch:
+    size: 16
+    timeoutMillis: 30000
+  websocket:
+    uri: ws://localhost:26657
+  uri: http://localhost:26657
+  rpc:
+    uri: http://localhost:26657
+  height:
+    from: 0
+    to: 100
+  skipEmptyBlocks: false
+node: http://localhost:26657
