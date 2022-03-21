@@ -5,7 +5,6 @@ import io.provenance.eventstream.stream.models.BlockEvent
 import io.provenance.eventstream.stream.models.BlockResponse
 import io.provenance.eventstream.stream.models.BlockResultsResponse
 import io.provenance.eventstream.stream.models.StreamBlockImpl
-import io.provenance.eventstream.stream.toByteArray
 import io.provenance.eventstream.test.base.TestBase
 import io.provenance.eventstream.test.utils.Defaults
 import kotlinx.coroutines.ExperimentalCoroutinesApi
