@@ -3,10 +3,10 @@ package io.provenance.eventstream.stream
 import io.provenance.blockchain.stream.api.BlockSink
 import io.provenance.eventstream.stream.models.StreamBlockImpl
 import io.provenance.eventstream.stream.models.StreamBlock
-import io.provenance.kafka.coroutine.KafkaSink
 import org.apache.kafka.clients.producer.KafkaProducer
 import org.apache.kafka.clients.producer.Producer
 import org.apache.kafka.clients.producer.ProducerConfig
+import org.apache.kafka.clients.producer.ProducerRecord
 import org.apache.kafka.common.serialization.Serdes
 
 fun kafkaBlockSink(producerProps: Map<String, Any>, topicName: String, kafkaProducer: Producer<ByteArray, ByteArray>? = null): KafkaBlockSink =
@@ -15,7 +15,7 @@ fun kafkaBlockSink(producerProps: Map<String, Any>, topicName: String, kafkaProd
 @OptIn(ExperimentalStdlibApi::class)
 class KafkaBlockSink(
     producerProps: Map<String, Any>,
-    topicName: String,
+    private val topicName: String,
     kafkaProducer: Producer<ByteArray, ByteArray>? = null
 ) : BlockSink {
     private val serializer = Serdes.ByteArray().serializer()
@@ -23,10 +23,16 @@ class KafkaBlockSink(
         ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG to serializer.javaClass,
         ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG to serializer.javaClass,
     )
-    val kafkaSink: KafkaSink<ByteArray, ByteArray> = KafkaSink(producerProps + byteArrayProps, topicName, kafkaProducer ?: KafkaProducer(producerProps + byteArrayProps))
+
+    private val producer = kafkaProducer ?: KafkaProducer(producerProps + byteArrayProps)
 
     override suspend fun invoke(block: StreamBlock) {
         val key = "${block.block.header!!.chainId}.${block.height}"
-        kafkaSink.send(key.toByteArray(), (block as StreamBlockImpl).toByteArray()!!)
+        val record = ProducerRecord(
+            topicName,
+            key.toByteArray(),
+            (block as StreamBlockImpl).toByteArray()!!
+        )
+        producer.send(record)
     }
 }
