@@ -200,7 +200,7 @@ class EventStream(
         val blockDatetime = block.header?.dateTime()
         val blockEvents = blockResult.blockEvents(blockDatetime)
         val txEvents = blockResult.txEvents(blockDatetime) { index: Int -> block.txHash(index).orEmpty() }
-        return StreamBlockImpl(block, blockEvents, txEvents)
+        return StreamBlockImpl(block, blockEvents, blockResult, txEvents)
     }
     /**
      * Constructs a Flow of live and historical blocks, plus associated event data.
