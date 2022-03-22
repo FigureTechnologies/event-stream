@@ -8,11 +8,11 @@ import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.flow
 import org.apache.kafka.common.errors.SerializationException
 
-fun Flow<KafkaStreamBlock<String, StreamBlockImpl>>.acking(block: (KafkaStreamBlock<String, StreamBlockImpl>) -> Unit): Flow<AckedKafkaStreamBlock<ByteArray, ByteArray>> {
+fun Flow<KafkaStreamBlock>.acking(block: (KafkaStreamBlock) -> Unit): Flow<AckedKafkaStreamBlock<ByteArray, ByteArray>> {
     return flow {
         collect {
-            val ackedConsumerRecordImpl = it.record.ack()
-            emit(AckedKafkaStreamBlock<ByteArray, ByteArray>(ackedConsumerRecordImpl))
+            block(it)
+            emit(AckedKafkaStreamBlock(it.ack()))
         }
     }
 }
