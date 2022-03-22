@@ -199,8 +199,9 @@ class EventStream(
     private fun BlockData.toStreamBlock(): StreamBlockImpl {
         val blockDatetime = block.header?.dateTime()
         val blockEvents = blockResult.blockEvents(blockDatetime)
+        val blockTxResults = blockResult.txsResults
         val txEvents = blockResult.txEvents(blockDatetime) { index: Int -> block.txHash(index).orEmpty() }
-        return StreamBlockImpl(block, blockEvents, blockResult, txEvents)
+        return StreamBlockImpl(block, blockEvents, blockTxResults, txEvents)
     }
     /**
      * Constructs a Flow of live and historical blocks, plus associated event data.
