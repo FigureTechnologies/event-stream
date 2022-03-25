@@ -46,7 +46,7 @@ class KafkaSinkTests : TestBase() {
         val blockEvents = blockResultsResponse!!.result.beginBlockEvents!!.map {
             BlockEvent(blockResultsResponse.result.height, OffsetDateTime.now(), it.type!!, it.attributes!!)
         }
-        val streamBlock = StreamBlockImpl(blockResponse!!.result!!.block!!, blockEvents, mutableListOf())
+        val streamBlock = StreamBlockImpl(blockResponse!!.result!!.block!!, blockEvents, mutableListOf(), emptyList(), emptyList())
         assert(mockProducer.history().isEmpty())
 
         val expectedKey =
@@ -88,7 +88,7 @@ class KafkaSinkTests : TestBase() {
         val blockEvents = blockResultsResponse!!.result.beginBlockEvents!!.map {
             BlockEvent(blockResultsResponse.result.height, OffsetDateTime.now(), it.type!!, it.attributes!!)
         }
-        val streamBlock = StreamBlockImpl(blockResponse!!.result!!.block!!, blockEvents, mutableListOf())
+        val streamBlock = StreamBlockImpl(blockResponse!!.result!!.block!!, blockEvents, mutableListOf(), emptyList(), emptyList())
 
         val expectedKey =
             "${blockResponse.result!!.block!!.header!!.chainId}.${blockResponse.result!!.block!!.header!!.height}"

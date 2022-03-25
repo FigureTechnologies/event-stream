@@ -2,8 +2,18 @@ package io.provenance.eventstream.stream.transformers
 
 import io.provenance.eventstream.config.Options
 import io.provenance.eventstream.stream.clients.TendermintBlockFetcher
-import io.provenance.eventstream.stream.models.*
-import io.provenance.eventstream.stream.models.extensions.*
+import io.provenance.eventstream.stream.models.Block
+import io.provenance.eventstream.stream.models.BlockEvent
+import io.provenance.eventstream.stream.models.StreamBlockImpl
+import io.provenance.eventstream.stream.models.TxEvent
+import io.provenance.eventstream.stream.models.TxError
+import io.provenance.eventstream.stream.models.TxInfo
+import io.provenance.eventstream.stream.models.EncodedBlockchainEvent
+import io.provenance.eventstream.stream.models.extensions.blockEvents
+import io.provenance.eventstream.stream.models.extensions.dateTime
+import io.provenance.eventstream.stream.models.extensions.txEvents
+import io.provenance.eventstream.stream.models.extensions.txHash
+import io.provenance.eventstream.stream.models.extensions.txErroredEvents
 
 /**
  * Query a block by height, returning any events associated with the block.

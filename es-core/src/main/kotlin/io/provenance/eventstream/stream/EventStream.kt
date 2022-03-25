@@ -12,7 +12,11 @@ import io.provenance.eventstream.stream.models.BlockMeta
 import io.provenance.eventstream.stream.models.EncodedBlockchainEvent
 import io.provenance.eventstream.stream.models.StreamBlock
 import io.provenance.eventstream.stream.models.StreamBlockImpl
-import io.provenance.eventstream.stream.models.extensions.*
+import io.provenance.eventstream.stream.models.extensions.blockEvents
+import io.provenance.eventstream.stream.models.extensions.dateTime
+import io.provenance.eventstream.stream.models.extensions.txEvents
+import io.provenance.eventstream.stream.models.extensions.txHash
+import io.provenance.eventstream.stream.models.extensions.txErroredEvents
 import io.provenance.eventstream.utils.backoff
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.ExperimentalCoroutinesApi

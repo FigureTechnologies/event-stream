@@ -2,7 +2,17 @@ package io.provenance.eventstream.stream.models.extensions
 
 import com.google.common.io.BaseEncoding
 import cosmos.tx.v1beta1.TxOuterClass
-import io.provenance.eventstream.stream.models.*
+import io.provenance.eventstream.stream.models.Block
+import io.provenance.eventstream.stream.models.BlockEvent
+import io.provenance.eventstream.stream.models.TxInfo
+import io.provenance.eventstream.stream.models.BlockHeader
+import io.provenance.eventstream.stream.models.BlockResponse
+import io.provenance.eventstream.stream.models.BlockResultsResponse
+import io.provenance.eventstream.stream.models.BlockResultsResponseResult
+import io.provenance.eventstream.stream.models.BlockResultsResponseResultEvents
+import io.provenance.eventstream.stream.models.BlockResultsResponseResultTxsResults
+import io.provenance.eventstream.stream.models.TxError
+import io.provenance.eventstream.stream.models.TxEvent
 import java.security.MessageDigest
 import java.security.NoSuchAlgorithmException
 import java.time.OffsetDateTime
@@ -84,7 +94,7 @@ fun BlockResultsResponseResult.blockEvents(blockDateTime: OffsetDateTime?): List
 fun BlockResultsResponseResult.txErroredEvents(blockDateTime: OffsetDateTime?, txHash: (Int) -> TxInfo?): List<TxError> =
     run {
         txsResults?.mapIndexed { index: Int, tx: BlockResultsResponseResultTxsResults ->
-            if(tx.code?.toInt() != 0) {
+            if (tx.code?.toInt() != 0) {
                 tx.toBlockError(height, blockDateTime, txHash(index)!!.txHash!!, txHash(index)!!.fee)
             } else {
                 null
@@ -104,7 +114,6 @@ fun BlockResultsResponseResult.txErroredEvents(blockDateTime: OffsetDateTime?, t
 //        }
 //    }
 //    return txErrors
-
 
 fun BlockResultsResponseResultTxsResults.toBlockError(blockHeight: Long, blockDateTime: OffsetDateTime?, txHash: String, fee: Pair<Long?, String?>?): TxError =
     TxError(
