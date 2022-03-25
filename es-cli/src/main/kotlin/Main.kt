@@ -44,7 +44,7 @@ import okhttp3.OkHttpClient
 import java.net.URI
 import java.util.concurrent.TimeUnit
 
-private fun configureEventStreamBuilder(client: OkHttpClient, node: String = "localhost:26657", uri: URI = URI("ws://localhost:26657")): Scarlet.Builder {
+private fun configureEventStreamBuilder(client: OkHttpClient, node: String = "localhost:26657", uri: URI = URI("$node")): Scarlet.Builder {
     return Scarlet.Builder()
         .webSocketFactory(client.newWebSocketFactory("${uri.scheme}://${uri.host}:${uri.port}/websocket"))
         .addMessageAdapterFactory(MoshiMessageAdapter.Factory())
@@ -84,7 +84,7 @@ fun main(args: Array<String>) {
         .readTimeout(60, TimeUnit.SECONDS)
         .build()
 
-    val wsStreamBuilder = configureEventStreamBuilder(okClient, config.node)
+    val wsStreamBuilder = configureEventStreamBuilder(okClient, config.eventStream.websocket.uri)
     val tendermintServiceClient = TendermintServiceOpenApiClient(config.node)
     val tendermintService = TendermintBlockFetcher(tendermintServiceClient)
 

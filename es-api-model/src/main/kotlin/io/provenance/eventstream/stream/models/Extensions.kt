@@ -44,7 +44,7 @@ fun String.hash(): String = sha256(BaseEncoding.base64().decode(this)).toHexStri
 
 // === Date/time methods ===============================================================================================
 
-fun Block.txHash(index: Int): TxInfo? {
+fun Block.txData(index: Int): TxInfo? {
     val tx = this.data?.txs?.get(index)
 
     if (tx != null) {
@@ -66,7 +66,7 @@ fun Block.dateTime() = this.header?.dateTime()
 fun BlockHeader.dateTime(): OffsetDateTime? =
     runCatching { OffsetDateTime.parse(this.time, DateTimeFormatter.ISO_DATE_TIME) }.getOrNull()
 
-fun BlockResponse.txHash(index: Int): TxInfo? = this.result?.block?.txHash(index)
+fun BlockResponse.txHash(index: Int): TxInfo? = this.result?.block?.txData(index)
 
 fun BlockResultsResponse.txEvents(blockDate: OffsetDateTime, txHash: (index: Int) -> TxInfo): List<TxEvent> =
     this.result.txEvents(blockDate, txHash)
@@ -75,7 +75,7 @@ fun BlockResultsResponseResult.txEvents(blockDateTime: OffsetDateTime?, txHash: 
     run {
         txsResults?.flatMapIndexed { index: Int, tx: BlockResultsResponseResultTxsResults ->
             tx.events
-                ?.map { it.toTxEvent(height, blockDateTime, txHash(index)!!.txHash!!, txHash(index)!!.fee) }
+                ?.map { it.toTxEvent(height, blockDateTime, txHash(index)?.txHash, txHash(index)?.fee) }
                 ?: emptyList()
         }
     } ?: emptyList()
@@ -95,33 +95,20 @@ fun BlockResultsResponseResult.txErroredEvents(blockDateTime: OffsetDateTime?, t
     run {
         txsResults?.mapIndexed { index: Int, tx: BlockResultsResponseResultTxsResults ->
             if (tx.code?.toInt() != 0) {
-                tx.toBlockError(height, blockDateTime, txHash(index)!!.txHash!!, txHash(index)!!.fee)
+                tx.toBlockError(height, blockDateTime, txHash(index)?.txHash, txHash(index)?.fee)
             } else {
                 null
             }
         }?.filterNotNull()
     } ?: emptyList()
-//    val txErrors = mutableListOf<TxError>()
-//    txsResults?.map {
-//        if(it.code?.toInt() != 0) {
-//            txErrors.add(
-//                it.toBlockError(
-//                    blockHeight = height,
-//                    blockDateTime = blockDateTime,
-//                    txHash(index)!!.fee
-//                )
-//            )
-//        }
-//    }
-//    return txErrors
 
-fun BlockResultsResponseResultTxsResults.toBlockError(blockHeight: Long, blockDateTime: OffsetDateTime?, txHash: String, fee: Pair<Long?, String?>?): TxError =
+fun BlockResultsResponseResultTxsResults.toBlockError(blockHeight: Long, blockDateTime: OffsetDateTime?, txHash: String?, fee: Pair<Long?, String?>?): TxError =
     TxError(
         blockHeight = blockHeight,
         blockDateTime = blockDateTime,
         code = this.code!!.toLong(),
         info = this.log ?: "",
-        txHash = txHash,
+        txHash = txHash ?: "",
         fee = fee!!.first!!,
         denom = fee!!.second!!
     )
@@ -137,15 +124,15 @@ fun BlockResultsResponseResultEvents.toBlockEvent(blockHeight: Long, blockDateTi
 fun BlockResultsResponseResultEvents.toTxEvent(
     blockHeight: Long,
     blockDateTime: OffsetDateTime?,
-    txHash: String,
+    txHash: String?,
     fee: Pair<Long?, String?>?
 ): TxEvent =
     TxEvent(
         blockHeight = blockHeight,
         blockDateTime = blockDateTime,
-        txHash = txHash,
+        txHash = txHash ?: "",
         eventType = this.type ?: "",
         attributes = this.attributes ?: emptyList(),
-        fee = fee!!.first!!,
-        denom = fee.second!!
+        fee = fee?.first ?: null,
+        denom = fee?.second ?: null
     )

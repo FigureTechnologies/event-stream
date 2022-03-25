@@ -65,7 +65,7 @@ class KafkaSourceTests : TestBase() {
             val blockEvents = v.result.beginBlockEvents!!.map {
                 BlockEvent(v.result.height, OffsetDateTime.now(), it.type!!, it.attributes!!)
             }
-            streamBlocks[k] = StreamBlockImpl(blockResponses[k]!!.result!!.block!!, blockEvents, mutableListOf(), emptyList(), emptyList())
+            streamBlocks[k] = StreamBlockImpl(blockResponses[k]!!.result!!.block!!, blockEvents, mutableListOf(), mutableListOf(), mutableListOf())
         }
     }
 
@@ -80,7 +80,7 @@ class KafkaSourceTests : TestBase() {
     @OptIn(ExperimentalCoroutinesApi::class)
     @Test
     fun testStreamBlockByteArrayExtensionsEmpty() {
-        val streamBytes = StreamBlockImpl(Block(), mutableListOf(), mutableListOf(), emptyList(), emptyList()).toByteArray()
+        val streamBytes = StreamBlockImpl(Block(), mutableListOf(), mutableListOf(), mutableListOf(), mutableListOf()).toByteArray()
         val streamBlockImpl = streamBytes!!.toStreamBlock()
         assert(streamBlockImpl!!.block.data == null)
     }
