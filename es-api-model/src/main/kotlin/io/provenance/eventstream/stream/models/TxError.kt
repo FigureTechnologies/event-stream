@@ -4,16 +4,15 @@ import com.squareup.moshi.JsonClass
 import java.time.OffsetDateTime
 
 /**
- * Used to represent transaction-level events like "transfer", "message", metadata events
- * (`provenance.metadata.v1.EventScopeCreated`), etc.
+ * Represents errored Tx events that collected a fee.
  */
 @JsonClass(generateAdapter = true)
-data class TxEvent(
+data class TxError (
     val blockHeight: Long,
     val blockDateTime: OffsetDateTime?,
+    val code: Long,
+    val info: String,
     val txHash: String,
-    override val eventType: String,
-    override val attributes: List<Event>,
     val fee: Long,
     val denom: String
-) : EncodedBlockchainEvent
+)

@@ -22,8 +22,10 @@ import io.provenance.eventstream.stream.DefaultBlockStreamFactory
 import io.provenance.eventstream.stream.clients.TendermintBlockFetcher
 import io.provenance.eventstream.stream.clients.TendermintServiceOpenApiClient
 import io.provenance.eventstream.stream.infrastructure.Serializer
+import io.provenance.eventstream.stream.infrastructure.Serializer.moshi
 import io.provenance.eventstream.stream.models.StreamBlock
 import io.provenance.eventstream.stream.models.StreamBlockImpl
+import io.provenance.eventstream.stream.models.StreamBlockImplJsonAdapter
 import io.provenance.eventstream.stream.observers.consoleOutput
 import io.provenance.eventstream.stream.observers.fileOutput
 import kotlinx.coroutines.Dispatchers
@@ -42,7 +44,7 @@ import okhttp3.OkHttpClient
 import java.net.URI
 import java.util.concurrent.TimeUnit
 
-private fun configureEventStreamBuilder(client: OkHttpClient, node: String = "localhost:26657", uri: URI = URI("ws://$node")): Scarlet.Builder {
+private fun configureEventStreamBuilder(client: OkHttpClient, node: String = "localhost:26657", uri: URI = URI("ws://localhost:26657")): Scarlet.Builder {
     return Scarlet.Builder()
         .webSocketFactory(client.newWebSocketFactory("${uri.scheme}://${uri.host}:${uri.port}/websocket"))
         .addMessageAdapterFactory(MoshiMessageAdapter.Factory())
@@ -73,6 +75,7 @@ fun main(args: Array<String>) {
     val decoderEngine = Serializer.moshiBuilder
         .addLast(KotlinJsonAdapterFactory())
         .add(JSONObjectAdapter())
+        .add(StreamBlock::class.java, StreamBlockImplJsonAdapter(moshi))
         .build()
         .let { MoshiDecoderEngine(it) }
 
@@ -101,7 +104,7 @@ fun main(args: Array<String>) {
     runBlocking {
         log.info("config: $config")
 
-        stream.streamBlocks(config.from, config.to)
+        stream.streamBlocks()
             .flowOn(Dispatchers.IO)
             .buffer()
             .catch { log.error("", it) }

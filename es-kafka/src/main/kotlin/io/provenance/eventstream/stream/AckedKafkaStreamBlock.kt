@@ -1,9 +1,6 @@
 package io.provenance.eventstream.stream
 
-import io.provenance.eventstream.stream.models.StreamBlock
-import io.provenance.eventstream.stream.models.Block
-import io.provenance.eventstream.stream.models.BlockEvent
-import io.provenance.eventstream.stream.models.TxEvent
+import io.provenance.eventstream.stream.models.*
 import io.provenance.kafka.coroutine.AckedConsumerRecord
 
 class AckedKafkaStreamBlock<K, V>(record: AckedConsumerRecord<K, V>) : StreamBlock {
@@ -12,4 +9,6 @@ class AckedKafkaStreamBlock<K, V>(record: AckedConsumerRecord<K, V>) : StreamBlo
     override val blockEvents: List<BlockEvent> by lazy { streamBlock.blockEvents }
     override val txEvents: List<TxEvent> by lazy { streamBlock.txEvents }
     override val historical: Boolean by lazy { streamBlock.historical }
+    override val blockResult: List<BlockResultsResponseResultTxsResults>? by lazy { streamBlock.blockResult }
+    override val txErrors: List<TxError> by lazy { streamBlock.txErrors }
 }

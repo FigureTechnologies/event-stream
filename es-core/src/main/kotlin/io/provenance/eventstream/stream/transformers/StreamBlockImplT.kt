@@ -2,15 +2,8 @@ package io.provenance.eventstream.stream.transformers
 
 import io.provenance.eventstream.config.Options
 import io.provenance.eventstream.stream.clients.TendermintBlockFetcher
-import io.provenance.eventstream.stream.models.Block
-import io.provenance.eventstream.stream.models.StreamBlockImpl
-import io.provenance.eventstream.stream.models.BlockEvent
-import io.provenance.eventstream.stream.models.TxEvent
-import io.provenance.eventstream.stream.models.EncodedBlockchainEvent
-import io.provenance.eventstream.stream.models.extensions.blockEvents
-import io.provenance.eventstream.stream.models.extensions.dateTime
-import io.provenance.eventstream.stream.models.extensions.txEvents
-import io.provenance.eventstream.stream.models.extensions.txHash
+import io.provenance.eventstream.stream.models.*
+import io.provenance.eventstream.stream.models.extensions.*
 
 /**
  * Query a block by height, returning any events associated with the block.
@@ -36,8 +29,9 @@ suspend fun queryBlock(
         val blockDatetime = header?.dateTime()
         val blockResponse = fetcher.getBlockResults(header!!.height)!!.result
         val blockEvents: List<BlockEvent> = blockResponse.blockEvents(blockDatetime)
-        val txEvents: List<TxEvent> = blockResponse.txEvents(blockDatetime) { index: Int -> txHash(index) ?: "" }
-        val streamBlock = StreamBlockImpl(this, blockEvents, txEvents, historical)
+        val txEvents: List<TxEvent> = blockResponse.txEvents(blockDatetime) { index: Int -> txHash(index) ?: TxInfo() }
+        val txErrors: List<TxError> = blockResponse.txErroredEvents(blockDatetime) { index: Int -> block.txHash(index) }
+        val streamBlock = StreamBlockImpl(this, blockEvents, blockResponse.txsResults, txEvents, txErrors, historical)
         val matchBlock = matchesBlockEvent(blockEvents, options)
         val matchTx = matchesTxEvent(txEvents, options)
 
