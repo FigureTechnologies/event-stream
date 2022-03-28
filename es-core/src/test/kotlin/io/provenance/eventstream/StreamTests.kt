@@ -53,6 +53,7 @@ class StreamTests : TestBase() {
         @Test
         fun testDecodeEmptyACKMessage() {
             val response: MessageType = decoder.decode(templates.read("rpc/responses/empty.json"))
+            println(response)
             assert(response is MessageType.Empty)
         }
 

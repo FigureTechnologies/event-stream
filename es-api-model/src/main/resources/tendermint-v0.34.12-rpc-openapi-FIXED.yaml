@@ -1251,6 +1251,9 @@ components:
       properties:
         result:
           type: object
+          required:
+            - "query"
+            - "data"
           properties:
             query:
               type: string

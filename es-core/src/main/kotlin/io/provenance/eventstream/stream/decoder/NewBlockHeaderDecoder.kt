@@ -6,7 +6,7 @@ import io.provenance.eventstream.stream.models.NewBlockHeaderResult
 import io.provenance.eventstream.stream.rpc.response.MessageType
 import io.provenance.eventstream.stream.rpc.response.RpcResponse
 
-class NewBlockHeaderDecoder(decoderEngine: DecoderEngine): Decoder(decoderEngine) {
+class NewBlockHeaderDecoder(decoderEngine: DecoderEngine) : Decoder(decoderEngine) {
     override val priority: Int = 100
 
     // We have to build a reified, parameterized type suitable to pass to `moshi.adapter`

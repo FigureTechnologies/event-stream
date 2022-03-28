@@ -37,7 +37,6 @@ fun messageDecoder(
     }
 }
 
-
 /**
  * Decode the flow of [Message] into a flow of [MessageType]
  */
@@ -100,8 +99,4 @@ fun nodeWebSocketClient(
             }
         }
     }
-}
-
-fun aoeu() {
-    defaultMoshi()
 }
