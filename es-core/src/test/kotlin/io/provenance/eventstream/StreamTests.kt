@@ -34,7 +34,7 @@ import org.junit.jupiter.api.assertThrows
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class StreamTests : TestBase() {
-    private val decoder = MessageType.Decoder(decoderEngine())
+    private val decoder = MessageType.Decoder(defaultDecoderEngine())
 
     @BeforeAll
     override fun setup() {
