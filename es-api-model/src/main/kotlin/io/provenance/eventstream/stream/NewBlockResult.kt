@@ -3,6 +3,9 @@ package io.provenance.eventstream.stream
 import com.squareup.moshi.JsonClass
 import io.provenance.eventstream.stream.models.Block
 import io.provenance.eventstream.stream.models.BlockResultsResponseResultEvents
+import io.provenance.eventstream.stream.models.ConsensusParamsBlock
+import io.provenance.eventstream.stream.models.ConsensusParamsEvidence
+import io.provenance.eventstream.stream.models.ConsensusParamsValidator
 
 /**
  * Response wrapper data class.
@@ -10,7 +13,8 @@ import io.provenance.eventstream.stream.models.BlockResultsResponseResultEvents
 @JsonClass(generateAdapter = true)
 data class NewBlockResult(
     val query: String?,
-    val data: NewBlockEventResultData
+    val data: NewBlockEventResultData,
+    val events: Map<String, List<String>>?,
 )
 
 /**
@@ -36,5 +40,19 @@ data class NewBlockEventResultBeginBlock(
 @JsonClass(generateAdapter = true)
 data class NewBlockEventResultValue(
     val block: Block,
-    val result_begin_block: NewBlockEventResultBeginBlock
+    val result_begin_block: NewBlockEventResultBeginBlock,
+    val result_end_block: NewBlockEventResultEndBlock?,
+)
+
+@JsonClass(generateAdapter = true)
+data class ConsensusParamsUpdates(
+    val block: ConsensusParamsBlock?,
+    val evidence: ConsensusParamsEvidence?,
+    val validator: ConsensusParamsValidator?,
+)
+
+@JsonClass(generateAdapter = true)
+data class NewBlockEventResultEndBlock(
+    val consensus_param_updates: ConsensusParamsBlock?,
+    val events: List<BlockResultsResponseResultEvents>,
 )
