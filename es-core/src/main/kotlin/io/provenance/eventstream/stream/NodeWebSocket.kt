@@ -39,6 +39,12 @@ fun messageDecoder(
 
 /**
  * Decode the flow of [Message] into a flow of [MessageType]
+ *
+ * @param moshi The [Moshi] instance used to convert from json.
+ * @param engine The [DecoderEngine] used to construct the decoder lambda.
+ * @param decoder The decoder function used to decode the [Message]s from the websocket.
+ * @return A [Flow] of decoded websocket messages of type [MessageType]
+ * @throws [CancellationException] When [MessageType.Panic] is encountered in the source flow.
  */
 fun Flow<Message>.decodeMessages(
     moshi: Moshi = defaultMoshi(),
