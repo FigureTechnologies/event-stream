@@ -15,6 +15,8 @@ dependencies {
     implementation(libs.arrow)
     implementation(libs.commons.lang)
     implementation(libs.json)
+
+    implementation(libs.provenance.protos)
 }
 
 sourceSets {

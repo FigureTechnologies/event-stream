@@ -1,14 +1,17 @@
 package io.provenance.eventstream.stream.models.extensions
 
 import com.google.common.io.BaseEncoding
+import cosmos.tx.v1beta1.TxOuterClass
 import io.provenance.eventstream.stream.models.Block
 import io.provenance.eventstream.stream.models.BlockEvent
+import io.provenance.eventstream.stream.models.TxInfo
 import io.provenance.eventstream.stream.models.BlockHeader
 import io.provenance.eventstream.stream.models.BlockResponse
 import io.provenance.eventstream.stream.models.BlockResultsResponse
 import io.provenance.eventstream.stream.models.BlockResultsResponseResult
 import io.provenance.eventstream.stream.models.BlockResultsResponseResultEvents
 import io.provenance.eventstream.stream.models.BlockResultsResponseResultTxsResults
+import io.provenance.eventstream.stream.models.TxError
 import io.provenance.eventstream.stream.models.TxEvent
 import java.security.MessageDigest
 import java.security.NoSuchAlgorithmException
@@ -41,7 +44,20 @@ fun String.hash(): String = sha256(BaseEncoding.base64().decode(this)).toHexStri
 
 // === Date/time methods ===============================================================================================
 
-fun Block.txHash(index: Int): String? = this.data?.txs?.get(index)?.hash()
+fun Block.txData(index: Int): TxInfo? {
+    val tx = this.data?.txs?.get(index)
+
+    if (tx != null) {
+        val feeInfo = TxOuterClass.Tx.parseFrom(BaseEncoding.base64().decode(tx)).authInfo.fee
+        val amount = feeInfo.getAmount(0).amount.toLong()
+        val denom = feeInfo.getAmount(0).denom
+        return TxInfo(
+            this.data?.txs?.get(index)?.hash(),
+            Pair(amount, denom)
+        )
+    }
+    return null
+}
 
 fun Block.txHashes(): List<String> = this.data?.txs?.map { it.hash() } ?: emptyList()
 
@@ -50,16 +66,16 @@ fun Block.dateTime() = this.header?.dateTime()
 fun BlockHeader.dateTime(): OffsetDateTime? =
     runCatching { OffsetDateTime.parse(this.time, DateTimeFormatter.ISO_DATE_TIME) }.getOrNull()
 
-fun BlockResponse.txHash(index: Int): String? = this.result?.block?.txHash(index)
+fun BlockResponse.txHash(index: Int): TxInfo? = this.result?.block?.txData(index)
 
-fun BlockResultsResponse.txEvents(blockDate: OffsetDateTime, txHash: (index: Int) -> String): List<TxEvent> =
+fun BlockResultsResponse.txEvents(blockDate: OffsetDateTime, txHash: (index: Int) -> TxInfo): List<TxEvent> =
     this.result.txEvents(blockDate, txHash)
 
-fun BlockResultsResponseResult.txEvents(blockDateTime: OffsetDateTime?, txHash: (Int) -> String): List<TxEvent> =
+fun BlockResultsResponseResult.txEvents(blockDateTime: OffsetDateTime?, txHash: (Int) -> TxInfo?): List<TxEvent> =
     run {
         txsResults?.flatMapIndexed { index: Int, tx: BlockResultsResponseResultTxsResults ->
             tx.events
-                ?.map { it.toTxEvent(height, blockDateTime, txHash(index)) }
+                ?.map { it.toTxEvent(height, blockDateTime, txHash(index)?.txHash, txHash(index)?.fee) }
                 ?: emptyList()
         }
     } ?: emptyList()
@@ -75,6 +91,28 @@ fun BlockResultsResponseResult.blockEvents(blockDateTime: OffsetDateTime?): List
     }
 } ?: emptyList()
 
+fun BlockResultsResponseResult.txErroredEvents(blockDateTime: OffsetDateTime?, txHash: (Int) -> TxInfo?): List<TxError> =
+    run {
+        txsResults?.mapIndexed { index: Int, tx: BlockResultsResponseResultTxsResults ->
+            if (tx.code?.toInt() != 0) {
+                tx.toBlockError(height, blockDateTime, txHash(index)?.txHash, txHash(index)?.fee)
+            } else {
+                null
+            }
+        }?.filterNotNull()
+    } ?: emptyList()
+
+fun BlockResultsResponseResultTxsResults.toBlockError(blockHeight: Long, blockDateTime: OffsetDateTime?, txHash: String?, fee: Pair<Long?, String?>?): TxError? =
+    TxError(
+        blockHeight = blockHeight,
+        blockDateTime = blockDateTime,
+        code = this.code?.toLong() ?: 0L,
+        info = this.log ?: "",
+        txHash = txHash ?: "",
+        fee = fee?.first ?: 0L,
+        denom = fee?.second ?: ""
+    )
+
 fun BlockResultsResponseResultEvents.toBlockEvent(blockHeight: Long, blockDateTime: OffsetDateTime?): BlockEvent =
     BlockEvent(
         blockHeight = blockHeight,
@@ -86,12 +124,15 @@ fun BlockResultsResponseResultEvents.toBlockEvent(blockHeight: Long, blockDateTi
 fun BlockResultsResponseResultEvents.toTxEvent(
     blockHeight: Long,
     blockDateTime: OffsetDateTime?,
-    txHash: String
+    txHash: String?,
+    fee: Pair<Long?, String?>?
 ): TxEvent =
     TxEvent(
         blockHeight = blockHeight,
         blockDateTime = blockDateTime,
-        txHash = txHash,
+        txHash = txHash ?: "",
         eventType = this.type ?: "",
-        attributes = this.attributes ?: emptyList()
+        attributes = this.attributes ?: emptyList(),
+        fee = fee?.first ?: null,
+        denom = fee?.second ?: null
     )

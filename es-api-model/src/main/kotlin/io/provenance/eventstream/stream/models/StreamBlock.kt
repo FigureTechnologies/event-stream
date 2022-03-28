@@ -5,7 +5,9 @@ import com.squareup.moshi.JsonClass
 interface StreamBlock {
     val block: Block
     val blockEvents: List<BlockEvent>
+    val blockResult: List<BlockResultsResponseResultTxsResults>?
     val txEvents: List<TxEvent>
+    val txErrors: List<TxError>
     val historical: Boolean
     val height: Long? get() = block.header?.height
 }
@@ -18,6 +20,8 @@ interface StreamBlock {
 data class StreamBlockImpl(
     override val block: Block,
     override val blockEvents: List<BlockEvent>,
+    override val blockResult: List<BlockResultsResponseResultTxsResults>?,
     override val txEvents: List<TxEvent>,
+    override val txErrors: List<TxError>,
     override val historical: Boolean = false
 ) : StreamBlock
