@@ -102,15 +102,15 @@ fun BlockResultsResponseResult.txErroredEvents(blockDateTime: OffsetDateTime?, t
         }?.filterNotNull()
     } ?: emptyList()
 
-fun BlockResultsResponseResultTxsResults.toBlockError(blockHeight: Long, blockDateTime: OffsetDateTime?, txHash: String?, fee: Pair<Long?, String?>?): TxError =
+fun BlockResultsResponseResultTxsResults.toBlockError(blockHeight: Long, blockDateTime: OffsetDateTime?, txHash: String?, fee: Pair<Long?, String?>?): TxError? =
     TxError(
         blockHeight = blockHeight,
         blockDateTime = blockDateTime,
-        code = this.code!!.toLong(),
+        code = this.code?.toLong() ?: 0L,
         info = this.log ?: "",
         txHash = txHash ?: "",
-        fee = fee!!.first!!,
-        denom = fee!!.second!!
+        fee = fee?.first ?: 0L,
+        denom = fee?.second ?: ""
     )
 
 fun BlockResultsResponseResultEvents.toBlockEvent(blockHeight: Long, blockDateTime: OffsetDateTime?): BlockEvent =
