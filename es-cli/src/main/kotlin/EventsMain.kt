@@ -12,7 +12,7 @@ import kotlinx.coroutines.runBlocking
 
 fun main() = runBlocking {
     val okHttp = defaultOkHttpClient()
-    val netAdapter = okHttpNetAdapter("ws://rpc.test.provenance.io:26657", okHttp)
+    val netAdapter = okHttpNetAdapter("ws://localhost:26657", okHttp)
     val decoderAdapter = moshiDecoderAdapter()
 
     nodeEventStream<MessageType.NewBlock>(netAdapter, decoderAdapter)
