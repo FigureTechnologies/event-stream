@@ -10,10 +10,25 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.channelFlow
+import kotlinx.coroutines.flow.map
 import mu.KotlinLogging
 
+/**
+ * Convert a [Flow] of type [MessageType.NewBlock] into a [Flow] of [Block].
+ *
+ * Mimic the behavior of the [LiveMetaDataStream] using [nodeEventStream] as a source.
+ */
+fun Flow<MessageType.NewBlock>.toLiveMetaDataStream(): Flow<Block> =
+    map { it.block.data.value.block }
+
+/**
+ * Create a [Flow] of [Block] from a [WebSocketService].
+ *
+ * @param eventStreamService The [WebSocketService] web socket instance to receive events from.
+ * @param decoder The [DecoderEngine] to use to marshal the [Message] to [MessageType].
+ */
 class LiveMetaDataStream(
-    private val eventStreamService: EventStreamService,
+    private val eventStreamService: WebSocketService,
     private val decoder: DecoderEngine,
 ) {
 
@@ -26,10 +41,10 @@ class LiveMetaDataStream(
      * @return A Flow of newly minted blocks and associated events
      */
     @OptIn(ExperimentalCoroutinesApi::class)
-    fun streamLiveBlocks(): Flow<Block> {
+    fun streamBlocks(): Flow<Block> {
 
         // Toggle the Lifecycle register start state:
-        eventStreamService.startListening()
+        eventStreamService.start()
 
         return channelFlow {
             for (event in eventStreamService.observeWebSocketEvent()) {
@@ -73,6 +88,4 @@ class LiveMetaDataStream(
      * A decoder for Tendermint RPC API messages.
      */
     private val responseMessageDecoder: MessageType.Decoder = MessageType.Decoder(decoder)
-
-    fun streamBlocks(): Flow<Block> = streamLiveBlocks()
 }

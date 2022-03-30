@@ -2,6 +2,7 @@ package io.provenance.eventstream.utils
 
 import kotlinx.coroutines.delay
 import kotlin.time.Duration
+import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.ExperimentalTime
 
 /**
@@ -34,6 +35,6 @@ interface DelayShim {
     }
 
     suspend fun doDelay(duration: Long) {
-        doDelay(Duration.milliseconds(duration))
+        doDelay(duration.milliseconds)
     }
 }

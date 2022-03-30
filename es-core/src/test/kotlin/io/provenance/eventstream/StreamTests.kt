@@ -3,6 +3,7 @@ package io.provenance.eventstream
 import com.tinder.scarlet.Message
 import com.tinder.scarlet.WebSocket
 import io.provenance.eventstream.adapter.json.decoder.DecoderEncodingException
+import io.provenance.eventstream.decoder.moshiDecoderAdapter
 import io.provenance.eventstream.stream.TendermintServiceClient
 import io.provenance.eventstream.stream.models.ABCIInfoResponse
 import io.provenance.eventstream.stream.models.BlockResponse
@@ -34,7 +35,7 @@ import org.junit.jupiter.api.assertThrows
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class StreamTests : TestBase() {
-    private val decoder = MessageType.Decoder(decoderEngine())
+    private val decoder = MessageType.Decoder(moshiDecoderAdapter().decoderEngine)
 
     @BeforeAll
     override fun setup() {
@@ -53,6 +54,7 @@ class StreamTests : TestBase() {
         @Test
         fun testDecodeEmptyACKMessage() {
             val response: MessageType = decoder.decode(templates.read("rpc/responses/empty.json"))
+            println(response)
             assert(response is MessageType.Empty)
         }
 

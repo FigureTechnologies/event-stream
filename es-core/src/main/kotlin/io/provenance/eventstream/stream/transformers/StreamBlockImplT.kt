@@ -35,7 +35,7 @@ suspend fun queryBlock(
         return null
     }
 
-    return block?.run {
+    return block.run {
         val blockDatetime = header?.dateTime()
         val blockResponse = fetcher.getBlockResults(header!!.height)!!.result
         val blockEvents: List<BlockEvent> = blockResponse.blockEvents(blockDatetime)

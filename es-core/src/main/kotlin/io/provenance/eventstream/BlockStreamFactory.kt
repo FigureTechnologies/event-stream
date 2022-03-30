@@ -49,8 +49,8 @@ class DefaultBlockStreamFactory(
         log.info("Connecting stream instance to ${config.node}")
         val lifecycle = LifecycleRegistry(config.eventStream.websocket.throttleDurationMs)
         val scarlet: Scarlet = eventStreamBuilder.lifecycle(lifecycle).build()
-        val tendermintRpc: TendermintRPCStream = scarlet.create(TendermintRPCStream::class.java)
-        val eventStreamService = TendermintEventStreamService(tendermintRpc, lifecycle)
+        val channel: WebSocketChannel = scarlet.create(WebSocketChannel::class.java)
+        val eventStreamService = channel.withLifecycle(lifecycle)
 
         return EventStream(
             eventStreamService,

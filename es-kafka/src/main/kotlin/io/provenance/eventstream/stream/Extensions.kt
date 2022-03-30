@@ -1,6 +1,5 @@
 package io.provenance.eventstream.stream
 
-import com.squareup.moshi.JsonAdapter
 import io.provenance.eventstream.stream.infrastructure.Serializer.moshi
 import io.provenance.eventstream.stream.models.StreamBlockImpl
 import kotlinx.coroutines.flow.Flow
@@ -18,24 +17,19 @@ fun Flow<KafkaStreamBlock>.acking(block: (KafkaStreamBlock) -> Unit): Flow<Acked
 }
 
 fun StreamBlockImpl.toByteArray(): ByteArray? {
-    return if (this == null) {
-        return ByteArray(0)
-    } else try {
-        val jsonAdapter: JsonAdapter<StreamBlockImpl> = moshi.adapter(StreamBlockImpl::class.java)
-
-        jsonAdapter.toJson(this).toByteArray()
+    return try {
+        moshi.adapter(StreamBlockImpl::class.java)
+            .toJson(this)
+            .toByteArray()
     } catch (e: Exception) {
         throw SerializationException(e)
     }
 }
 
 fun ByteArray.toStreamBlock(): StreamBlockImpl? {
-    return if (this == null || this.size == 0) {
-        null
-    } else try {
-        val jsonAdapter: JsonAdapter<StreamBlockImpl> = moshi.adapter(StreamBlockImpl::class.java)
-
-        jsonAdapter.fromJson(this.decodeToString())
+    return try {
+        moshi.adapter(StreamBlockImpl::class.java)
+            .fromJson(this.decodeToString())
     } catch (e: Exception) {
         throw SerializationException(e)
     }

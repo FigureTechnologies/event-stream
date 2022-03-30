@@ -56,7 +56,7 @@ import java.util.concurrent.CompletionException
 @OptIn(FlowPreview::class, ExperimentalTime::class)
 @ExperimentalCoroutinesApi
 class EventStream(
-    private val eventStreamService: EventStreamService,
+    private val eventStreamService: WebSocketService,
     private val fetcher: TendermintBlockFetcher,
     private val decoder: DecoderEngine,
     private val dispatchers: DispatcherProvider = DefaultDispatcherProvider(),
@@ -174,7 +174,7 @@ class EventStream(
                     }
                 }.onCompletion {
                     log.info("live::stopping event stream")
-                    eventStreamService.stopListening()
+                    eventStreamService.stop()
                 }.retryWhen { cause: Throwable, attempt: Long ->
                     log.warn("live::error; recovering Flow (attempt ${attempt + 1})")
                     when (cause) {

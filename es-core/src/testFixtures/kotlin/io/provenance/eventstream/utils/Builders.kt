@@ -4,9 +4,9 @@ import com.squareup.moshi.Moshi
 import io.provenance.eventstream.adapter.json.decoder.MoshiDecoderEngine
 import io.provenance.eventstream.coroutines.DispatcherProvider
 import io.provenance.eventstream.stream.BlockStreamOptions
-import io.provenance.eventstream.stream.EventStreamService
 import io.provenance.eventstream.stream.TendermintServiceClient
 import io.provenance.eventstream.stream.EventStream
+import io.provenance.eventstream.stream.WebSocketService
 import io.provenance.eventstream.stream.clients.TendermintBlockFetcher
 import io.provenance.eventstream.stream.models.ABCIInfoResponse
 import io.provenance.eventstream.stream.models.BlockResponse
@@ -63,13 +63,13 @@ object Builders {
      */
     data class EventStreamBuilder(val builders: Builders) {
         var dispatchers: DispatcherProvider? = null
-        var eventStreamService: EventStreamService? = null
+        var eventStreamService: WebSocketService? = null
         var tendermintServiceClient: TendermintServiceClient? = null
         var moshi: Moshi? = null
         var options: BlockStreamOptions = BlockStreamOptions()
         var includeLiveBlocks: Boolean = true
 
-        fun <T : EventStreamService> eventStreamService(value: T) = apply { eventStreamService = value }
+        fun <T : WebSocketService> eventStreamService(value: T) = apply { eventStreamService = value }
         fun <T : TendermintServiceClient> tendermintService(value: T) = apply { tendermintServiceClient = value }
         fun moshi(value: Moshi) = apply { moshi = value }
         fun dispatchers(value: DispatcherProvider) = apply { dispatchers = value }

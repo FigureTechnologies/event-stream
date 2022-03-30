@@ -3,10 +3,14 @@ package io.provenance.eventstream.extensions
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flatMapConcat
 import kotlinx.coroutines.flow.flatMapMerge
+import okhttp3.OkHttpClient
 import org.apache.commons.lang3.StringUtils
 import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
 import java.util.Base64
+import java.util.concurrent.TimeUnit
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.seconds
 
 // === String methods ==================================================================================================
 
@@ -134,4 +138,9 @@ private object CharUtils {
      * @return true if between 32 and 126 inclusive
      */
     fun isAsciiPrintable(ch: Char): Boolean = ch.code in 32..126
+}
+
+fun OkHttpClient.awaitShutdown(waitFor: Duration = 10.seconds) {
+    dispatcher.executorService.shutdown()
+    dispatcher.executorService.awaitTermination(waitFor.inWholeMilliseconds, TimeUnit.MILLISECONDS)
 }
