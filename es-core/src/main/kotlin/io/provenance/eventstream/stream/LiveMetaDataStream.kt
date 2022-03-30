@@ -13,7 +13,7 @@ import kotlinx.coroutines.flow.channelFlow
 import mu.KotlinLogging
 
 class LiveMetaDataStream(
-    private val eventStreamService: EventStreamService,
+    private val eventStreamService: WebSocketService,
     private val decoder: DecoderEngine,
 ) {
 
@@ -29,7 +29,7 @@ class LiveMetaDataStream(
     fun streamLiveBlocks(): Flow<Block> {
 
         // Toggle the Lifecycle register start state:
-        eventStreamService.startListening()
+        eventStreamService.start()
 
         return channelFlow {
             for (event in eventStreamService.observeWebSocketEvent()) {

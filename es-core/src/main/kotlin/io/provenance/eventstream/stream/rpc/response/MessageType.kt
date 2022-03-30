@@ -31,7 +31,7 @@ sealed interface MessageType {
                         return message
                     }
                 } catch (e: DecoderDataException) {
-                    log.info("failed to decode as ${decoder.javaClass.simpleName}: ${e.message}")
+                    log.trace("failed to decode as ${decoder.javaClass.simpleName}: ${e.message}")
                 }
             }
             return Unknown(input)
