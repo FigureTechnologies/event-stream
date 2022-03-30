@@ -35,7 +35,7 @@ import org.junit.jupiter.api.assertThrows
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class StreamTests : TestBase() {
-    private val decoder = MessageType.Decoder(moshiDecoderAdapter().decoderEngine())
+    private val decoder = MessageType.Decoder(moshiDecoderAdapter().decoderEngine)
 
     @BeforeAll
     override fun setup() {

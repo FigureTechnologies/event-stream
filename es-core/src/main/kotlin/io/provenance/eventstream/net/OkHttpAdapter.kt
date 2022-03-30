@@ -6,13 +6,14 @@ import okhttp3.OkHttpClient
 import java.net.URI
 import java.util.concurrent.TimeUnit
 import kotlin.time.Duration
+import kotlin.time.Duration.Companion.seconds
 import kotlin.time.ExperimentalTime
 
 /**
  * Create a default okHttpClient to use for the event stream.
  */
 @OptIn(ExperimentalTime::class)
-fun defaultOkHttpClient(pingInterval: Duration = Duration.seconds(10), readInterval: Duration = Duration.seconds(60)) =
+fun defaultOkHttpClient(pingInterval: Duration = 10.seconds, readInterval: Duration = 60.seconds) =
     OkHttpClient.Builder()
         .pingInterval(pingInterval.inWholeMilliseconds, TimeUnit.MILLISECONDS)
         .readTimeout(readInterval.inWholeMilliseconds, TimeUnit.MILLISECONDS)

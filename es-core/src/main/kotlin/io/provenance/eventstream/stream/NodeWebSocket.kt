@@ -38,17 +38,17 @@ inline fun <reified T : MessageType> nodeEventStream(
     decoderAdapter: DecoderAdapter,
     throttle: Duration = DEFAULT_THROTTLE_PERIOD,
     lifecycle: LifecycleRegistry = defaultLifecycle(throttle),
-    channel: WebSocketChannel = defaultWebSocketChannel(wsAdapter, decoderAdapter.wsDecoder(), throttle, lifecycle),
+    channel: WebSocketChannel = defaultWebSocketChannel(wsAdapter, decoderAdapter.wsDecoder, throttle, lifecycle),
     wss: WebSocketService = channel.withLifecycle(lifecycle),
 ): Flow<T> {
     // Only supported NewBlock and NewBlockHeader right now.
     require(T::class == MessageType.NewBlock::class || T::class == MessageType.NewBlockHeader::class) {
-        "unsupported MessageType ${T::class.simpleName}"
+        "unsupported MessageType.${T::class.simpleName}"
     }
 
     val subscription = T::class.simpleName
     val sub = Subscribe("tm.event='$subscription'")
-    return webSocketClient(sub, wsAdapter, decoderAdapter.wsDecoder(), throttle, lifecycle, channel, wss).decodeMessages(decoder = decoderAdapter.jsonDecoder())
+    return webSocketClient(sub, wsAdapter, decoderAdapter.wsDecoder, throttle, lifecycle, channel, wss).decodeMessages(decoder = decoderAdapter.jsonDecoder)
 }
 
 /**
@@ -58,6 +58,7 @@ inline fun <reified T : MessageType> nodeEventStream(
  * @return A [Flow] of decoded websocket messages of type [MessageType]
  * @throws [CancellationException] When [MessageType.Panic] is encountered in the source flow.
  */
+@Suppress("unchecked_cast")
 fun <T : MessageType> Flow<Message>.decodeMessages(decoder: MessageDecoder): Flow<T> =
     map { decoder(it) }.transform {
         val log = KotlinLogging.logger {}

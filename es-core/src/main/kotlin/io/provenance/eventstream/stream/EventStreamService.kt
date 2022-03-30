@@ -31,7 +31,7 @@ fun WebSocketChannel.withLifecycle(lifecycle: LifecycleRegistry): WebSocketServi
     object : WebSocketService, WebSocketChannel by this, WebSocketLifecycle by webSocketLifecycle(lifecycle) {}
 
 /**
- *
+ * Generic web socket lifecycle to add graceful startup and shutdown to a service.
  */
 interface WebSocketLifecycle {
     /**
@@ -73,6 +73,6 @@ fun webSocketLifecycle(lifecycle: LifecycleRegistry): WebSocketLifecycle = objec
 }
 
 /**
- *
+ * Composite interface for [WebSocketChannel] and [WebSocketLifecycle]
  */
 interface WebSocketService : WebSocketChannel, WebSocketLifecycle

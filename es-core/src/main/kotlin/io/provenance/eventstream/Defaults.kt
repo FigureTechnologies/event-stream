@@ -33,39 +33,6 @@ import kotlin.time.Duration
 import kotlin.time.ExperimentalTime
 
 /**
- * Create a default configuration to use for the event stream.
- *
- * @param environment The environment to generate a configutation with.
- * @return The configuration
- */
-fun defaultConfig(environment: Environment): Config = ConfigLoader.Builder()
-    .addSource(EnvironmentVariablesPropertySource(useUnderscoresAsSeparator = true, allowUppercaseNames = true))
-    .apply {
-        // If in the local environment, override the ${...} envvar values in `application.properties` with
-        // the values provided in the local-specific `local.env.properties` property file:
-        if (environment.isLocal()) {
-            addPreprocessor(PropsPreprocessor("/local.env.properties"))
-        }
-    }
-    .addSource(PropertySource.resource("/application.yml"))
-    .build()
-    .loadConfigOrThrow()
-
-/**
- * Create a default websocket builder for the event stream.
- */
-@OptIn(ExperimentalTime::class)
-fun defaultEventStreamBuilder(wsFactory: () -> WebSocket): Scarlet.Builder {
-    val factory = object : WebSocket.Factory {
-        override fun create(): WebSocket = wsFactory()
-    }
-    return Scarlet.Builder()
-        .webSocketFactory(factory)
-        .addMessageAdapterFactory(MoshiMessageAdapter.Factory())
-        .addStreamAdapterFactory(CoroutinesStreamAdapterFactory())
-}
-
-/**
  * Create the default [TendermintServiceClient] to use with the event stream.
  *
  * @param rpcUri The URI of the Tendermint RPC service to connect to.
@@ -75,21 +42,12 @@ fun defaultTendermintService(rpcUri: String): TendermintServiceClient =
     TendermintServiceOpenApiClient(rpcUri)
 
 /**
- * Create the default [TendermintServiceClient] to use with the event stream.
- *
- * @param rpcUri The URI of the Tendermint RPC service to connect to.
- * @return The [TendermintServiceClient] instance to use for the event stream.
- */
-fun defaultTendermintFetcher(rpcUri: String): TendermintBlockFetcher =
-    TendermintBlockFetcher(TendermintServiceOpenApiClient(rpcUri))
-
-/**
- *
+ * Adapter type wrapper for [WebSocket.Factory] lambdas.
  */
 typealias WsAdapter = () -> WebSocket
 
 /**
- *
+ * Adapter method to convert lambda into [WebSocket.Factory]
  */
 fun WsAdapter.toScarletFactory(): WebSocket.Factory {
     return object : WebSocket.Factory {
@@ -98,12 +56,12 @@ fun WsAdapter.toScarletFactory(): WebSocket.Factory {
 }
 
 /**
- *
+ * Adapter type wrapper for [MessageAdapter.Factory] lambdas.
  */
 typealias WsDecoderAdapter = (type: Type, annotations: Array<Annotation>) -> MessageAdapter<*>
 
 /**
- *
+ * Adapter method to convert lambda into [MessageAdapter.Factory]
  */
 fun WsDecoderAdapter.toScarletFactory(): MessageAdapter.Factory {
     return object : MessageAdapter.Factory {
@@ -112,7 +70,13 @@ fun WsDecoderAdapter.toScarletFactory(): MessageAdapter.Factory {
 }
 
 /**
+ * Create a [WebSocketChannel] instance via [Scarlet].
  *
+ * @param wsFactory The [WsAdapter] used to create [WebSocket] used within [Scarlet] to connect to a host.
+ * @param msgAdapterFactory The [WsDecoderAdapter] to use within the web socket to convert into [com.tinder.scarlet.Message].
+ * @param throttle The rate to throttle within [Scarlet] for interval polling.
+ * @param lifecycle The [LifecycleRegistry] to use for websocket spin-up and tear-down.
+ * @return The [WebSocketChannel] instance.
  */
 fun defaultWebSocketChannel(
     wsFactory: WsAdapter,
@@ -130,13 +94,19 @@ fun defaultWebSocketChannel(
 }
 
 /**
- *
+ * Create a [LifecycleRegistry] used to manage websocket spin-up and tear-down within [Scarlet].
  */
 fun defaultLifecycle(throttle: Duration = DEFAULT_THROTTLE_PERIOD): LifecycleRegistry =
     LifecycleRegistry(throttle.inWholeMilliseconds)
 
 /**
- * Old stuff - TODO remove this.
+ * ---------------------------------------------------------------------------
+ * Old stuff - TODO work to remove this
+ * ---------------------------------------------------------------------------
+ */
+
+/**
+ *
  */
 @OptIn(ExperimentalCoroutinesApi::class, ExperimentalTime::class)
 fun defaultEventStream(
@@ -154,3 +124,45 @@ fun defaultEventStream(
     )
     return factory.createSource(options)
 }
+
+/**
+ * Create the default [TendermintServiceClient] to use with the event stream.
+ *
+ * @param rpcUri The URI of the Tendermint RPC service to connect to.
+ * @return The [TendermintServiceClient] instance to use for the event stream.
+ */
+fun defaultTendermintFetcher(rpcUri: String): TendermintBlockFetcher =
+    TendermintBlockFetcher(TendermintServiceOpenApiClient(rpcUri))
+
+/**
+ * Create a default websocket builder for the event stream.
+ */
+@OptIn(ExperimentalTime::class)
+fun defaultEventStreamBuilder(wsFactory: () -> WebSocket): Scarlet.Builder {
+    val factory = object : WebSocket.Factory {
+        override fun create(): WebSocket = wsFactory()
+    }
+    return Scarlet.Builder()
+        .webSocketFactory(factory)
+        .addMessageAdapterFactory(MoshiMessageAdapter.Factory())
+        .addStreamAdapterFactory(CoroutinesStreamAdapterFactory())
+}
+
+/**
+ * Create a default configuration to use for the event stream.
+ *
+ * @param environment The environment to generate a configutation with.
+ * @return The configuration
+ */
+fun defaultConfig(environment: Environment): Config = ConfigLoader.Builder()
+    .addSource(EnvironmentVariablesPropertySource(useUnderscoresAsSeparator = true, allowUppercaseNames = true))
+    .apply {
+        // If in the local environment, override the ${...} envvar values in `application.properties` with
+        // the values provided in the local-specific `local.env.properties` property file:
+        if (environment.isLocal()) {
+            addPreprocessor(PropsPreprocessor("/local.env.properties"))
+        }
+    }
+    .addSource(PropertySource.resource("/application.yml"))
+    .build()
+    .loadConfigOrThrow()

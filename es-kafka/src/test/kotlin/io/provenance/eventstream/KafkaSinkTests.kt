@@ -90,9 +90,6 @@ class KafkaSinkTests : TestBase() {
         }
         val streamBlock = StreamBlockImpl(blockResponse!!.result!!.block!!, blockEvents, mutableListOf(), mutableListOf(), mutableListOf())
 
-        val expectedKey =
-            "${blockResponse.result!!.block!!.header!!.chainId}.${blockResponse.result!!.block!!.header!!.height}"
-
         val e = RuntimeException()
         mockProducer.errorNext(e)
 

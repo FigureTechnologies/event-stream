@@ -51,8 +51,6 @@ data class Template(private val moshi: Moshi) {
         val jarUrl: URL = clazz.protectionDomain.codeSource.location
         val jarPath: Path = Paths.get(jarUrl.toString().substring("file:".length))
         val fs = FileSystems.newFileSystem(jarPath, null)
-
-        val base: Path = fs.getPath(directory)
         val dirStream = Files.newDirectoryStream(fs.getPath("templates/$directory"))
 
         return sequence {

@@ -133,6 +133,6 @@ fun BlockResultsResponseResultEvents.toTxEvent(
         txHash = txHash ?: "",
         eventType = this.type ?: "",
         attributes = this.attributes ?: emptyList(),
-        fee = fee?.first ?: null,
-        denom = fee?.second ?: null
+        fee = fee?.first,
+        denom = fee?.second
     )
