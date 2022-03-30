@@ -1,21 +1,21 @@
 package io.provenance.eventstream.flow.extensions
 
 import io.provenance.eventstream.stream.models.BlockMeta
-import kotlinx.coroutines.InternalCoroutinesApi
-import kotlinx.coroutines.FlowPreview
-import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.cancel
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.delay
+import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.InternalCoroutinesApi
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.FlowCollector
 import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.channelFlow
-import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlin.math.max
@@ -23,6 +23,8 @@ import kotlin.math.min
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.ExperimentalTime
+
+val DEFAULT_POLL_INTERVAL = 2.seconds
 
 /**
  * Cancels the flow upon receipt of a signal from
@@ -173,6 +175,7 @@ fun <T> Flow<T>.windowed(size: Int, step: Int, partialWindows: Boolean, timeout:
  * @param partialWindows controls whether or not to keep partial windows in the end if any.
  * @param timeout If an element is not emitted in the specified duration, the buffer will be emitted downstream if
  *  it is non-empty.
+ * @param pollInterval Delay interval between each check of the buffer for elements.
  */
 @OptIn(
     InternalCoroutinesApi::class,
@@ -186,6 +189,7 @@ fun <T, R> Flow<T>.windowed(
     step: Int,
     partialWindows: Boolean,
     timeout: Duration? = null,
+    pollInterval: Duration = DEFAULT_POLL_INTERVAL,
     transform: suspend (Flow<T>) -> R
 ): Flow<R> {
     require(size > 0 && step > 0) { "Size and step should be greater than 0, but was size: $size, step: $step" }
@@ -199,7 +203,6 @@ fun <T, R> Flow<T>.windowed(
         val toSkip: Int = max(step - size, 0)
         var skipped: Int = toSkip
         var lastEmittedAt: Instant? = null
-        val pollInterval = 2.seconds
 
         fun updateEmissionTime() {
             lastEmittedAt = Clock.System.now()
