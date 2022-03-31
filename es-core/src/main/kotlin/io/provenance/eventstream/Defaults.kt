@@ -16,6 +16,7 @@ import io.provenance.eventstream.adapter.json.decoder.MoshiDecoderEngine
 import io.provenance.eventstream.config.Config
 import io.provenance.eventstream.config.Environment
 import io.provenance.eventstream.decoder.defaultMoshi
+import io.provenance.eventstream.net.NetAdapter
 import io.provenance.eventstream.net.defaultOkHttpClient
 import io.provenance.eventstream.net.okHttpNetAdapter
 import io.provenance.eventstream.stream.BlockStreamOptions
@@ -138,9 +139,9 @@ fun defaultTendermintFetcher(rpcUri: String): TendermintBlockFetcher =
  * Create a default websocket builder for the event stream.
  */
 @OptIn(ExperimentalTime::class)
-fun defaultEventStreamBuilder(wsFactory: () -> WebSocket): Scarlet.Builder {
+fun defaultEventStreamBuilder(netAdapter: NetAdapter): Scarlet.Builder {
     val factory = object : WebSocket.Factory {
-        override fun create(): WebSocket = wsFactory()
+        override fun create(): WebSocket = netAdapter.wsAdapter.invoke()
     }
     return Scarlet.Builder()
         .webSocketFactory(factory)

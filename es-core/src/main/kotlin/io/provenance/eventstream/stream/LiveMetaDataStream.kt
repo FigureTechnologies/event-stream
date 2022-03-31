@@ -14,6 +14,11 @@ import kotlinx.coroutines.flow.map
 import mu.KotlinLogging
 
 /**
+ *
+ */
+fun Flow<MessageType.NewBlockHeader>.mapLiveHeaderData() = map { it.header.data.value!!.header!! }
+
+/**
  * Convert a [Flow] of type [MessageType.NewBlock] into a [Flow] of [Block].
  *
  * Mimic the behavior of the [LiveMetaDataStream] using [nodeEventStream] as a source.

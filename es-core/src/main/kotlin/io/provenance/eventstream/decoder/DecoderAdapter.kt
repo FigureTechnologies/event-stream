@@ -1,4 +1,4 @@
-package io.provenance.eventstream.stream.decoder
+package io.provenance.eventstream.decoder
 
 import io.provenance.eventstream.WsDecoderAdapter
 import io.provenance.eventstream.adapter.json.decoder.DecoderEngine

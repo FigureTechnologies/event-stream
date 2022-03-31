@@ -6,9 +6,10 @@ import com.tinder.scarlet.lifecycle.LifecycleRegistry
 import io.provenance.eventstream.WsAdapter
 import io.provenance.eventstream.WsDecoderAdapter
 import io.provenance.eventstream.adapter.json.decoder.MessageDecoder
+import io.provenance.eventstream.decoder.DecoderAdapter
 import io.provenance.eventstream.defaultLifecycle
 import io.provenance.eventstream.defaultWebSocketChannel
-import io.provenance.eventstream.stream.decoder.DecoderAdapter
+import io.provenance.eventstream.net.NetAdapter
 import io.provenance.eventstream.stream.rpc.request.Subscribe
 import io.provenance.eventstream.stream.rpc.response.MessageType
 import kotlinx.coroutines.CancellationException
@@ -26,7 +27,7 @@ val DEFAULT_THROTTLE_PERIOD = 1.seconds
 /**
  * Create an event stream subscription to a node.
  *
- * @param wsAdapter The [WsAdapter] to use to connect to the node.
+ * @param netAdapter The [NetAdapter] to use to connect to the node.
  * @param decoderAdapter The [DecoderAdapter] to use to convert from json.
  * @param throttle The web socket throttle duration.
  * @param lifecycle The [LifecycleRegistry] instance used to manage startup and shutdown.
@@ -34,11 +35,11 @@ val DEFAULT_THROTTLE_PERIOD = 1.seconds
  * @param wss The [WebSocketService] used to manage the channel.
  */
 inline fun <reified T : MessageType> nodeEventStream(
-    noinline wsAdapter: WsAdapter,
+    netAdapter: NetAdapter,
     decoderAdapter: DecoderAdapter,
     throttle: Duration = DEFAULT_THROTTLE_PERIOD,
     lifecycle: LifecycleRegistry = defaultLifecycle(throttle),
-    channel: WebSocketChannel = defaultWebSocketChannel(wsAdapter, decoderAdapter.wsDecoder, throttle, lifecycle),
+    channel: WebSocketChannel = defaultWebSocketChannel(netAdapter.wsAdapter, decoderAdapter.wsDecoder, throttle, lifecycle),
     wss: WebSocketService = channel.withLifecycle(lifecycle),
 ): Flow<T> {
     // Only supported NewBlock and NewBlockHeader right now.
@@ -48,7 +49,8 @@ inline fun <reified T : MessageType> nodeEventStream(
 
     val subscription = T::class.simpleName
     val sub = Subscribe("tm.event='$subscription'")
-    return webSocketClient(sub, wsAdapter, decoderAdapter.wsDecoder, throttle, lifecycle, channel, wss).decodeMessages(decoder = decoderAdapter.jsonDecoder)
+    return webSocketClient(sub, netAdapter.wsAdapter, decoderAdapter.wsDecoder, throttle, lifecycle, channel, wss)
+        .decodeMessages(decoder = decoderAdapter.jsonDecoder)
 }
 
 /**
@@ -66,9 +68,9 @@ fun <T : MessageType> Flow<Message>.decodeMessages(decoder: MessageDecoder): Flo
             is MessageType.Panic ->
                 throw CancellationException("RPC endpoint panic: ${it.error}")
 
-            is MessageType.Error -> log.error("failed to handle ws message:${it.error}")
-            is MessageType.Unknown -> log.info("unknown message type:${it.type}")
-            is MessageType.Empty -> {}
+            is MessageType.Error -> log.error { "failed to handle ws message:${it.error}" }
+            is MessageType.Unknown -> log.info { "unknown message type:${it.type}" }
+            is MessageType.Empty -> log.debug { "received empty message type" }
 
             else -> emit(it as T)
         }
@@ -97,15 +99,15 @@ fun webSocketClient(
     }
 
     // Toggle the Lifecycle register start state
-    log.info { "starting web socket client" }
+    log.debug { "starting web socket client" }
     wss.start()
 
-    log.info { "listening for web events" }
+    log.debug { "listening for web events" }
     for (event in wss.observeWebSocketEvent()) {
-        log.info { "got event: $event" }
+        log.trace { "got event: $event" }
         when (event) {
             is WebSocket.Event.OnConnectionOpened<*> -> {
-                log.info("live::connection established, initializing subscription:$subscription")
+                log.debug { "connection established, initializing subscription:$subscription" }
                 wss.subscribe(subscription)
             }
 
@@ -114,15 +116,15 @@ fun webSocketClient(
             }
 
             is WebSocket.Event.OnConnectionClosing -> {
-                close(CancellationException("live::connection closed"))
+                close(CancellationException("connection closed"))
             }
 
             is WebSocket.Event.OnConnectionFailed -> {
-                throw CancellationException("live::connection failed", event.throwable)
+                throw CancellationException("connection failed", event.throwable)
             }
 
             else -> {
-                throw CancellationException("live::unexpected event:$event")
+                throw CancellationException("unexpected event:$event")
             }
         }
     }

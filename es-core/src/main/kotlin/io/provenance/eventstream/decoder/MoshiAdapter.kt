@@ -5,8 +5,6 @@ import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import com.tinder.scarlet.messageadapter.moshi.MoshiMessageAdapter
 import io.provenance.eventstream.adapter.json.JSONObjectAdapter
 import io.provenance.eventstream.adapter.json.decoder.MoshiDecoderEngine
-import io.provenance.eventstream.stream.decoder.DecoderAdapter
-import io.provenance.eventstream.stream.decoder.decoderAdapter
 
 /**
  * Create the default [Moshi] JSON serializer/deserializer.
