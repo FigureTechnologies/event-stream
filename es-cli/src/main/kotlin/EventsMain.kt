@@ -1,8 +1,6 @@
 package io.provenance.eventstream
 
 import io.provenance.eventstream.decoder.moshiDecoderAdapter
-import io.provenance.eventstream.extensions.awaitShutdown
-import io.provenance.eventstream.net.defaultOkHttpClient
 import io.provenance.eventstream.net.okHttpNetAdapter
 import io.provenance.eventstream.stream.historicalBlockMetaData
 import io.provenance.eventstream.stream.mapHistoricalHeaderData
@@ -17,9 +15,8 @@ import mu.KotlinLogging
 
 fun main() = runBlocking {
     val log = KotlinLogging.logger {}
-    val host = "localhost:26657"
-    val okHttp = defaultOkHttpClient()
-    val netAdapter = okHttpNetAdapter(host, okHttp)
+    val host = "rpc.test.provenance.io:443"
+    val netAdapter = okHttpNetAdapter(host, tls = true)
     val decoderAdapter = moshiDecoderAdapter()
 
     // Example is not collected.
@@ -35,8 +32,8 @@ fun main() = runBlocking {
     // Use metadataFlow to fetch from:(current - 10000) to:(current + 5).
     // This will combine the historical flow and live flow to create an ordered stream of BlockHeaders.
     val current = netAdapter.rpcAdapter.getCurrentHeight()!!
-    metadataFlow(netAdapter, decoderAdapter, from = current - 10000, to = current + 5)
+    metadataFlow(netAdapter, decoderAdapter, from = current - 1000, to = current)
         .collect { println("recv:${it.height}") }
 
-    okHttp.awaitShutdown()
+    netAdapter.shutdown()
 }

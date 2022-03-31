@@ -59,7 +59,7 @@ fun webSocketLifecycle(lifecycle: LifecycleRegistry): WebSocketLifecycle = objec
      * Note: this must be called prior to any receiving any events on the RPC stream.
      */
     override fun start() {
-        log.info { "start()" }
+        log.debug { "start()" }
         lifecycle.onNext(Lifecycle.State.Started)
     }
 
@@ -67,7 +67,7 @@ fun webSocketLifecycle(lifecycle: LifecycleRegistry): WebSocketLifecycle = objec
      * Stops the provided event stream from receiving events.
      */
     override fun stop() {
-        log.info { "stop()" }
+        log.debug { "stop()" }
         lifecycle.onNext(Lifecycle.State.Stopped.AndAborted)
     }
 }

@@ -1,6 +1,7 @@
 package io.provenance.eventstream.net
 
 import com.tinder.scarlet.websocket.okhttp.newWebSocketFactory
+import io.provenance.eventstream.extensions.awaitShutdown
 import io.provenance.eventstream.stream.clients.TendermintBlockFetcher
 import io.provenance.eventstream.stream.clients.TendermintServiceOpenApiClient
 import mu.KotlinLogging
@@ -41,6 +42,7 @@ fun okHttpNetAdapter(host: String, okHttpClient: OkHttpClient = defaultOkHttpCli
 
     return netAdapter(
         okHttpClient.newWebSocketFactory("${wsUri.scheme}://${wsUri.host}:${wsUri.port}/websocket")::create,
-        TendermintBlockFetcher(TendermintServiceOpenApiClient(rpcUri.toASCIIString()))
+        TendermintBlockFetcher(TendermintServiceOpenApiClient(rpcUri.toASCIIString())),
+        okHttpClient::awaitShutdown
     )
 }
