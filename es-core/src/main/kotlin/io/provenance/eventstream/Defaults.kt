@@ -20,12 +20,12 @@ import io.provenance.eventstream.net.NetAdapter
 import io.provenance.eventstream.net.defaultOkHttpClient
 import io.provenance.eventstream.net.okHttpNetAdapter
 import io.provenance.eventstream.stream.BlockStreamOptions
-import io.provenance.eventstream.stream.DEFAULT_THROTTLE_PERIOD
 import io.provenance.eventstream.stream.DefaultBlockStreamFactory
 import io.provenance.eventstream.stream.TendermintServiceClient
 import io.provenance.eventstream.stream.WebSocketChannel
 import io.provenance.eventstream.stream.clients.TendermintBlockFetcher
 import io.provenance.eventstream.stream.clients.TendermintServiceOpenApiClient
+import io.provenance.eventstream.stream.flows.DEFAULT_THROTTLE_PERIOD
 import io.provenance.eventstream.stream.models.StreamBlockImpl
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import okhttp3.OkHttpClient

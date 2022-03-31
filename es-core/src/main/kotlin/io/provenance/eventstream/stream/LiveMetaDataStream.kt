@@ -4,28 +4,13 @@ import com.tinder.scarlet.Message
 import com.tinder.scarlet.WebSocket
 import io.provenance.eventstream.adapter.json.decoder.DecoderEngine
 import io.provenance.eventstream.stream.models.Block
-import io.provenance.eventstream.stream.models.BlockHeader
 import io.provenance.eventstream.stream.rpc.request.Subscribe
 import io.provenance.eventstream.stream.rpc.response.MessageType
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.channelFlow
-import kotlinx.coroutines.flow.map
 import mu.KotlinLogging
-
-/**
- * Convert a [Flow] of type [MessageType.NewBlockHeader] into a flow of [BlockHeader]
- */
-fun Flow<MessageType.NewBlockHeader>.mapLiveHeaderData(): Flow<BlockHeader> = map { it.header.data.value!!.header!! }
-
-/**
- * Convert a [Flow] of type [MessageType.NewBlock] into a [Flow] of [Block].
- *
- * Mimic the behavior of the [LiveMetaDataStream] using [nodeEventStream] as a source.
- */
-fun Flow<MessageType.NewBlock>.toLiveMetaDataStream(): Flow<Block> =
-    map { it.block.data.value.block }
 
 /**
  * Create a [Flow] of [Block] from a [WebSocketService].

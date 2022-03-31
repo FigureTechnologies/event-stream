@@ -1,87 +1,20 @@
 package io.provenance.eventstream.stream
 
 import io.provenance.eventstream.config.Options
-import io.provenance.eventstream.net.NetAdapter
-import io.provenance.eventstream.stream.EventStream.Companion.TENDERMINT_MAX_QUERY_RANGE
 import io.provenance.eventstream.stream.clients.TendermintBlockFetcher
-import io.provenance.eventstream.stream.models.BlockHeader
 import io.provenance.eventstream.stream.models.BlockMeta
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.flow.DEFAULT_CONCURRENCY
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.asFlow
-import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.flatMapConcat
 import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.withContext
 import mu.KotlinLogging
-import kotlin.coroutines.CoroutineContext
 import kotlin.math.floor
 import kotlin.math.max
 import kotlin.math.min
-
-/**
- * Convert a [Flow] of [BlockMeta] into a [Flow] of [BlockHeader].
- */
-fun Flow<BlockMeta>.mapHistoricalHeaderData(): Flow<BlockHeader> = map { it.header!! }
-
-/**
- * Create a [Flow] of historical [BlockMeta] from a node.
- *
- * @param netAdapter The [NetAdapter] to use to interface with the node rpc.
- * @param from The `from` height to begin the stream with.
- * @param to The `to` height to fetch until. If omitted, use the current height.
- * @return The [Flow] of [BlockMeta]
- */
-fun historicalBlockMetaData(netAdapter: NetAdapter, from: Long = 1, to: Long? = null): Flow<BlockMeta> = flow {
-    suspend fun currentHeight() =
-        netAdapter.rpcAdapter.getCurrentHeight() ?: throw RuntimeException("cannot fetch current height")
-
-    val realTo = to ?: currentHeight()
-    require(from <= realTo) { "from:$from must be less than to:$realTo" }
-
-    emitAll((from..realTo).toList().toMetaData(netAdapter))
-}
-
-/**
- * Convert a list of heights into a [Flow] of [BlockMeta].
- *
- * @param netAdapter The [NetAdapter] to use to interface with the node rpc.
- * @param concurrency The coroutine concurrency setting for async parallel fetches.
- * @param context The coroutine context to execute the async parallel fetches.
- * @return The [Flow] of [BlockMeta]
- */
-@OptIn(FlowPreview::class, ExperimentalCoroutinesApi::class)
-fun List<Long>.toMetaData(
-    netAdapter: NetAdapter,
-    concurrency: Int = DEFAULT_CONCURRENCY,
-    context: CoroutineContext = Dispatchers.Default
-): Flow<BlockMeta> {
-    val fetcher = netAdapter.rpcAdapter
-    val log = KotlinLogging.logger {}
-    return channelFlow {
-        chunked(TENDERMINT_MAX_QUERY_RANGE).map { LongRange(it.first(), it.last()) }
-            .chunked(concurrency).map { chunks ->
-                withContext(context) {
-                    log.debug { "processing chunks:$chunks" }
-                    chunks.toList().map {
-                        async {
-                            fetcher.getBlocksMeta(it.first, it.last)
-                                ?.sortedBy { it.header?.height }
-                                ?: throw RuntimeException("failed to fetch for range:[${it.first} .. ${it.last}]")
-                        }
-                    }.awaitAll().flatten()
-                }.forEach { send(it) }
-            }
-    }
-}
 
 class MetadataStream(
     val options: BlockStreamOptions,

@@ -1,17 +1,18 @@
-package io.provenance.eventstream.stream
+package io.provenance.eventstream.stream.flows
 
 import com.tinder.scarlet.Message
 import com.tinder.scarlet.WebSocket
 import com.tinder.scarlet.lifecycle.LifecycleRegistry
-import io.provenance.eventstream.WsAdapter
-import io.provenance.eventstream.WsDecoderAdapter
 import io.provenance.eventstream.adapter.json.decoder.MessageDecoder
 import io.provenance.eventstream.decoder.DecoderAdapter
 import io.provenance.eventstream.defaultLifecycle
 import io.provenance.eventstream.defaultWebSocketChannel
 import io.provenance.eventstream.net.NetAdapter
+import io.provenance.eventstream.stream.WebSocketChannel
+import io.provenance.eventstream.stream.WebSocketService
 import io.provenance.eventstream.stream.rpc.request.Subscribe
 import io.provenance.eventstream.stream.rpc.response.MessageType
+import io.provenance.eventstream.stream.withLifecycle
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -23,35 +24,6 @@ import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
 val DEFAULT_THROTTLE_PERIOD = 1.seconds
-
-/**
- * Create an event stream subscription to a node.
- *
- * @param netAdapter The [NetAdapter] to use to connect to the node.
- * @param decoderAdapter The [DecoderAdapter] to use to convert from json.
- * @param throttle The web socket throttle duration.
- * @param lifecycle The [LifecycleRegistry] instance used to manage startup and shutdown.
- * @param channel The [WebSocketChannel] used to receive incoming websocket events.
- * @param wss The [WebSocketService] used to manage the channel.
- */
-inline fun <reified T : MessageType> nodeEventStream(
-    netAdapter: NetAdapter,
-    decoderAdapter: DecoderAdapter,
-    throttle: Duration = DEFAULT_THROTTLE_PERIOD,
-    lifecycle: LifecycleRegistry = defaultLifecycle(throttle),
-    channel: WebSocketChannel = defaultWebSocketChannel(netAdapter.wsAdapter, decoderAdapter.wsDecoder, throttle, lifecycle),
-    wss: WebSocketService = channel.withLifecycle(lifecycle),
-): Flow<T> {
-    // Only supported NewBlock and NewBlockHeader right now.
-    require(T::class == MessageType.NewBlock::class || T::class == MessageType.NewBlockHeader::class) {
-        "unsupported MessageType.${T::class.simpleName}"
-    }
-
-    val subscription = T::class.simpleName
-    val sub = Subscribe("tm.event='$subscription'")
-    return webSocketClient(sub, netAdapter.wsAdapter, decoderAdapter.wsDecoder, throttle, lifecycle, channel, wss)
-        .decodeMessages(decoder = decoderAdapter.jsonDecoder)
-}
 
 /**
  * Decode the flow of [Message] into a flow of [MessageType]
@@ -85,11 +57,11 @@ fun <T : MessageType> Flow<Message>.decodeMessages(decoder: MessageDecoder): Flo
 @OptIn(ExperimentalCoroutinesApi::class)
 fun webSocketClient(
     subscription: Subscribe,
-    wsAdapter: WsAdapter,
-    wsDecoderAdapter: WsDecoderAdapter,
+    netAdapter: NetAdapter,
+    decoderAdapter: DecoderAdapter,
     throttle: Duration = DEFAULT_THROTTLE_PERIOD,
     lifecycle: LifecycleRegistry = defaultLifecycle(throttle),
-    channel: WebSocketChannel = defaultWebSocketChannel(wsAdapter, wsDecoderAdapter, throttle, lifecycle),
+    channel: WebSocketChannel = defaultWebSocketChannel(netAdapter.wsAdapter, decoderAdapter.wsDecoder, throttle, lifecycle),
     wss: WebSocketService = channel.withLifecycle(lifecycle),
 ): Flow<Message> = channelFlow {
     val log = KotlinLogging.logger {}

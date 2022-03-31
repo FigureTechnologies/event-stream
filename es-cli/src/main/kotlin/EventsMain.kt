@@ -2,12 +2,9 @@ package io.provenance.eventstream
 
 import io.provenance.eventstream.decoder.moshiDecoderAdapter
 import io.provenance.eventstream.net.okHttpNetAdapter
-import io.provenance.eventstream.stream.historicalBlockMetaData
-import io.provenance.eventstream.stream.mapHistoricalHeaderData
-import io.provenance.eventstream.stream.mapLiveHeaderData
-import io.provenance.eventstream.stream.metadataFlow
-import io.provenance.eventstream.stream.nodeEventStream
-import io.provenance.eventstream.stream.rpc.response.MessageType.NewBlockHeader
+import io.provenance.eventstream.stream.flows.historicalMetadataFlow
+import io.provenance.eventstream.stream.flows.liveMetadataFlow
+import io.provenance.eventstream.stream.flows.metadataFlow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.runBlocking
@@ -20,13 +17,11 @@ fun main() = runBlocking {
     val decoderAdapter = moshiDecoderAdapter()
 
     // Example is not collected.
-    historicalBlockMetaData(netAdapter, 1, 100)
-        .mapHistoricalHeaderData()
+    historicalMetadataFlow(netAdapter, 1, 100)
         .onEach { if (it.height % 1500 == 0L) { log.info { "oldBlock: ${it.height}" } } }
 
     // Example is not collected.
-    nodeEventStream<NewBlockHeader>(netAdapter, decoderAdapter)
-        .mapLiveHeaderData()
+    liveMetadataFlow(netAdapter, decoderAdapter)
         .onEach { println("liveBlock: ${it.height}") }
 
     // Use metadataFlow to fetch from:(current - 10000) to:(current + 5).
