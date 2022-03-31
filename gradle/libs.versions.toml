@@ -49,6 +49,7 @@ provenance-protos = { module = "io.provenance:proto-kotlin", version.ref = "prov
 scarlet-core = { module = "com.tinder.scarlet:scarlet", version.ref = "scarlet" }
 scarlet-stream = { module = "com.tinder.scarlet:stream-adapter-coroutines", version.ref = "scarlet" }
 scarlet-websocket = { module = "com.tinder.scarlet:websocket-okhttp", version.ref = "scarlet" }
+bouncycastle = { module = "org.bouncycastle:bcprov-jdk15on", version.ref = "bouncyCastle"}
 scarlet-moshi = { module = "com.tinder.scarlet:message-adapter-moshi", version.ref = "scarlet" }
 
 [plugins]

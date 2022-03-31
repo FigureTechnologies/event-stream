@@ -8,7 +8,7 @@ event-stream:
   rpc:
     uri: http://localhost:26657
   height:
-    from: 1
+    from: 155585
   skipEmptyBlocks: false
 node: http://localhost:26657
-from: 1
+from: 6278500

@@ -15,6 +15,8 @@ dependencies {
     implementation(libs.arrow)
     implementation(libs.commons.lang)
     implementation(libs.json)
+    implementation(libs.bouncycastle)
+    implementation("io.provenance.hdwallet:hdwallet:0.1.15")
 
     implementation(libs.provenance.protos)
 }
