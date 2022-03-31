@@ -171,8 +171,8 @@ fun <T> Flow<T>.windowed(size: Int, step: Int, partialWindows: Boolean, timeout:
  *
  * Both [size] and [step] must be positive and can be greater than the number of elements in this collection.
  * @param size the number of elements to take in each window
- * @param step the number of elements to move the window forward by on an each step.
- * @param partialWindows controls whether or not to keep partial windows in the end if any.
+ * @param step the number of elements to move the window forward by each step.
+ * @param partialWindows controls whether to keep partial windows in the end if any.
  * @param timeout If an element is not emitted in the specified duration, the buffer will be emitted downstream if
  *  it is non-empty.
  * @param pollInterval Delay interval between each check of the buffer for elements.

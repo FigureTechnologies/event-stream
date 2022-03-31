@@ -12,10 +12,10 @@ import io.provenance.eventstream.stream.models.BlockMeta
 import io.provenance.eventstream.stream.models.EncodedBlockchainEvent
 import io.provenance.eventstream.stream.models.StreamBlock
 import io.provenance.eventstream.stream.models.StreamBlockImpl
-import io.provenance.eventstream.stream.models.extensions.txErroredEvents
 import io.provenance.eventstream.stream.models.extensions.blockEvents
 import io.provenance.eventstream.stream.models.extensions.dateTime
 import io.provenance.eventstream.stream.models.extensions.txData
+import io.provenance.eventstream.stream.models.extensions.txErroredEvents
 import io.provenance.eventstream.stream.models.extensions.txEvents
 import io.provenance.eventstream.utils.backoff
 import kotlinx.coroutines.CoroutineStart
@@ -27,10 +27,10 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.asFlow
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.buffer
 import kotlinx.coroutines.flow.cancellable
 import kotlinx.coroutines.flow.channelFlow
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.consumeAsFlow
 import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.filter
@@ -45,13 +45,13 @@ import kotlinx.coroutines.flow.onCompletion
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.retryWhen
-import kotlin.time.ExperimentalTime
 import mu.KotlinLogging
 import java.io.EOFException
 import java.net.ConnectException
 import java.net.SocketException
 import java.net.SocketTimeoutException
 import java.util.concurrent.CompletionException
+import kotlin.time.ExperimentalTime
 
 @OptIn(FlowPreview::class, ExperimentalTime::class)
 @ExperimentalCoroutinesApi
@@ -205,6 +205,7 @@ class EventStream(
         val txErrors = blockResult.txErroredEvents(blockDatetime) { index: Int -> block.txData(index) }
         return StreamBlockImpl(block, blockEvents, blockTxResults, txEvents, txErrors)
     }
+
     /**
      * Constructs a Flow of live and historical blocks, plus associated event data.
      *

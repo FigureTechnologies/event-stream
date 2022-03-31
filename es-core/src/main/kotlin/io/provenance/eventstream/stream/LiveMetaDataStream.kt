@@ -10,16 +10,7 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.channelFlow
-import kotlinx.coroutines.flow.map
 import mu.KotlinLogging
-
-/**
- * Convert a [Flow] of type [MessageType.NewBlock] into a [Flow] of [Block].
- *
- * Mimic the behavior of the [LiveMetaDataStream] using [nodeEventStream] as a source.
- */
-fun Flow<MessageType.NewBlock>.toLiveMetaDataStream(): Flow<Block> =
-    map { it.block.data.value.block }
 
 /**
  * Create a [Flow] of [Block] from a [WebSocketService].
