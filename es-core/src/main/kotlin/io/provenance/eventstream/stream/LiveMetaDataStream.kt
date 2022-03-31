@@ -4,6 +4,7 @@ import com.tinder.scarlet.Message
 import com.tinder.scarlet.WebSocket
 import io.provenance.eventstream.adapter.json.decoder.DecoderEngine
 import io.provenance.eventstream.stream.models.Block
+import io.provenance.eventstream.stream.models.BlockHeader
 import io.provenance.eventstream.stream.rpc.request.Subscribe
 import io.provenance.eventstream.stream.rpc.response.MessageType
 import kotlinx.coroutines.CancellationException
@@ -14,9 +15,9 @@ import kotlinx.coroutines.flow.map
 import mu.KotlinLogging
 
 /**
- *
+ * Convert a [Flow] of type [MessageType.NewBlockHeader] into a flow of [BlockHeader]
  */
-fun Flow<MessageType.NewBlockHeader>.mapLiveHeaderData() = map { it.header.data.value!!.header!! }
+fun Flow<MessageType.NewBlockHeader>.mapLiveHeaderData(): Flow<BlockHeader> = map { it.header.data.value!!.header!! }
 
 /**
  * Convert a [Flow] of type [MessageType.NewBlock] into a [Flow] of [Block].

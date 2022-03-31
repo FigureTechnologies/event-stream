@@ -4,6 +4,7 @@ import io.provenance.eventstream.config.Options
 import io.provenance.eventstream.net.NetAdapter
 import io.provenance.eventstream.stream.EventStream.Companion.TENDERMINT_MAX_QUERY_RANGE
 import io.provenance.eventstream.stream.clients.TendermintBlockFetcher
+import io.provenance.eventstream.stream.models.BlockHeader
 import io.provenance.eventstream.stream.models.BlockMeta
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -27,12 +28,17 @@ import kotlin.math.max
 import kotlin.math.min
 
 /**
- *
+ * Convert a [Flow] of [BlockMeta] into a [Flow] of [BlockHeader].
  */
-fun Flow<BlockMeta>.mapHistoricalHeaderData() = map { it.header!! }
+fun Flow<BlockMeta>.mapHistoricalHeaderData(): Flow<BlockHeader> = map { it.header!! }
 
 /**
+ * Create a [Flow] of historical [BlockMeta] from a node.
  *
+ * @param netAdapter The [NetAdapter] to use to interface with the node rpc.
+ * @param from The `from` height to begin the stream with.
+ * @param to The `to` height to fetch until. If omitted, use the current height.
+ * @return The [Flow] of [BlockMeta]
  */
 fun historicalBlockMetaData(netAdapter: NetAdapter, from: Long = 1, to: Long? = null): Flow<BlockMeta> = flow {
     suspend fun currentHeight() =
@@ -41,11 +47,16 @@ fun historicalBlockMetaData(netAdapter: NetAdapter, from: Long = 1, to: Long? = 
     val realTo = to ?: currentHeight()
     require(from <= realTo) { "from:$from must be less than to:$realTo" }
 
-    emitAll((from .. realTo).toList().toMetaData(netAdapter))
+    emitAll((from..realTo).toList().toMetaData(netAdapter))
 }
 
 /**
+ * Convert a list of heights into a [Flow] of [BlockMeta].
  *
+ * @param netAdapter The [NetAdapter] to use to interface with the node rpc.
+ * @param concurrency The coroutine concurrency setting for async parallel fetches.
+ * @param context The coroutine context to execute the async parallel fetches.
+ * @return The [Flow] of [BlockMeta]
  */
 @OptIn(FlowPreview::class, ExperimentalCoroutinesApi::class)
 fun List<Long>.toMetaData(
@@ -72,9 +83,6 @@ fun List<Long>.toMetaData(
     }
 }
 
-/**
- *
- */
 class MetadataStream(
     val options: BlockStreamOptions,
     val fetcher: TendermintBlockFetcher
