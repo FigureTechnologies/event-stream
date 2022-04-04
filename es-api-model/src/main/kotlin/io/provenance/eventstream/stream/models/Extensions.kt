@@ -49,8 +49,8 @@ fun Block.txData(index: Int): TxInfo? {
 
     if (tx != null) {
         val feeInfo = TxOuterClass.Tx.parseFrom(BaseEncoding.base64().decode(tx)).authInfo.fee
-        val amount = feeInfo.getAmount(0).amount.toLong()
-        val denom = feeInfo.getAmount(0).denom
+        val amount = feeInfo.amountList.getOrNull(0)?.amount?.toLong()
+        val denom = feeInfo.amountList.getOrNull(0)?.denom
         return TxInfo(
             this.data?.txs?.get(index)?.hash(),
             Pair(amount, denom)
