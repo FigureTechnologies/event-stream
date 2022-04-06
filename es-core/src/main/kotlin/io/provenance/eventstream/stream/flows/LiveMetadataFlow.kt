@@ -5,10 +5,8 @@ import io.provenance.eventstream.decoder.DecoderAdapter
 import io.provenance.eventstream.defaultLifecycle
 import io.provenance.eventstream.defaultWebSocketChannel
 import io.provenance.eventstream.net.NetAdapter
-import io.provenance.eventstream.stream.LiveMetaDataStream
 import io.provenance.eventstream.stream.WebSocketChannel
 import io.provenance.eventstream.stream.WebSocketService
-import io.provenance.eventstream.stream.models.Block
 import io.provenance.eventstream.stream.models.BlockHeader
 import io.provenance.eventstream.stream.models.BlockMeta
 import io.provenance.eventstream.stream.rpc.request.Subscribe
@@ -22,14 +20,6 @@ import kotlin.time.Duration
  * Convert a [Flow] of type [MessageType.NewBlockHeader] into a flow of [BlockHeader]
  */
 fun Flow<MessageType.NewBlockHeader>.mapLiveHeaderData(): Flow<BlockHeader> = map { it.header.data.value!!.header!! }
-
-/**
- * Convert a [Flow] of type [MessageType.NewBlock] into a [Flow] of [Block].
- *
- * Mimic the behavior of the [LiveMetaDataStream] using [nodeEventStream] as a source.
- */
-fun Flow<MessageType.NewBlock>.mapLiveBlockData(): Flow<Block> =
-    map { it.block.data.value.block }
 
 /**
  * Create a [Flow] of historical [BlockMeta] from a node.
