@@ -8,8 +8,12 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.DEFAULT_CONCURRENCY
 import kotlinx.coroutines.flow.Flow
+import kotlin.coroutines.CoroutineContext
+import kotlin.coroutines.EmptyCoroutineContext
 
-data class BlockData(val block: Block, val blockResult: BlockResultsResponseResult)
+data class BlockData(val block: Block, val blockResult: BlockResultsResponseResult) {
+    val height = block.header!!.height
+}
 
 open class BlockFetchException(m: String) : Exception(m)
 
@@ -19,5 +23,5 @@ interface BlockFetcher {
     suspend fun getCurrentHeight(): Long?
     suspend fun getBlock(height: Long): BlockData
     suspend fun getBlockResults(height: Long): BlockResultsResponse?
-    suspend fun getBlocks(heights: List<Long>, concurrency: Int = DEFAULT_CONCURRENCY): Flow<BlockData>
+    suspend fun getBlocks(heights: List<Long>, concurrency: Int = DEFAULT_CONCURRENCY, context: CoroutineContext = EmptyCoroutineContext): Flow<BlockData>
 }
