@@ -11,10 +11,12 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.transform
+import kotlinx.coroutines.withContext
 import org.slf4j.LoggerFactory
+import kotlin.coroutines.CoroutineContext
 
 class TendermintBlockFetcher(
-    val tendermintServiceClient: TendermintServiceClient
+    private val tendermintServiceClient: TendermintServiceClient
 ) : BlockFetcher {
 
     private val log = LoggerFactory.getLogger(javaClass)
@@ -44,13 +46,15 @@ class TendermintBlockFetcher(
     }
 
     @OptIn(FlowPreview::class)
-    override suspend fun getBlocks(heights: List<Long>, concurrency: Int): Flow<BlockData> =
-        heights.chunked(concurrency).asFlow().transform { chunkOfHeights: List<Long> ->
-            emitAll(
-                coroutineScope {
-                    // Concurrently process <concurrency> blocks at a time:
-                    chunkOfHeights.map { height -> async { getBlock(height) } }.awaitAll()
-                }.asFlow()
-            )
+    override suspend fun getBlocks(heights: List<Long>, concurrency: Int, context: CoroutineContext): Flow<BlockData> =
+        withContext(context) {
+            heights.chunked(concurrency).asFlow().transform { chunkOfHeights: List<Long> ->
+                emitAll(
+                    coroutineScope {
+                        // Concurrently process <concurrency> blocks at a time:
+                        chunkOfHeights.map { height -> async { getBlock(height) } }.awaitAll()
+                    }.asFlow()
+                )
+            }
         }
 }
