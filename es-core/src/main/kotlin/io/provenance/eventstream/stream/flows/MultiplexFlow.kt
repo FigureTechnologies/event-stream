@@ -20,6 +20,7 @@ import java.util.concurrent.atomic.AtomicLong
 /**
  *
  */
+@OptIn(ExperimentalCoroutinesApi::class)
 private fun <T> combinedFlow(
     getCurrentHeight: suspend () -> Long?,
     from: Long? = null,
@@ -145,6 +146,7 @@ fun metadataFlow(netAdapter: NetAdapter, decoderAdapter: DecoderAdapter, from: L
  * @param to The `to` height, if omitted, no end is assumed.
  * @return The [Flow] of [BlockData].
  */
+@OptIn(ExperimentalCoroutinesApi::class)
 fun blockFlow(netAdapter: NetAdapter, decoderAdapter: DecoderAdapter, from: Long? = null, to: Long? = null): Flow<BlockData> {
     val getCurrentHeight: suspend () -> Long? = { netAdapter.rpcAdapter.getCurrentHeight() }
     val getHeight: (BlockData) -> Long = { it.height }
