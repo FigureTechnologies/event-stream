@@ -69,3 +69,4 @@ fun Flow<MessageType.NewBlock>.mapBlockData(netAdapter: NetAdapter): Flow<BlockD
     val fetcher = netAdapter.rpcAdapter
     return map { fetcher.getBlock(it.block.data.value.block.header!!.height) }
 }
+
