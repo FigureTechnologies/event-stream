@@ -1,6 +1,24 @@
 # Event stream client for Provenance blockchain
 
 This is a flow based project to create an event listener on the [Provenance](https://provenance.io) blockchain and receive block information. 
+
+## Status
+
+[![Latest Release][release-badge]][release-latest]
+[![Maven Central][maven-badge]][maven-url]
+[![Apache 2.0 License][license-badge]][license-url]
+[![LOC][loc-badge]][loc-report]
+
+[license-badge]: https://img.shields.io/github/license/provenance-io/event-stream.svg
+[license-url]: https://github.com/provenance-io/event-stream/blob/main/LICENSE
+[maven-badge]: https://maven-badges.herokuapp.com/maven-central/io.provenance.eventstream/es-core/badge.svg
+[maven-url]: https://maven-badges.herokuapp.com/maven-central/io.provenance.eventstream/es-core
+[release-badge]: https://img.shields.io/github/tag/provenance-io/event-stream.svg
+[release-latest]: https://github.com/provenance-io/event-stream/releases/latest
+[loc-badge]: https://tokei.rs/b1/github/provenance-io/event-stream
+[loc-report]: https://github.com/provenance-io/event-stream
+
+
 ## Installation
 
 ### Maven
