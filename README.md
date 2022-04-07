@@ -1,69 +1,144 @@
-# provenance-event-stream 
+# Event stream client for Provenance blockchain
 
-A coroutine-based library for streaming blocks and events from the Provenance blockchain to interested consumers.
+This is a flow based project to create an event listener on the [Provenance](https://provenance.io) blockchain and receive block information. 
+## Installation
 
-## Listening for blocks
+### Maven
 
-The code in this repository can also be run as a standalone utility for displaying live and historical Provenance 
-blocks and events.
-
-### Running the event stream listener outside of a container:
-
-Port `26657` is expected to be open for RPC and web-socket traffic, which will
-require port-forwarding to the Provenance Kubernetes cluster.
-
-#### Using `figcli`
-
-This can be accomplished easily using the internal Figure command line tool, `figcli`:
-
-1. If it does not already exist, add a `[port_forward]` entry to you local `figcli`
-   configuration file:
-
-   ```
-   [port_forward]
-   context = "gke_provenance-io-test_us-east1-b_p-io-cluster"
-   ```
-
-   This example will use the Provenance test cluster.
-
-2. Create a pod in the cluster to perform port-forwarding on a specific remote host and port:
-
-   ```bash
-   $ figcli port-forward 26657:$REMOTE_HOST:26657
-   ```
-   where `$REMOTE_HOST` is a private IP within the cluster network, e.g. `192.168.xxx.xxx`
-
-3. If successful, you should see the pod listed in the output of `kubectl get pods`:
-
-   ```bash
-   $ kubectl get pods
-   
-   NAME                                READY   STATUS    RESTARTS   AGE
-   datadog-agent-29nvm                 1/1     Running   2          26d
-   datadog-agent-44rdl                 1/1     Running   1          26d
-   datadog-agent-xcj48                 1/1     Running   1          26d
-   ...
-   datadog-agent-xfkmw                 1/1     Running   1          26d
-   figcli-temp-port-forward-fi8dlktx   1/1     Running   0          15m   <<<
-   nginx-test                          1/1     Running   0          154d
-   ```
-   
-Traffic on `localhost:26657` will now be forwarded to the Provenance cluster
-
-### 5. Running
-
-The service can be run locally:
-
-```bash
-$ make run-local
+```xml
+<dependencies>
+    <dependency>
+        <groupId>io.provenance.eventstream</groupId>
+        <artifactId>es-core</artifactId>
+        <version>${version}</version>
+    </dependency>
+    <dependency>
+        <groupId>io.provenance.eventstream</groupId>
+        <artifactId>es-api</artifactId>
+        <version>${version}</version>
+    </dependency>
+    <dependency>
+        <groupId>io.provenance.eventstream</groupId>
+        <artifactId>es-api-model</artifactId>
+        <version>${version}</version>
+    </dependency>
+</dependencies>
 ```
 
-To pass an arbitrary argument string to the service, run `make run-local` with a variable named `ARGS`:
+### Gradle
 
-```bash
-$ make run-local ARGS="--from=3017000"  # Display blocks starting from 3017000
+#### Groovy
+
+In `build.gradle`:
+
+```groovy
+implementation 'io.provenance.eventstream:es-core:${version}'
+implementation 'io.provenance.eventstream:es-api:${version}'
+implementation 'io.provenance.eventstream:es-api-model:${version}'
 ```
 
-```bash
-$ make run-local ARGS="--verbose"  # Only show live blocks with verbose output
+#### Kotlin
+
+In `build.gradle.kts`:
+
+```kotlin
+implementation("io.provenance.eventstream:es-core:${version}")
+implementation("io.provenance.eventstream:es-api:${version}")
+implementation("io.provenance.eventstream:es-api-model:${version}")
+```
+
+## Setup
+
+To get started using the provenance event stream library you need to create an httpAdapter
+that will create both the rpc client and the websocket client to your query node of choice. 
+
+```kotlin
+// note that we do not provide a protocol for the host value.
+// this will be added dynamically in the adapter.
+val host = "rpc.test.provenance.io:443"
+val netAdapter = okHttpNetAdapter(host, tls = true)
+```
+
+With this adapter we can create streams for live data, historical data, metadata, or any combinations. 
+
+## Usage
+
+### Historical Flows 
+
+Historical flows require a `fromHeight` parameter where you want your stream to start.
+
+Optionally, you can add `toHeight` as an optional parameter. If not supplied the stream will go to current block height.
+
+Get metadata flows: 
+```kotlin
+val log = KotlinLogging.logger {}
+
+historicalMetadataFlow(netAdapter, 1, 100)
+  .onEach { log.info { "oldMeta: ${it.height}" } }
+  .collect()
+```
+
+Get block flows: 
+```kotlin
+val log = KotlinLogging.logger {}
+
+historicalBlockFlow(netAdapter, 1, 100)
+  .onEach { log.info { "oldBlock: ${it.height}" } }
+  .collect()
+```
+
+### Live Flows: 
+Live flows require an adapter to decode the JSON responses from the chain. 
+
+The project includes a `moshi` adapter configured to decode the RPC responses 
+
+Get live metadata:
+```kotlin
+val log = KotlinLogging.logger {}
+val decoderAdapter = moshiDecoderAdapter()
+
+liveMetadataFlow(netAdapter, decoderAdapter)
+  .onEach { log.info { "liveMeta: ${it.height}" } }
+  .collect()
+```
+
+Get live blocks: 
+```kotlin
+val log = KotlinLogging.logger {}
+val decoderAdapter = moshiDecoderAdapter()
+
+liveBlockFlow(netAdapter, decoderAdapter)
+    .onEach { log.info {"liveBlock: $it" } }
+    .collect()
+```
+
+### Combinations
+
+These flows can also be combined to create historical + live flows
+
+```kotlin
+val log = KotlinLogging.logger {}
+
+// get the current block height from the node
+val current = netAdapter.rpcAdapter.getCurrentHeight()!!
+val decoderAdapter = moshiDecoderAdapter()
+
+metadataFlow(netAdapter, decoderAdapter, from = current - 1000, to = current)
+    .onEach { log.info {"received: ${it.height}" } }
+    .collect()
+```
+
+### Node Subscriptions
+
+We can additionally subscribe to certain events on the node. 
+
+Currently, only `MessageType.NewBlock` and `MessageType.NewBlockHeader` are supported. 
+
+```kotlin
+val log = KotlinLogging.logger {}
+val decoderAdapter = moshiDecoderAdapter()
+
+nodeEventStream<MessageType.NewBlock>(netAdapter, decoderAdapter)
+    .onEach { log.info {"liveBlock: $it" } }
+    .collect()
 ```
