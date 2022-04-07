@@ -52,7 +52,7 @@ fun main() = runBlocking {
     // This will combine the historical flow and live flow to create an ordered stream of BlockHeaders.
     // Example is not collected.
     blockFlow(netAdapter, decoderAdapter, from = current - 1000, to = current)
-        .onEach { println("recv:${it}") }
+        .onEach { println("recv:$it") }
         .collect()
 
     netAdapter.shutdown()
