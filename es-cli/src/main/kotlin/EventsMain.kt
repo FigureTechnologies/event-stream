@@ -2,12 +2,12 @@ package io.provenance.eventstream
 
 import io.provenance.eventstream.decoder.moshiDecoderAdapter
 import io.provenance.eventstream.net.okHttpNetAdapter
-import io.provenance.eventstream.stream.flows.blockFlow
-import io.provenance.eventstream.stream.flows.historicalBlockFlow
-import io.provenance.eventstream.stream.flows.historicalMetadataFlow
-import io.provenance.eventstream.stream.flows.liveBlockFlow
-import io.provenance.eventstream.stream.flows.liveMetadataFlow
-import io.provenance.eventstream.stream.flows.metadataFlow
+import io.provenance.eventstream.stream.flows.blockDataFlow
+import io.provenance.eventstream.stream.flows.blockHeaderFlow
+import io.provenance.eventstream.stream.flows.historicalBlockDataFlow
+import io.provenance.eventstream.stream.flows.historicalBlockHeaderFlow
+import io.provenance.eventstream.stream.flows.liveBlockDataFlow
+import io.provenance.eventstream.stream.flows.liveBlockHeaderFlow
 import io.provenance.eventstream.stream.flows.nodeEventStream
 import io.provenance.eventstream.stream.rpc.response.MessageType
 import kotlinx.coroutines.flow.collect
@@ -22,19 +22,19 @@ fun main() = runBlocking {
     val decoderAdapter = moshiDecoderAdapter()
 
     // Example is not collected.
-    historicalMetadataFlow(netAdapter, 1, 100)
-        .onEach { if (it.height % 1500 == 0L) { log.info { "oldMeta: ${it.height}" } } }
+    historicalBlockHeaderFlow(netAdapter, 1, 100)
+        .onEach { if (it.height % 1500 == 0L) { log.info { "oldHeader: ${it.height}" } } }
 
     // Example is not collected.
-    historicalBlockFlow(netAdapter, 1, 100)
+    historicalBlockDataFlow(netAdapter, 1, 100)
         .onEach { if (it.height % 1500 == 0L) { log.info { "oldBlock: ${it.height}" } } }
 
     // Example is not collected.
-    liveMetadataFlow(netAdapter, decoderAdapter)
-        .onEach { println("liveMeta: ${it.height}") }
+    liveBlockHeaderFlow(netAdapter, decoderAdapter)
+        .onEach { println("liveHeader: ${it.height}") }
 
     // Example is not collected.
-    liveBlockFlow(netAdapter, decoderAdapter)
+    liveBlockDataFlow(netAdapter, decoderAdapter)
         .onEach { println("liveBlock: $it") }
 
     // Example is not collected.
@@ -45,13 +45,13 @@ fun main() = runBlocking {
     // This will combine the historical flow and live flow to create an ordered stream of BlockHeaders.
     // Example is not collected.
     val current = netAdapter.rpcAdapter.getCurrentHeight()!!
-    metadataFlow(netAdapter, decoderAdapter, from = current - 1000, to = current)
+    blockHeaderFlow(netAdapter, decoderAdapter, from = current - 1000, to = current)
         .onEach { println("recv:${it.height}") }
 
     // Use metadataFlow to fetch from:(current - 10000) to:(current).
     // This will combine the historical flow and live flow to create an ordered stream of BlockHeaders.
     // Example is not collected.
-    blockFlow(netAdapter, decoderAdapter, from = current - 1000, to = current)
+    blockDataFlow(netAdapter, decoderAdapter, from = current - 1000, to = current)
         .onEach { println("recv:$it") }
         .collect()
 

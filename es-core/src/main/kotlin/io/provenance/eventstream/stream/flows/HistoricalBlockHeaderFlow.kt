@@ -34,7 +34,7 @@ fun Flow<BlockMeta>.mapHistoricalHeaderData(): Flow<BlockHeader> = map { it.head
  * @param context The coroutine context to execute the async parallel fetches.
  * @return The [Flow] of [BlockHeader]
  */
-fun historicalMetadataFlow(
+fun historicalBlockHeaderFlow(
     netAdapter: NetAdapter,
     from: Long = 1,
     to: Long? = null,
@@ -66,7 +66,7 @@ internal fun historicalBlockMetaFlow(
     val realTo = to ?: currentHeight()
     require(from <= realTo) { "from:$from must be less than to:$realTo" }
 
-    emitAll((from..realTo).toList().toMetaData(netAdapter, concurrency, context))
+    emitAll((from..realTo).toList().toBlockMeta(netAdapter, concurrency, context))
 }
 
 /**
@@ -78,7 +78,7 @@ internal fun historicalBlockMetaFlow(
  * @return The [Flow] of [BlockMeta]
  */
 @OptIn(FlowPreview::class, ExperimentalCoroutinesApi::class)
-fun List<Long>.toMetaData(
+internal fun List<Long>.toBlockMeta(
     netAdapter: NetAdapter,
     concurrency: Int = DEFAULT_CONCURRENCY,
     context: CoroutineContext = EmptyCoroutineContext
