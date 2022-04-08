@@ -12,7 +12,6 @@ import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.ExperimentalTime
 
-
 private val SSL_SCHEMES = setOf("grpcs", "https", "tcp+tls", "wss")
 private val NON_SSL_SCHEMES = setOf("grpc", "http", "tcp", "ws")
 /**
@@ -56,8 +55,7 @@ private fun nodeToNetAdapterURIs(node: String): Pair<String, String> {
         if (parsed.port == -1) {
             if (parsed.scheme in SSL_SCHEMES) 443
             else 80
-        }
-        else parsed.port
+        } else parsed.port
 
     val base = "${parsed.host}:$port"
     return "http$scheme://$base" to "ws$scheme://$base"
