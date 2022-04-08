@@ -51,7 +51,7 @@ class ConsoleOutput(private val verbose: Boolean, private val nth: Int) : BlockS
 
         (block as StreamBlockImpl).logBlockInfo()
         if (verbose) {
-            block.txEvents.forEach(logBlockTxEvent)
+//            block.txEvents.forEach(logBlockTxEvent)
             block.blockEvents.forEach(logBlockEvent)
         }
     }

@@ -13,12 +13,16 @@ import io.provenance.eventstream.stream.models.extensions.toTxEvent
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flatMapConcat
 import kotlinx.coroutines.flow.flatMapMerge
+import okhttp3.OkHttpClient
 import org.apache.commons.lang3.StringUtils
 import tendermint.types.BlockOuterClass
 import tendermint.types.Types
 import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
 import java.util.Base64
+import java.util.concurrent.TimeUnit
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.seconds
 
 // === String methods ==================================================================================================
 
@@ -158,3 +162,8 @@ fun BlockOuterClass.Block.txHash(index: Int): String? = let {
 }
 
 fun String.hash(): String = sha256(BaseEncoding.base64().decode(this)).toHexString()
+
+fun OkHttpClient.awaitShutdown(waitFor: Duration = 10.seconds) {
+    dispatcher.executorService.shutdown()
+    dispatcher.executorService.awaitTermination(waitFor.inWholeMilliseconds, TimeUnit.MILLISECONDS)
+}

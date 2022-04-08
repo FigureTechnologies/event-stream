@@ -1,5 +1,6 @@
 package io.provenance.eventstream.stream
 
+import io.provenance.eventstream.stream.infrastructure.Serializer.moshi
 import io.provenance.eventstream.stream.models.StreamBlockImpl
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.collect
@@ -13,35 +14,29 @@ import java.io.ObjectInputStream
 import java.io.ObjectInputFilter
 import java.io.IOException
 
-fun Flow<KafkaStreamBlock<String, StreamBlockImpl>>.acking(block: (KafkaStreamBlock<String, StreamBlockImpl>) -> Unit): Flow<AckedKafkaStreamBlock<ByteArray, ByteArray>> {
+fun Flow<KafkaStreamBlock>.acking(block: (KafkaStreamBlock) -> Unit): Flow<AckedKafkaStreamBlock<ByteArray, ByteArray>> {
     return flow {
         collect {
-            val ackedConsumerRecordImpl = it.record.ack()
-            emit(AckedKafkaStreamBlock<ByteArray, ByteArray>(ackedConsumerRecordImpl))
+            block(it)
+            emit(AckedKafkaStreamBlock(it.ack()))
         }
     }
 }
 
 fun StreamBlockImpl.toByteArray(): ByteArray? {
-    return if (this == null) {
-        return ByteArray(0)
-    } else try {
-        val boas = ByteArrayOutputStream()
-        ObjectOutputStream(boas).use { ois ->
-            ois.writeObject(this)
-            return boas.toByteArray()
-        }
+    return try {
+        moshi.adapter(StreamBlockImpl::class.java)
+            .toJson(this)
+            .toByteArray()
     } catch (e: Exception) {
         throw SerializationException(e)
     }
 }
 
 fun ByteArray.toStreamBlock(): StreamBlockImpl? {
-    return if (this == null || this.size == 0) {
-        null
-    } else try {
-        val `is`: InputStream = ByteArrayInputStream(this)
-        ObjectInputStream(`is`).use { ois -> return ois.readObject() as StreamBlockImpl }
+    return try {
+        moshi.adapter(StreamBlockImpl::class.java)
+            .fromJson(this.decodeToString())
     } catch (e: Exception) {
         throw SerializationException(e)
     }

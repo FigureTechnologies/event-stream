@@ -1245,6 +1245,33 @@ components:
             error:
               type: string
               example: "Description of failure"
+    NewBlockHeader:
+      description: Block Header Response
+      type: object
+      properties:
+        result:
+          type: object
+          required:
+            - "query"
+            - "data"
+          properties:
+            query:
+              type: string
+              example: "tm.event='NewBlockHeader'"
+            data:
+              type: object
+              properties:
+                type:
+                  type: string
+                  example: "tendermint/event/NewBlockHeader"
+                value:
+                  type: object
+                  properties:
+                    header:
+                      $ref: "#/components/schemas/BlockHeader"
+                    num_txs:
+                      type: integer
+                      example: 54
     ProtocolVersion:
       type: object
       properties:
@@ -1487,9 +1514,6 @@ components:
           example: 1000000
         header:
           $ref: "#/components/schemas/BlockHeader"
-#        num_txs:
-#          type: string
-#          example: "54"
         num_txs:
           type: integer
           example: 54
@@ -1501,8 +1525,6 @@ components:
         - "block_metas"
       properties:
         last_height:
-#          type: string
-#          example: "1276718"
           type: integer
           format: int64
           example: 1276718
@@ -1574,6 +1596,12 @@ components:
               items:
                 type: string
                 example: "yQHwYl3uCkKoo2GaChRnd+THLQ2RM87nEZrE19910Z28ABIUWW/t8AtIMwcyU0sT32RcMDI9GF0aEAoFdWF0b20SBzEwMDAwMDASEwoNCgV1YXRvbRIEMzEwMRCd8gEaagom61rphyEDoJPxlcjRoNDtZ9xMdvs+lRzFaHe2dl2P5R2yVCWrsHISQKkqX5H1zXAIJuC57yw0Yb03Fwy75VRip0ZBtLiYsUqkOsPUoQZAhDNP+6LY+RUwz/nVzedkF0S29NZ32QXdGv0="
+        events:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              type: string
         evidence:
           type: object
           properties:
@@ -2893,10 +2921,10 @@ components:
       properties:
         block:
           type: object
-          required:
-            - "max_bytes"
-            - "max_gas"
-            - "time_iota_ms"
+          # required:
+          #  - "max_bytes"
+          #  - "max_gas"
+          #  - "time_iota_ms"
           properties:
             max_bytes:
               type: string

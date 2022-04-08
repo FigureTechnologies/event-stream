@@ -6,26 +6,26 @@ import com.squareup.moshi.Moshi
 import com.tinder.scarlet.Message
 import com.tinder.scarlet.WebSocket
 import io.provenance.eventstream.coroutines.DispatcherProvider
-import io.provenance.eventstream.stream.EventStreamService
-import io.provenance.eventstream.stream.models.rpc.request.Subscribe
+import io.provenance.eventstream.stream.WebSocketService
+import io.provenance.eventstream.stream.rpc.request.Subscribe
 import io.provenance.eventstream.test.utils.Defaults
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.ChannelIterator
 import kotlinx.coroutines.channels.ReceiveChannel
 import kotlinx.coroutines.runBlocking
+<<<<<<< HEAD
 import mu.KotlinLogging
 import tendermint.types.BlockOuterClass
+=======
+>>>>>>> 2e0d83082ec12150956bf9e7da1afafa5764b843
 import java.util.concurrent.atomic.AtomicLong
 
 class MockEventStreamService private constructor(
     private val channel: Channel<WebSocket.Event>,
     private val responseCount: Long,
-    private val moshi: Moshi,
     private val dispatchers: DispatcherProvider
-) : EventStreamService {
-
-    private val log = KotlinLogging.logger { }
+) : WebSocketService {
 
     class Builder {
         private var dispatchers: DispatcherProvider? = null
@@ -99,7 +99,6 @@ class MockEventStreamService private constructor(
             return MockEventStreamService(
                 channel = channel,
                 responseCount = payloads.size.toLong(),
-                moshi = moshi,
                 dispatchers = dispatchers ?: error("dispatchers must be provided")
             )
         }
@@ -135,7 +134,7 @@ class MockEventStreamService private constructor(
                         if (unconsumedMessageCount.get() <= 0) {
                             // All messages have been read. We're done:
                             channel.close()
-                            stopListening()
+                            stop()
                             return false
                         }
                         return iterator.hasNext()
@@ -152,11 +151,11 @@ class MockEventStreamService private constructor(
         }
     }
 
-    override fun startListening() {
+    override fun start() {
         // no-op
     }
 
-    override fun stopListening() {
+    override fun stop() {
         // no-op
     }
 }

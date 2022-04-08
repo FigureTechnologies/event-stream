@@ -1,22 +1,55 @@
 package io.provenance.eventstream
 
+// linting is giving a hard time on these kotlinx packages that cannot be auto-corrected,
+// IntelliJ is also giving linting errors if the imports are changed to individual imports.
+// ktlint-disable no-wildcard-imports
+import com.sksamuel.hoplite.ConfigLoader
+import com.sksamuel.hoplite.PropertySource
+import com.sksamuel.hoplite.addCommandLineSource
+import com.sksamuel.hoplite.addEnvironmentSource
+import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
+import com.tinder.scarlet.Scarlet
+import com.tinder.scarlet.messageadapter.moshi.MoshiMessageAdapter
+import com.tinder.scarlet.websocket.okhttp.newWebSocketFactory
+import com.tinder.streamadapter.coroutines.CoroutinesStreamAdapterFactory
+import io.provenance.blockchain.stream.api.BlockSink
+import io.provenance.blockchain.stream.api.BlockSource
+import io.provenance.eventstream.adapter.json.JSONObjectAdapter
+import io.provenance.eventstream.adapter.json.decoder.MoshiDecoderEngine
 import io.provenance.eventstream.config.Config
-import io.provenance.eventstream.config.Environment
-import io.provenance.eventstream.config.Options
-import io.provenance.eventstream.extensions.dateTime
-import io.provenance.eventstream.extensions.repeatDecodeBase64
-import io.provenance.eventstream.stream.consumers.EventStreamViewer
+import io.provenance.eventstream.stream.BlockStreamFactory
+import io.provenance.eventstream.stream.DefaultBlockStreamFactory
+import io.provenance.eventstream.stream.clients.TendermintBlockFetcher
+import io.provenance.eventstream.stream.clients.TendermintServiceOpenApiClient
+import io.provenance.eventstream.stream.infrastructure.Serializer
+import io.provenance.eventstream.stream.infrastructure.Serializer.moshi
 import io.provenance.eventstream.stream.models.StreamBlock
-import io.provenance.eventstream.stream.models.extensions.dateTime
-import io.provenance.eventstream.utils.colors.green
-import kotlinx.cli.ArgParser
-import kotlinx.cli.ArgType
-import kotlinx.cli.default
+import io.provenance.eventstream.stream.models.StreamBlockImpl
+import io.provenance.eventstream.stream.models.StreamBlockImplJsonAdapter
+import io.provenance.eventstream.stream.observers.consoleOutput
+import io.provenance.eventstream.stream.observers.fileOutput
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.buffer
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.onCompletion
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.runBlocking
 import mu.KotlinLogging
+import okhttp3.OkHttpClient
+import java.net.URI
+import java.util.concurrent.TimeUnit
+
+private fun configureEventStreamBuilder(client: OkHttpClient, node: String = "localhost:26657", uri: URI = URI("$node")): Scarlet.Builder {
+    return Scarlet.Builder()
+        .webSocketFactory(client.newWebSocketFactory("${uri.scheme}://${uri.host}:${uri.port}/websocket"))
+        .addMessageAdapterFactory(MoshiMessageAdapter.Factory())
+        .addStreamAdapterFactory(CoroutinesStreamAdapterFactory())
+}
 
 @OptIn(FlowPreview::class, kotlin.time.ExperimentalTime::class)
 @ExperimentalCoroutinesApi
@@ -28,117 +61,67 @@ fun main(args: Array<String>) {
      *   in the environment variable:
      *     event.stream.rpc_uri=http://localhost:26657 is overridden by "event__stream_rpc_uri=foo"
      *
-     * See https://github.com/sksamuel/hoplite#environmentvariablespropertysource
+     * @see https://github.com/sksamuel/hoplite#environmentvariablespropertysource
      */
-    val parser = ArgParser("provenance-event-stream")
-    val envFlag by parser.option(
-        ArgType.Choice<Environment>(),
-        shortName = "e",
-        fullName = "env",
-        description = "Specify the application environment. If not present, fall back to the `\$ENVIRONMENT` envvar",
-    )
-    val fromHeight by parser.option(
-        ArgType.Int,
-        fullName = "from",
-        description = "Fetch blocks starting from height, inclusive."
-    )
-    val toHeight by parser.option(
-        ArgType.Int, fullName = "to", description = "Fetch blocks up to height, inclusive"
-    )
-    val verbose by parser.option(
-        ArgType.Boolean, shortName = "v", fullName = "verbose", description = "Enables verbose output"
-    ).default(false)
-    val skipIfEmpty by parser.option(
-        ArgType.Choice(listOf(false, true), { it.toBooleanStrict() }),
-        fullName = "skip-if-empty",
-        description = "Skip blocks that have no transactions"
-    ).default(true)
+    val config: Config = ConfigLoader.Builder()
+        .addCommandLineSource(args)
+        .addEnvironmentSource(useUnderscoresAsSeparator = true, allowUppercaseNames = true)
+        .addPropertySource(PropertySource.resource("/application.yml"))
+        .build()
+        .loadConfigOrThrow()
 
-    parser.parse(args)
+    val log = KotlinLogging.logger {}
 
-    val environment: Environment =
-        envFlag ?: runCatching { Environment.valueOf(System.getenv("ENVIRONMENT")) }
-            .getOrElse {
-                error("Not a valid environment: ${System.getenv("ENVIRONMENT")}")
-            }
+    val decoderEngine = Serializer.moshiBuilder
+        .addLast(KotlinJsonAdapterFactory())
+        .add(JSONObjectAdapter())
+//        .add(StreamBlock::class.java, StreamBlockImplJsonAdapter(moshi))
+//        .add()
+        .build()
+        .let { MoshiDecoderEngine(it) }
 
-    val config: Config = defaultConfig(environment)
+    val okClient = OkHttpClient.Builder()
+        .pingInterval(10, TimeUnit.SECONDS)
+        .readTimeout(60, TimeUnit.SECONDS)
+        .build()
 
-    val log = KotlinLogging.logger { }
+    val wsStreamBuilder = configureEventStreamBuilder(okClient, config.eventStream.websocket.uri)
+    val tendermintServiceClient = TendermintServiceOpenApiClient(URI(config.node))
+    val tendermintService = TendermintBlockFetcher(tendermintServiceClient)
 
-    runBlocking(Dispatchers.IO) {
+//    val dispatcher = object : DispatcherProvider {
+//        private val single = Executors.newSingleThreadExecutor {
+//            Thread(it).also { t -> t.isDaemon = true }
+//        }.asCoroutineDispatcher()
+//        override fun io(): CoroutineDispatcher = single
+//        override fun default(): CoroutineDispatcher = single
+//        override fun main(): CoroutineDispatcher = single
+//        override fun unconfined(): CoroutineDispatcher = single
+//    }
 
-        log.info(
-            """
-            |Running with options: {
-            |    from-height = $fromHeight 
-            |    to-height = $toHeight
-            |    skip-if-empty = $skipIfEmpty
-            |}
-            """.trimMargin("|")
-        )
+    val factory: BlockStreamFactory = DefaultBlockStreamFactory(config, decoderEngine, wsStreamBuilder, tendermintService)
+    val stream: BlockSource<StreamBlockImpl> = factory.fromConfig(config)
 
-        val options = Options
-            .Builder()
-            .batchSize(config.eventStream.batch.size)
-            .fromHeight(fromHeight?.toLong())
-            .toHeight(toHeight?.toLong())
-            .skipIfEmpty(skipIfEmpty)
-            .apply {
-                if (config.eventStream.filter.txEvents.isNotEmpty()) {
-                    matchTxEvent { it in config.eventStream.filter.txEvents }
-                }
-            }
-            .apply {
-                if (config.eventStream.filter.blockEvents.isNotEmpty()) {
-                    matchBlockEvent { it in config.eventStream.filter.blockEvents }
-                }
-            }
-            .also {
-                if (config.eventStream.filter.txEvents.isNotEmpty()) {
-                    log.info("Listening for tx events:")
-                    for (event in config.eventStream.filter.txEvents) {
-                        log.info(" - $event")
-                    }
-                }
-                if (config.eventStream.filter.blockEvents.isNotEmpty()) {
-                    log.info("Listening for block events:")
-                    for (event in config.eventStream.filter.blockEvents) {
-                        log.info(" - $event")
-                    }
-                }
-            }
-            .build()
+    runBlocking {
+        log.info("config: $config")
 
-        val factory = Factory.using(environment)
-
-        log.info("*** Observing blocks and events. No action will be taken. ***")
-        EventStreamViewer(factory, options)
-            .consume { b: StreamBlock ->
-                val text = "Block: ${b.block.header?.height ?: "--"}: ${b.block.header?.dateTime()?.toLocalDate()
-                } ${b.block.header?.lastBlockId?.hash}; ${b.txEvents.size} tx event(s)"
-                println(
-                    if (b.historical) {
-                        text
-                    } else {
-                        green(text)
-                    }
-                )
-                if (verbose) {
-                    for (event in b.blockEvents) {
-                        println("  Block-Event: ${event.type}")
-                        for (attr in event.attributesList) {
-                            println("    ${attr.key?.toStringUtf8()?.repeatDecodeBase64()}: ${attr.value?.toStringUtf8()?.repeatDecodeBase64()}")
-                        }
-                    }
-                    for (event in b.txEvents) {
-                        println("  Tx-Event: ${event.type}")
-                        for (attr in event.attributesList) {
-                            println("    ${attr.key?.repeatDecodeBase64()}: ${attr.value?.repeatDecodeBase64()}")
-                        }
-                    }
-                }
-                println()
-            }
+        stream.streamBlocks()
+            .flowOn(Dispatchers.IO)
+            .buffer()
+            .catch { log.error("", it) }
+            .observe(consoleOutput(config.verbose))
+            .observe(fileOutput("../pio-testnet-1/json-data", decoderEngine))
+            .onCompletion { log.info("stream fetch complete", it) }
+            .collect()
     }
+
+    // OkHttp leaves a non-daemon executor running in the background. Have to explicitly shut down
+    // the pool in order for the app to gracefully exit.
+    okClient.dispatcher.executorService.shutdown()
+    okClient.dispatcher.executorService.awaitTermination(1, TimeUnit.SECONDS)
 }
+
+private fun Flow<StreamBlock>.observe(block: BlockSink) = onEach { block(it) }
+
+private fun Flow<StreamBlock>.onEach(block: BlockSink) =
+    onEach { block(it) }

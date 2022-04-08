@@ -3,6 +3,7 @@ package io.provenance.eventstream.utils
 import java.util.Random
 import kotlin.math.pow
 import kotlin.time.Duration
+import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.ExperimentalTime
 
 /**
@@ -37,7 +38,7 @@ fun backoffMillis(attempt: Long, base: Double = BASE_WAIT_MILLISECONDS, jitter: 
 
 @OptIn(ExperimentalTime::class)
 fun backoff(attempt: Long, base: Double = BASE_WAIT_MILLISECONDS, jitter: Boolean = true): Duration =
-    Duration.milliseconds(backoffMillis(attempt = attempt, base = base, jitter = jitter))
+    backoffMillis(attempt = attempt, base = base, jitter = jitter).milliseconds
 
 @OptIn(ExperimentalTime::class)
 fun backoff(attempt: Int, base: Double = BASE_WAIT_MILLISECONDS, jitter: Boolean = true): Duration =

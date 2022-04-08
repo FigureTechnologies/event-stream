@@ -4,13 +4,18 @@ import com.google.protobuf.util.JsonFormat
 import com.squareup.moshi.JsonAdapter
 import io.provenance.eventstream.stream.KafkaStreamBlock
 import io.provenance.eventstream.stream.acking
+<<<<<<< HEAD
+=======
+import io.provenance.eventstream.stream.infrastructure.Serializer.moshi
+import io.provenance.eventstream.stream.models.Block
+>>>>>>> 2e0d83082ec12150956bf9e7da1afafa5764b843
 import io.provenance.eventstream.stream.models.BlockEvent
 import io.provenance.eventstream.stream.models.BlockResultsResponse
 import io.provenance.eventstream.stream.models.StreamBlockImpl
 import io.provenance.eventstream.stream.toByteArray
 import io.provenance.eventstream.stream.toStreamBlock
 import io.provenance.eventstream.test.base.TestBase
-import io.provenance.kafka.coroutine.kafkaChannel
+import io.provenance.kafka.coroutine.kafkaConsumerChannel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.map
@@ -65,7 +70,11 @@ class KafkaSourceTests : TestBase() {
             val blockEvents = v.result.beginBlockEvents!!.map {
                 BlockEvent(v.result.height, OffsetDateTime.now(), it.type!!, it.attributes!!)
             }
+<<<<<<< HEAD
             streamBlocks[k] = StreamBlockImpl(blockResponses[k]!!, blockEvents, mutableListOf())
+=======
+            streamBlocks[k] = StreamBlockImpl(blockResponses[k]!!.result!!.block!!, blockEvents, mutableListOf(), mutableListOf(), mutableListOf())
+>>>>>>> 2e0d83082ec12150956bf9e7da1afafa5764b843
         }
     }
 
@@ -80,7 +89,11 @@ class KafkaSourceTests : TestBase() {
     @OptIn(ExperimentalCoroutinesApi::class)
     @Test
     fun testStreamBlockByteArrayExtensionsEmpty() {
+<<<<<<< HEAD
         val streamBytes = StreamBlockImpl(BlockOuterClass.Block.getDefaultInstance(), mutableListOf(), mutableListOf()).toByteArray()
+=======
+        val streamBytes = StreamBlockImpl(Block(), mutableListOf(), mutableListOf(), mutableListOf(), mutableListOf()).toByteArray()
+>>>>>>> 2e0d83082ec12150956bf9e7da1afafa5764b843
         val streamBlockImpl = streamBytes!!.toStreamBlock()
         assert(streamBlockImpl!!.block.header.chainId == "")
     }
@@ -137,10 +150,10 @@ class KafkaSourceTests : TestBase() {
 
         startOffsets[tp1] = 0L
         mockConsumer.updateBeginningOffsets(startOffsets)
-        val results = mutableListOf<KafkaStreamBlock<String, StreamBlockImpl>>()
+        val results = mutableListOf<KafkaStreamBlock>()
         try {
             runBlocking {
-                val kafkaChannel = kafkaChannel<ByteArray, ByteArray>(
+                val kafkaChannel = kafkaConsumerChannel<ByteArray, ByteArray>(
                     consumerProps,
                     setOf("test-topic"),
                     consumer = mockConsumer
@@ -149,7 +162,7 @@ class KafkaSourceTests : TestBase() {
                 mockConsumer.schedulePollTask {
                     kafkaChannel.cancel()
                 }
-                kafkaChannel.receiveAsFlow().map { KafkaStreamBlock<String, StreamBlockImpl>(it) }
+                kafkaChannel.receiveAsFlow().map { KafkaStreamBlock(it) }
                     .onEach {
                         results.add(it)
                     }
@@ -187,10 +200,10 @@ class KafkaSourceTests : TestBase() {
 
         startOffsets[tp1] = 0L
         mockConsumer.updateBeginningOffsets(startOffsets)
-        val results = mutableListOf<KafkaStreamBlock<String, StreamBlockImpl>>()
+        val results = mutableListOf<KafkaStreamBlock>()
         try {
             runBlocking {
-                val kafkaChannel = kafkaChannel<ByteArray, ByteArray>(
+                val kafkaChannel = kafkaConsumerChannel<ByteArray, ByteArray>(
                     consumerProps,
                     setOf("test-topic"),
                     consumer = mockConsumer
@@ -199,7 +212,7 @@ class KafkaSourceTests : TestBase() {
                 mockConsumer.schedulePollTask {
                     mockConsumer.close()
                 }
-                kafkaChannel.receiveAsFlow().map { KafkaStreamBlock<String, StreamBlockImpl>(it) }
+                kafkaChannel.receiveAsFlow().map { KafkaStreamBlock(it) }
                     .onEach {
                         results.add(it)
                     }
@@ -222,10 +235,10 @@ class KafkaSourceTests : TestBase() {
 
         startOffsets[tp1] = 0L
         mockConsumer.updateBeginningOffsets(startOffsets)
-        val results = mutableListOf<KafkaStreamBlock<String, StreamBlockImpl>>()
+        val results = mutableListOf<KafkaStreamBlock>()
         assertThrows<IllegalStateException> {
             runBlocking {
-                val kafkaChannel = kafkaChannel<ByteArray, ByteArray>(
+                val kafkaChannel = kafkaConsumerChannel<ByteArray, ByteArray>(
                     consumerProps,
                     setOf("test-topic"),
                     consumer = mockConsumer
@@ -233,7 +246,7 @@ class KafkaSourceTests : TestBase() {
                 mockConsumer.schedulePollTask {
                     mockConsumer.close()
                 }
-                kafkaChannel.receiveAsFlow().map { KafkaStreamBlock<String, StreamBlockImpl>(it) }
+                kafkaChannel.receiveAsFlow().map { KafkaStreamBlock(it) }
                     .onEach {
                         results.add(it)
                     }
@@ -267,10 +280,10 @@ class KafkaSourceTests : TestBase() {
 
         startOffsets[tp1] = 0L
         mockConsumer.updateBeginningOffsets(startOffsets)
-        val results = mutableListOf<KafkaStreamBlock<String, StreamBlockImpl>>()
+        val results = mutableListOf<KafkaStreamBlock>()
         assertThrows<IllegalStateException> {
             runBlocking {
-                val kafkaChannel = kafkaChannel<ByteArray, ByteArray>(
+                val kafkaChannel = kafkaConsumerChannel<ByteArray, ByteArray>(
                     consumerProps,
                     setOf("test-topic"),
                     consumer = mockConsumer
@@ -278,7 +291,7 @@ class KafkaSourceTests : TestBase() {
                 mockConsumer.schedulePollTask {
                     mockConsumer.close()
                 }
-                kafkaChannel.receiveAsFlow().map { KafkaStreamBlock<String, StreamBlockImpl>(it) }
+                kafkaChannel.receiveAsFlow().map { KafkaStreamBlock(it) }
                     .onEach {
                         results.add(it)
                     }

@@ -5,65 +5,74 @@ import com.tinder.scarlet.WebSocket
 import com.tinder.scarlet.lifecycle.LifecycleRegistry
 import com.tinder.scarlet.ws.Receive
 import com.tinder.scarlet.ws.Send
-import io.provenance.eventstream.stream.models.rpc.request.Subscribe
+import io.provenance.eventstream.stream.rpc.request.Subscribe
 import kotlinx.coroutines.channels.ReceiveChannel
+import mu.KotlinLogging
 
 /**
  * Used by the Scarlet library to instantiate an implementation that provides access to a
  * `ReceiveChannel<WebSocket.Event>` that can be used to listen for web socket events.
  */
-interface TendermintRPCStream {
-
+interface WebSocketChannel {
+    /**
+     * Receive events from the web socket.
+     */
     @Receive
     fun observeWebSocketEvent(): ReceiveChannel<WebSocket.Event>
 
+    /**
+     * Subscribe to the web socket events.
+     */
     @Send
     fun subscribe(subscribe: Subscribe)
-
-    // Note: this is a known bug with the Scarlet coroutine adapter implementation.
-    // After consuming raw websocket events emitted from the receiver returned from `observeWebSocketEvent()`,
-    // the accompanying RPC response streaming receiver `streamEvents()` will not produce
-    // any instances of `RpcResponse<Result>` (basically hanging):
-    //
-    // See https://github.com/Tinder/Scarlet/issues/150 for details
-    //
-    // @Receive
-    // fun streamEvents(): ReceiveChannel<RpcResponse<Result>>
 }
 
-interface EventStreamService : TendermintRPCStream {
+fun WebSocketChannel.withLifecycle(lifecycle: LifecycleRegistry): WebSocketService =
+    object : WebSocketService, WebSocketChannel by this, WebSocketLifecycle by webSocketLifecycle(lifecycle) {}
+
+/**
+ * Generic web socket lifecycle to add graceful startup and shutdown to a service.
+ */
+interface WebSocketLifecycle {
     /**
-     * Starts the stream
+     * Start the web socket stream.
      */
-    fun startListening()
+    fun start()
 
     /**
-     * Stops the stream
+     * Stop the web socket stream.
      */
-    fun stopListening()
+    fun stop()
 }
 
 /**
- * A service that emits realtime block data from the the Tendermint RPC API websocket.
+ * Create a websocket lifecycle tied to scarlet lifecycle registry.
  *
- * @param rpcStream The Tendermint RPC API websocket stream provider (powered by Scarlet).
  * @param lifecycle The lifecycle responsible for starting and stopping the underlying websocket event stream.
  */
-class TendermintEventStreamService(rpcStream: TendermintRPCStream, val lifecycle: LifecycleRegistry) :
-    TendermintRPCStream by rpcStream, EventStreamService {
+fun webSocketLifecycle(lifecycle: LifecycleRegistry): WebSocketLifecycle = object : WebSocketLifecycle {
+    private val log = KotlinLogging.logger {}
+
     /**
      * Allows the provided event stream to start receiving events.
      *
      * Note: this must be called prior to any receiving any events on the RPC stream.
      */
-    override fun startListening() {
+    override fun start() {
+        log.debug { "start()" }
         lifecycle.onNext(Lifecycle.State.Started)
     }
 
     /**
      * Stops the provided event stream from receiving events.
      */
-    override fun stopListening() {
+    override fun stop() {
+        log.debug { "stop()" }
         lifecycle.onNext(Lifecycle.State.Stopped.AndAborted)
     }
 }
+
+/**
+ * Composite interface for [WebSocketChannel] and [WebSocketLifecycle]
+ */
+interface WebSocketService : WebSocketChannel, WebSocketLifecycle

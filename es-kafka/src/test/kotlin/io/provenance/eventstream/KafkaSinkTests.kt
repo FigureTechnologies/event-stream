@@ -4,7 +4,6 @@ import io.provenance.eventstream.stream.kafkaBlockSink
 import io.provenance.eventstream.stream.models.BlockEvent
 import io.provenance.eventstream.stream.models.BlockResultsResponse
 import io.provenance.eventstream.stream.models.StreamBlockImpl
-import io.provenance.eventstream.stream.toByteArray
 import io.provenance.eventstream.test.base.TestBase
 import io.provenance.eventstream.test.utils.Defaults
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -47,20 +46,21 @@ class KafkaSinkTests : TestBase() {
         val blockEvents = blockResultsResponse!!.result.beginBlockEvents!!.map {
             BlockEvent(blockResultsResponse.result.height, OffsetDateTime.now(), it.type!!, it.attributes!!)
         }
+<<<<<<< HEAD
         val streamBlock = StreamBlockImpl(blockResponse!!, blockEvents, mutableListOf())
+=======
+        val streamBlock = StreamBlockImpl(blockResponse!!.result!!.block!!, blockEvents, mutableListOf(), mutableListOf(), mutableListOf())
+>>>>>>> 2e0d83082ec12150956bf9e7da1afafa5764b843
         assert(mockProducer.history().isEmpty())
 
         val expectedKey =
             "${blockResponse!!.header!!.chainId}.${blockResponse.header!!.height}"
 
-        val record = kafkaBlockSink(producerProps, "testTopic", mockProducer).kafkaSink.sendHelper(
-            expectedKey.toByteArray(),
-            streamBlock.toByteArray()!!
-        )
+        kafkaBlockSink(producerProps, "testTopic", mockProducer).also {
+            it.invoke(streamBlock)
+        }
 
         mockProducer.completeNext()
-
-        record.get()
 
         assertEquals(mockProducer.history().size, 1)
         assertEquals(mockProducer.history()[0].key().decodeToString(), expectedKey)
@@ -92,6 +92,7 @@ class KafkaSinkTests : TestBase() {
         val blockEvents = blockResultsResponse!!.result.beginBlockEvents!!.map {
             BlockEvent(blockResultsResponse.result.height, OffsetDateTime.now(), it.type!!, it.attributes!!)
         }
+<<<<<<< HEAD
         val streamBlock = StreamBlockImpl(blockResponse!!, blockEvents, mutableListOf())
 
         val expectedKey =
@@ -101,12 +102,17 @@ class KafkaSinkTests : TestBase() {
             streamBlock.toByteArray()!!,
             expectedKey.toByteArray()
         )
+=======
+        val streamBlock = StreamBlockImpl(blockResponse!!.result!!.block!!, blockEvents, mutableListOf(), mutableListOf(), mutableListOf())
+>>>>>>> 2e0d83082ec12150956bf9e7da1afafa5764b843
 
         val e = RuntimeException()
         mockProducer.errorNext(e)
 
         try {
-            record.get()
+            kafkaBlockSink(producerProps, "testTopic", mockProducer).also {
+                it.invoke(streamBlock)
+            }
         } catch (ex: Exception) {
             assertEquals(e, ex.cause)
         }

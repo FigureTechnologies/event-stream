@@ -1,6 +1,8 @@
 package io.provenance.eventstream.config
 
 import com.sksamuel.hoplite.ConfigAlias
+import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.flow.DEFAULT_CONCURRENCY
 
 // Data classes in this file are intended to be instantiated by the hoplite configuration library
 
@@ -9,7 +11,7 @@ data class WebsocketStreamConfig(
     @ConfigAlias("throttle_duration_ms") val throttleDurationMs: Long = 0
 )
 
-data class RpcStreamConfig(val uri: String, val chainId: String)
+data class RpcStreamConfig(val uri: String)
 
 data class StreamEventsFilterConfig(
     @ConfigAlias("tx_events") val txEvents: Set<String> = emptySet(),
@@ -25,12 +27,21 @@ data class BatchConfig(
     @ConfigAlias("timeout_ms") val timeoutMillis: Long?,
 )
 
+@OptIn(FlowPreview::class)
 data class EventStreamConfig(
     val websocket: WebsocketStreamConfig,
     val rpc: RpcStreamConfig,
     val batch: BatchConfig,
-    val filter: StreamEventsFilterConfig = StreamEventsFilterConfig.empty,
-    val skipEmpty: Boolean = true,
+    val filter: StreamEventsFilterConfig = StreamEventsFilterConfig(),
+    val height: HeightConfig = HeightConfig(),
+    val concurrency: Int = DEFAULT_CONCURRENCY,
+    val ordered: Boolean?,
+    @ConfigAlias("skip_empty_blocks") val skipEmptyBlocks: Boolean?,
+)
+
+data class HeightConfig(
+    val from: Long = 1,
+    val to: Long? = null,
 )
 
 data class UploadConfig(
@@ -42,6 +53,11 @@ data class UploadConfig(
 }
 
 data class Config(
+    val verbose: Boolean = false,
     @ConfigAlias("event-stream") val eventStream: EventStreamConfig,
-    val upload: UploadConfig = UploadConfig.empty
+    val upload: UploadConfig = UploadConfig(),
+    val node: String,
+    val from: Long? = null,
+    val to: Long? = null,
+    val ordered: Boolean = false,
 )

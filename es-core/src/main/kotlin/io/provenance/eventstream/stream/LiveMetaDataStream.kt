@@ -1,20 +1,26 @@
 package io.provenance.eventstream.stream
 
-import com.squareup.moshi.Moshi
 import com.tinder.scarlet.Message
 import com.tinder.scarlet.WebSocket
+import io.provenance.eventstream.adapter.json.decoder.DecoderEngine
 import io.provenance.eventstream.stream.models.Block
-import io.provenance.eventstream.stream.models.rpc.request.Subscribe
-import io.provenance.eventstream.stream.models.rpc.response.MessageType
+import io.provenance.eventstream.stream.rpc.request.Subscribe
+import io.provenance.eventstream.stream.rpc.response.MessageType
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.channelFlow
 import mu.KotlinLogging
 
+/**
+ * Create a [Flow] of [Block] from a [WebSocketService].
+ *
+ * @param eventStreamService The [WebSocketService] web socket instance to receive events from.
+ * @param decoder The [DecoderEngine] to use to marshal the [Message] to [MessageType].
+ */
 class LiveMetaDataStream(
-    private val eventStreamService: EventStreamService,
-    private val moshi: Moshi,
+    private val eventStreamService: WebSocketService,
+    private val decoder: DecoderEngine,
 ) {
 
     private val log = KotlinLogging.logger { }
@@ -26,10 +32,10 @@ class LiveMetaDataStream(
      * @return A Flow of newly minted blocks and associated events
      */
     @OptIn(ExperimentalCoroutinesApi::class)
-    fun streamLiveBlocks(): Flow<Block> {
+    fun streamBlocks(): Flow<Block> {
 
         // Toggle the Lifecycle register start state:
-        eventStreamService.startListening()
+        eventStreamService.start()
 
         return channelFlow {
             for (event in eventStreamService.observeWebSocketEvent()) {
@@ -72,7 +78,5 @@ class LiveMetaDataStream(
     /**
      * A decoder for Tendermint RPC API messages.
      */
-    private val responseMessageDecoder: MessageType.Decoder = MessageType.Decoder(moshi)
-
-    fun streamBlocks(): Flow<Block> = streamLiveBlocks()
+    private val responseMessageDecoder: MessageType.Decoder = MessageType.Decoder(decoder)
 }

@@ -10,10 +10,11 @@ import tendermint.types.BlockOuterClass.Block
  * A client designed to interact with the Tendermint RPC API.
  */
 interface TendermintServiceClient {
-    suspend fun abciInfo(): Types.ResponseInfo
+    suspend fun getHeight(): Long
     suspend fun block(height: Long?): Block
 //    suspend fun blockResults(height: Long?): BlockResultsResponse
     suspend fun blockchain(minHeight: Long?, maxHeight: Long?): BlockchainResponse
 //    suspend fun blockResults(block: Block): ServiceOuterClass.GetTxResponse?
-    suspend fun blockResults(block: Block): io.provenance.eventstream.stream.clients.BlockResultsResponse?
+    suspend fun blockResults(height: Long?): io.provenance.eventstream.stream.clients.BlockResultsResponse
+    suspend fun blockResults(block: Block): io.provenance.eventstream.stream.clients.BlockResultsResponse
 }

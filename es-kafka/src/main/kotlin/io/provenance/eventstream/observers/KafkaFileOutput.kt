@@ -33,7 +33,7 @@ class KafkaFileOutput(dir: String) : BlockSink {
 }
 
 private fun StreamBlock.toStreamBlockImpl(): StreamBlockImpl? {
-    return StreamBlockImpl(this.block, this.blockEvents, this.txEvents, this.historical)
+    return StreamBlockImpl(this.block, this.blockEvents, this.blockResult, this.txEvents, this.txErrors, this.historical)
 }
 
 private fun ByteArray.toHex(): String {

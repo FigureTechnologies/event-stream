@@ -1,10 +1,12 @@
-package io.provenance.eventstream.stream.models.rpc.response
+package io.provenance.eventstream.stream.rpc.response
 
-import com.squareup.moshi.JsonDataException
-import com.squareup.moshi.Moshi
+import io.provenance.eventstream.stream.decoder.Decoder as TDecoder
+import io.provenance.eventstream.adapter.json.decoder.DecoderDataException
+import io.provenance.eventstream.adapter.json.decoder.DecoderEngine
 import io.provenance.eventstream.stream.NewBlockResult
+import io.provenance.eventstream.stream.models.NewBlockHeaderResult
+import mu.KotlinLogging
 import kotlin.reflect.full.primaryConstructor
-import io.provenance.eventstream.stream.models.rpc.response.decoder.Decoder as TDecoder
 
 /**
  * A sealed class family which defines the results of decoding a Tendermint websocket/RPC API response.
@@ -13,10 +15,12 @@ sealed interface MessageType {
     /**
      * Decode the supplied input into one of the variants of [MessageType].
      */
-    class Decoder(val moshi: Moshi) {
+    class Decoder(private val engine: DecoderEngine) {
+        private val log = KotlinLogging.logger {}
+
         // Decoders are attempted according to their assigned priority in descending order:
         private val decoders =
-            TDecoder::class.sealedSubclasses.mapNotNull { clazz -> clazz.primaryConstructor?.call(moshi) }
+            TDecoder::class.sealedSubclasses.mapNotNull { clazz -> clazz.primaryConstructor?.call(engine) }
                 .sortedByDescending { it.priority }
 
         fun decode(input: String): MessageType {
@@ -26,17 +30,18 @@ sealed interface MessageType {
                     if (message != null) {
                         return message
                     }
-                } catch (_: JsonDataException) {
+                } catch (e: DecoderDataException) {
+                    log.trace("failed to decode as ${decoder.javaClass.simpleName}: ${e.message}")
                 }
             }
-            return Unknown
+            return Unknown(input)
         }
     }
 
     /**
      * An unknown message was received.
      */
-    object Unknown : MessageType
+    data class Unknown(val type: String) : MessageType
 
     /**
      * An empty message was received.
@@ -67,4 +72,9 @@ sealed interface MessageType {
      * A message indicating a new block was created.
      */
     data class NewBlock(val block: NewBlockResult) : MessageType
+
+    /**
+     *
+     */
+    data class NewBlockHeader(val header: NewBlockHeaderResult) : MessageType
 }
