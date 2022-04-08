@@ -27,7 +27,7 @@ fun defaultOkHttpClient(pingInterval: Duration = 10.seconds, readInterval: Durat
 /**
  * Create the [OkHttpClient] flavor of the required [NetAdapter] fields.
  *
- * @param hosh The node host address to connect to.
+ * @param node The node host address to connect to.
  * @param okHttpClient The [OkHttpClient] instance to use for http calls.
  * @return The [NetAdapter] instance.
  */
