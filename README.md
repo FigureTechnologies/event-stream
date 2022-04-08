@@ -75,7 +75,7 @@ that will create both the rpc client and the websocket client to your query node
 
 ```kotlin
 val host = "https://rpc.test.provenance.io"
-val netAdapter = okHttpNetAdapter(host, tls = true)
+val netAdapter = okHttpNetAdapter(host)
 ```
 
 With this adapter we can create streams for live data, historical data, metadata, or any combinations. 
