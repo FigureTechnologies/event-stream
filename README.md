@@ -88,20 +88,20 @@ Historical flows require a `fromHeight` parameter where you want your stream to 
 
 Optionally, you can add `toHeight` as an optional parameter. If not supplied the stream will go to current block height.
 
-Get metadata flows: 
+Get block header flows: 
 ```kotlin
 val log = KotlinLogging.logger {}
 
-historicalMetadataFlow(netAdapter, 1, 100)
-  .onEach { log.info { "oldMeta: ${it.height}" } }
+historicalBlockHeaderFlow(netAdapter, 1, 100)
+  .onEach { log.info { "oldHeader: ${it.height}" } }
   .collect()
 ```
 
-Get block flows: 
+Get block data flows: 
 ```kotlin
 val log = KotlinLogging.logger {}
 
-historicalBlockFlow(netAdapter, 1, 100)
+historicalBlockDataFlow(netAdapter, 1, 100)
   .onEach { log.info { "oldBlock: ${it.height}" } }
   .collect()
 ```
@@ -111,23 +111,23 @@ Live flows require an adapter to decode the JSON responses from the chain.
 
 The project includes a `moshi` adapter configured to decode the RPC responses 
 
-Get live metadata:
+Get live block headers:
 ```kotlin
 val log = KotlinLogging.logger {}
 val decoderAdapter = moshiDecoderAdapter()
 
-liveMetadataFlow(netAdapter, decoderAdapter)
-  .onEach { log.info { "liveMeta: ${it.height}" } }
+liveBlockHeaderFlow(netAdapter, decoderAdapter)
+  .onEach { log.info { "liveHeader: ${it.height}" } }
   .collect()
 ```
 
-Get live blocks: 
+Get live block datas: 
 ```kotlin
 val log = KotlinLogging.logger {}
 val decoderAdapter = moshiDecoderAdapter()
 
-liveBlockFlow(netAdapter, decoderAdapter)
-    .onEach { log.info {"liveBlock: $it" } }
+liveBlockDataFlow(netAdapter, decoderAdapter)
+    .onEach { log.info { "liveBlock: $it" } }
     .collect()
 ```
 
@@ -135,6 +135,7 @@ liveBlockFlow(netAdapter, decoderAdapter)
 
 These flows can also be combined to create historical + live flows
 
+Get block headers:
 ```kotlin
 val log = KotlinLogging.logger {}
 
@@ -142,8 +143,21 @@ val log = KotlinLogging.logger {}
 val current = netAdapter.rpcAdapter.getCurrentHeight()!!
 val decoderAdapter = moshiDecoderAdapter()
 
-metadataFlow(netAdapter, decoderAdapter, from = current - 1000, to = current)
-    .onEach { log.info {"received: ${it.height}" } }
+blockHeaderFlow(netAdapter, decoderAdapter, from = current - 1000, to = current)
+    .onEach { log.info { "received: ${it.height}" } }
+    .collect()
+```
+
+Get block datas:
+```kotlin
+val log = KotlinLogging.logger {}
+
+// get the current block height from the node
+val current = netAdapter.rpcAdapter.getCurrentHeight()!!
+val decoderAdapter = moshiDecoderAdapter()
+
+blockDataFlow(netAdapter, decoderAdapter, from = current - 1000, to = current)
+    .onEach { log.info { "received: ${it.height}" } }
     .collect()
 ```
 
