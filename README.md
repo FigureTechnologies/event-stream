@@ -70,10 +70,11 @@ implementation("io.provenance.eventstream:es-api-model:${version}")
 To get started using the provenance event stream library you need to create an httpAdapter
 that will create both the rpc client and the websocket client to your query node of choice. 
 
+*The protocol is required on the host value and can be one of* `http | https | tcp | tcp+tls`. 
+
+
 ```kotlin
-// note that we do not provide a protocol for the host value.
-// this will be added dynamically in the adapter.
-val host = "rpc.test.provenance.io:443"
+val host = "https://rpc.test.provenance.io"
 val netAdapter = okHttpNetAdapter(host, tls = true)
 ```
 

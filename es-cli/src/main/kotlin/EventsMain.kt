@@ -17,8 +17,8 @@ import mu.KotlinLogging
 
 fun main() = runBlocking {
     val log = KotlinLogging.logger {}
-    val host = "rpc.test.provenance.io:443"
-    val netAdapter = okHttpNetAdapter(host, tls = true)
+    val host = "https://rpc.provenance.io"
+    val netAdapter = okHttpNetAdapter(host)
     val decoderAdapter = moshiDecoderAdapter()
 
     // Example is not collected.
