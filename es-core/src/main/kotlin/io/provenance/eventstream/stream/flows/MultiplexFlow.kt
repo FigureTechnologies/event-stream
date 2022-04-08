@@ -111,8 +111,6 @@ private fun <T> combinedFlow(
     }
 }
 
-
-
 /**
  * Create a [Flow] of [BlockHeader] from height to height.
  *
