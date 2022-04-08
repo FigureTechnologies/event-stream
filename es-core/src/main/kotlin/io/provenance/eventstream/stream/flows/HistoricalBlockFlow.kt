@@ -23,7 +23,7 @@ import kotlin.coroutines.EmptyCoroutineContext
  * @param context The coroutine context to execute the async parallel fetches.
  * @return The [Flow] of [BlockData]
  */
-fun historicalBlockFlow(
+fun historicalBlockDataFlow(
     netAdapter: NetAdapter,
     from: Long = 1,
     to: Long? = null,
