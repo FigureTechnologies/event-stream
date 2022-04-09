@@ -39,7 +39,7 @@ class LiveMetaDataStream(
 
         return channelFlow {
             for (event in eventStreamService.observeWebSocketEvent()) {
-                log.info("streaveLiveBlocks::event received=${event}")
+                log.info("streaveLiveBlocks::event received=$event")
                 when (event) {
                     is WebSocket.Event.OnConnectionOpened<*> -> {
                         log.info("streamLiveBlocks::received OnConnectionOpened event")
