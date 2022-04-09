@@ -139,14 +139,17 @@ class EventStream(
 
     private fun <T : EncodedBlockchainEvent> keepBlock(events: List<T>): Boolean {
         if (options.txEvents.isEmpty() && options.blockEvents.isEmpty()) {
+            log.info("txEvents and blockEvents empty")
             return true
         }
 
         if (options.txEvents.isNotEmpty() && events.any { it.eventType in options.txEvents }) {
+            log.info("txEvents is not empty")
             return true
         }
 
         if (options.blockEvents.isNotEmpty() && events.any { it.eventType in options.blockEvents }) {
+            log.info("block events are not empty")
             return true
         }
 

@@ -39,6 +39,7 @@ class LiveMetaDataStream(
 
         return channelFlow {
             for (event in eventStreamService.observeWebSocketEvent()) {
+                log.info("streaveLiveBlocks::event received=${event}")
                 when (event) {
                     is WebSocket.Event.OnConnectionOpened<*> -> {
                         log.info("streamLiveBlocks::received OnConnectionOpened event")
@@ -68,7 +69,7 @@ class LiveMetaDataStream(
                             log.warn("live::binary message payload not supported")
                         }
                     }
-                    is WebSocket.Event.OnConnectionFailed -> throw event.throwable
+                    is WebSocket.Event.OnConnectionFailed -> { log.error("connection failed::") }
                     else -> throw Throwable("live::unexpected event type: $event")
                 }
             }
