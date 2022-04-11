@@ -3,9 +3,9 @@
     "config:base"
   ],
   "enabledManagers": ["regex"],
-  "regexMangers": [
+  "regexManagers": [
     {
-      "fileMatch": ["^Dockerfile$"],
+      "fileMatch": ["(^|/)Dockerfile%"],
       "matchStrings": ["FROM openjdk:(?<currentValue>.*?)\n"],
       "depNameTemplate": "openjdk",
       "datasourceTemplate": "adoptium-java"
