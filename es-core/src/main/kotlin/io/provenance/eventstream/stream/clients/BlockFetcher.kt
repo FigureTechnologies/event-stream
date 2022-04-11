@@ -11,7 +11,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.EmptyCoroutineContext
 
-data class BlockData(val block: Block, val blockResult: BlockResultsResponseResult) {
+data class BlockData(val block: Block, val blockResult: BlockResultsResponseResult, var historical: Boolean = false) {
     val height = block.header!!.height
 }
 

@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.onEach
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.EmptyCoroutineContext
 
@@ -56,8 +57,10 @@ fun List<Long>.toBlockData(
     val list = this
     val fetcher = netAdapter.rpcAdapter
     return channelFlow {
-        fetcher.getBlocks(list, concurrency, context).collect {
-            send(it)
-        }
+        fetcher.getBlocks(list, concurrency, context)
+            .onEach { it.historical = true }
+            .collect {
+                send(it)
+            }
     }
 }
