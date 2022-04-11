@@ -9,28 +9,9 @@
         "openjdk"
       ],
       "allowedVersions": "11"
-    },
-    {
-      "paths": [
-        "Dockerfile",
-        "docker-compose.local.yml",
-        "github/workflows/build.yaml",
-        ".github/workflows/publish.yaml"
-      ],
-      "schedule": [
-        "before 8am on Monday"
-      ]
-    },
-    {
-      "ignorePaths": [
-        "Dockerfile",
-        "docker-compose.local.yml",
-        "github/workflows/build.yaml",
-        ".github/workflows/publish.yaml"
-      ],
-      "schedule": [
-        "before 8am"
-      ]
     }
+  ],
+  "schedule": [
+    "before 8am"
   ]
 }
