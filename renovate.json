@@ -2,13 +2,13 @@
   "extends": [
     "config:base"
   ],
-  "enabledManagers": ["regex"],
-  "regexManagers": [
+  "packageRules": [
     {
-      "fileMatch": ["(^|/)Dockerfile%"],
-      "matchStrings": ["FROM openjdk:(?<currentValue>.*?)\n"],
-      "depNameTemplate": "openjdk",
-      "datasourceTemplate": "adoptium-java"
+      "matchDatasources": ["docker"],
+      "matchPackageNames": [
+        "openjdk"
+      ],
+      "allowedVersions": "11"
     }
   ],
   "schedule": [
