@@ -1,5 +1,17 @@
 {
   "extends": [
     "config:base"
+  ],
+  "enabledManagers": ["regex"],
+  "regexMangers": [
+    {
+      "fileMatch": ["(^|/)Dockerfile%"],
+      "matchStrings": ["FROM openjdk:(?<currentValue>.*?)\n"],
+      "depNameTemplate": "openjdk",
+      "datasourceTemplate": "adoptium-java"
+    }
+  ],
+  "schedule": [
+    "before 8am on Monday"
   ]
 }
