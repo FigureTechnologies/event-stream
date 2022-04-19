@@ -11,4 +11,4 @@ event-stream:
     from: 1
   skipEmptyBlocks: false
 node: http://localhost:26657
-from: 1
+from: 6278600

@@ -17,16 +17,16 @@ import mu.KotlinLogging
 
 fun main() = runBlocking {
     val log = KotlinLogging.logger {}
-    val host = "https://rpc.provenance.io"
+    val host = "http://localhost:26657"
     val netAdapter = okHttpNetAdapter(host)
     val decoderAdapter = moshiDecoderAdapter()
 
     // Example is not collected.
-    historicalBlockHeaderFlow(netAdapter, 1, 100)
+    historicalBlockHeaderFlow(netAdapter, 6278600, 6278900)
         .onEach { if (it.height % 1500 == 0L) { log.info { "oldHeader: ${it.height}" } } }
 
     // Example is not collected.
-    historicalBlockDataFlow(netAdapter, 1, 100)
+    historicalBlockDataFlow(netAdapter, 6278600, 6278900)
         .onEach { if (it.height % 1500 == 0L) { log.info { "oldBlock: ${it.height}" } } }
 
     // Example is not collected.
