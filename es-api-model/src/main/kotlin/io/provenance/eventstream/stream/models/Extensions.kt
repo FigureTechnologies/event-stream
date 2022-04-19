@@ -2,17 +2,7 @@ package io.provenance.eventstream.stream.models.extensions
 
 import com.google.common.io.BaseEncoding
 import cosmos.tx.v1beta1.TxOuterClass
-import io.provenance.eventstream.stream.models.Block
-import io.provenance.eventstream.stream.models.BlockEvent
-import io.provenance.eventstream.stream.models.TxInfo
-import io.provenance.eventstream.stream.models.BlockHeader
-import io.provenance.eventstream.stream.models.BlockResponse
-import io.provenance.eventstream.stream.models.BlockResultsResponse
-import io.provenance.eventstream.stream.models.BlockResultsResponseResult
-import io.provenance.eventstream.stream.models.BlockResultsResponseResultEvents
-import io.provenance.eventstream.stream.models.BlockResultsResponseResultTxsResults
-import io.provenance.eventstream.stream.models.TxError
-import io.provenance.eventstream.stream.models.TxEvent
+import io.provenance.eventstream.stream.models.*
 import java.security.MessageDigest
 import java.security.NoSuchAlgorithmException
 import java.time.OffsetDateTime
@@ -110,7 +100,8 @@ fun BlockResultsResponseResultTxsResults.toBlockError(blockHeight: Long, blockDa
         info = this.log ?: "",
         txHash = txHash ?: "",
         fee = fee?.first ?: 0L,
-        denom = fee?.second ?: ""
+        denom = fee?.second ?: "",
+        signerAddr = mutableListOf()
     )
 
 fun BlockResultsResponseResultEvents.toBlockEvent(blockHeight: Long, blockDateTime: OffsetDateTime?): BlockEvent =

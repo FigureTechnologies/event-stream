@@ -14,5 +14,6 @@ data class TxError(
     val info: String,
     val txHash: String,
     val fee: Long,
+    val signerAddr: List<String>,
     val denom: String
 )
