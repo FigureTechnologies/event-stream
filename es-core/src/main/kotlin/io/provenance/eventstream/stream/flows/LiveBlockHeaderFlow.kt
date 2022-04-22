@@ -1,7 +1,9 @@
 package io.provenance.eventstream.stream.flows
 
 import com.tinder.scarlet.lifecycle.LifecycleRegistry
+import com.tinder.scarlet.retry.BackoffStrategy
 import io.provenance.eventstream.decoder.DecoderAdapter
+import io.provenance.eventstream.defaultBackoffStrategy
 import io.provenance.eventstream.defaultLifecycle
 import io.provenance.eventstream.defaultWebSocketChannel
 import io.provenance.eventstream.net.NetAdapter
@@ -37,9 +39,10 @@ fun liveBlockHeaderFlow(
     decoderAdapter: DecoderAdapter,
     throttle: Duration = DEFAULT_THROTTLE_PERIOD,
     lifecycle: LifecycleRegistry = defaultLifecycle(throttle),
-    channel: WebSocketChannel = defaultWebSocketChannel(netAdapter.wsAdapter, decoderAdapter.wsDecoder, throttle, lifecycle),
+    backoffStrategy: BackoffStrategy = defaultBackoffStrategy(),
+    channel: WebSocketChannel = defaultWebSocketChannel(netAdapter.wsAdapter, decoderAdapter.wsDecoder, throttle, lifecycle, backoffStrategy),
     wss: WebSocketService = channel.withLifecycle(lifecycle),
 ): Flow<BlockHeader> {
-    return nodeEventStream<MessageType.NewBlockHeader>(netAdapter, decoderAdapter, throttle, lifecycle, channel, wss)
+    return nodeEventStream<MessageType.NewBlockHeader>(netAdapter, decoderAdapter, throttle, lifecycle, backoffStrategy, channel, wss)
         .mapLiveBlockHeader()
 }

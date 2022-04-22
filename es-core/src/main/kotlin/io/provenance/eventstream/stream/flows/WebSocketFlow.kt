@@ -92,7 +92,8 @@ fun webSocketClient(
             }
 
             is WebSocket.Event.OnConnectionFailed -> {
-                throw CancellationException("connection failed", event.throwable)
+                log.info("Connection failed", event.throwable)
+                /* no-op: let the scarlet retry takeover from here */
             }
 
             else -> {
@@ -100,4 +101,5 @@ fun webSocketClient(
             }
         }
     }
+    log.debug { "stopping web socket client" }
 }
