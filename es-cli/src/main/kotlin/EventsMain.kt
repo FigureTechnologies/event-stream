@@ -6,9 +6,11 @@ import io.provenance.eventstream.stream.flows.blockDataFlow
 import io.provenance.eventstream.stream.flows.blockHeaderFlow
 import io.provenance.eventstream.stream.flows.historicalBlockDataFlow
 import io.provenance.eventstream.stream.flows.historicalBlockHeaderFlow
-import io.provenance.eventstream.stream.flows.liveBlockDataFlow
-import io.provenance.eventstream.stream.flows.liveBlockHeaderFlow
+import io.provenance.eventstream.stream.flows.wsBlockDataFlow
+import io.provenance.eventstream.stream.flows.wsBlockHeaderFlow
 import io.provenance.eventstream.stream.flows.nodeEventStream
+import io.provenance.eventstream.stream.flows.pollingBlockDataFlow
+import io.provenance.eventstream.stream.flows.pollingBlockHeaderFlow
 import io.provenance.eventstream.stream.rpc.response.MessageType
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.onEach
@@ -30,11 +32,11 @@ fun main() = runBlocking {
         .onEach { if (it.height % 1500 == 0L) { log.info { "oldBlock: ${it.height}" } } }
 
     // Example is not collected.
-    liveBlockHeaderFlow(netAdapter, decoderAdapter)
+    wsBlockHeaderFlow(netAdapter, decoderAdapter)
         .onEach { println("liveHeader: ${it.height}") }
 
     // Example is not collected.
-    liveBlockDataFlow(netAdapter, decoderAdapter)
+    wsBlockDataFlow(netAdapter, decoderAdapter)
         .onEach { println("liveBlock: $it") }
 
     // Example is not collected.
@@ -53,6 +55,13 @@ fun main() = runBlocking {
     // Example is not collected.
     blockDataFlow(netAdapter, decoderAdapter, from = current - 1000, to = current)
         .onEach { println("recv:$it") }
+
+    pollingBlockDataFlow(netAdapter, from = current - 10)
+        .onEach { println("revc:${it.height}") }
+        .collect()
+
+    pollingBlockHeaderFlow(netAdapter, from = current - 10)
+        .onEach { println("revc:${it.height}") }
         .collect()
 
     netAdapter.shutdown()

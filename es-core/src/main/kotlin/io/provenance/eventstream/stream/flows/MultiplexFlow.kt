@@ -1,9 +1,6 @@
 package io.provenance.eventstream.stream.flows
 
-import io.provenance.eventstream.decoder.DecoderAdapter
 import io.provenance.eventstream.net.NetAdapter
-import io.provenance.eventstream.stream.clients.BlockData
-import io.provenance.eventstream.stream.models.BlockHeader
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.ReceiveChannel
@@ -19,50 +16,16 @@ import mu.KotlinLogging
 import java.util.concurrent.atomic.AtomicLong
 
 /**
- * Create a [Flow] of [BlockHeader] from height to height.
  *
- * This flow will intelligently determine how to merge the live and history flows to
- * create a seamless stream of [BlockHeader] objects.
- *
- * @param netAdapter The [NetAdapter] to use for network interfacing.
- * @param decoderAdapter The [DecoderAdapter] to use to marshal json.
- * @param from The `from` height, if omitted, height 1 is used.
- * @param to The `to` height, if omitted, no end is assumed.
- * @return The [Flow] of [BlockHeader].
  */
-fun blockHeaderFlow(netAdapter: NetAdapter, decoderAdapter: DecoderAdapter, from: Long? = null, to: Long? = null): Flow<BlockHeader> {
-    val getCurrentHeight: suspend () -> Long? = { netAdapter.rpcAdapter.getCurrentHeight() }
-    val getHeight: (BlockHeader) -> Long = { it.height }
-    val history: (Long, Long) -> Flow<BlockHeader> = { f, t -> historicalBlockHeaderFlow(netAdapter, f, t) }
-    val live: () -> Flow<BlockHeader> = { liveBlockHeaderFlow(netAdapter, decoderAdapter) }
-    return combinedFlow(getCurrentHeight, from, to, getHeight, history, live)
-}
-
-/**
- * Create a [Flow] of [BlockData] from height to height.
- *
- * This flow will intelligently determine how to merge the live and history flows to
- * create a seamless stream of [BlockData] objects.
- *
- * @param netAdapter The [NetAdapter] to use for network interfacing.
- * @param decoderAdapter The [DecoderAdapter] to use to marshal json.
- * @param from The `from` height, if omitted, height 1 is used.
- * @param to The `to` height, if omitted, no end is assumed.
- * @return The [Flow] of [BlockData].
- */
-fun blockDataFlow(netAdapter: NetAdapter, decoderAdapter: DecoderAdapter, from: Long? = null, to: Long? = null): Flow<BlockData> {
-    val getCurrentHeight: suspend () -> Long? = { netAdapter.rpcAdapter.getCurrentHeight() }
-    val getHeight: (BlockData) -> Long = { it.height }
-    val history: (Long, Long) -> Flow<BlockData> = { f, t -> historicalBlockDataFlow(netAdapter, f, t) }
-    val live: () -> Flow<BlockData> = { liveBlockDataFlow(netAdapter, decoderAdapter) }
-    return combinedFlow(getCurrentHeight, from, to, getHeight, history, live)
-}
+internal fun currentHeightFn(netAdapter: NetAdapter): suspend () -> Long? =
+    { netAdapter.rpcAdapter.getCurrentHeight() }
 
 /**
  *
  */
 @OptIn(ExperimentalCoroutinesApi::class)
-private fun <T> combinedFlow(
+internal fun <T> combinedFlow(
     getCurrentHeight: suspend () -> Long?,
     from: Long? = null,
     to: Long? = null,
@@ -146,6 +109,9 @@ private fun <T> combinedFlow(
     }
 }
 
+/**
+ *
+ */
 @OptIn(ExperimentalCoroutinesApi::class)
 suspend fun <T> gapFill(
     channel: ReceiveChannel<T>,

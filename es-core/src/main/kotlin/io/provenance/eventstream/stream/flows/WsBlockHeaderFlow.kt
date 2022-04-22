@@ -34,7 +34,7 @@ fun Flow<MessageType.NewBlockHeader>.mapLiveBlockHeader(): Flow<BlockHeader> = m
  * @param channel The [WebSocketChannel] used to receive incoming websocket events.
  * @param wss The [WebSocketService] used to manage the channel.
  */
-fun liveBlockHeaderFlow(
+fun wsBlockHeaderFlow(
     netAdapter: NetAdapter,
     decoderAdapter: DecoderAdapter,
     throttle: Duration = DEFAULT_THROTTLE_PERIOD,
