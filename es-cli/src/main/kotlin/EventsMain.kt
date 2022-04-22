@@ -56,13 +56,15 @@ fun main() = runBlocking {
     blockDataFlow(netAdapter, decoderAdapter, from = current - 1000, to = current)
         .onEach { println("recv:$it") }
 
-    pollingBlockDataFlow(netAdapter, from = current - 10)
+    // Example is not collected.
+    pollingBlockDataFlow(netAdapter)
         .onEach { println("revc:${it.height}") }
         .collect()
 
-    pollingBlockHeaderFlow(netAdapter, from = current - 10)
+    // Example is not collected.
+    pollingBlockHeaderFlow(netAdapter)
         .onEach { println("revc:${it.height}") }
-        .collect()
+
 
     netAdapter.shutdown()
 }

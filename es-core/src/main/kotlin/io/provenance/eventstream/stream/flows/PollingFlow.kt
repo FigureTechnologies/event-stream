@@ -6,6 +6,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.flow
+import mu.KotlinLogging
 import kotlin.time.Duration
 
 /**
@@ -15,7 +16,7 @@ import kotlin.time.Duration
  * @param block Lambda returning the next element to be emitted, or null if nothing is ready.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
-fun <T> pollingFlow(pollInterval: Duration, block: suspend () -> T?): Flow<T> = channelFlow {
+inline fun <T> pollingFlow(pollInterval: Duration, crossinline block: suspend () -> T?): Flow<T> = channelFlow {
     while (!isClosedForSend) {
         val data = block()
         if (data == null) {
@@ -35,15 +36,20 @@ internal fun <T> pollingDataFlow(
     from: Long?,
     fetch: suspend (List<Long>) -> List<T>
 ): Flow<T> = flow {
+    val log = KotlinLogging.logger {}
     var current = from ?: getHeight()
     pollingFlow(pollInterval) {
         val newCurrent = getHeight()
+        log.info { "current:$current newCurrent:$newCurrent" }
         val diff = newCurrent - current
         val data = when {
-            diff > 0L -> fetch((current..newCurrent).toList())
+            diff >= 0L -> {
+                log.info { "fetching ${(current..newCurrent).toList()}" }
+                fetch((current..newCurrent).toList())
+            }
             else -> null
         }
-        current = newCurrent
+        current = newCurrent + 1
         return@pollingFlow data
     }.collect { it.forEach { block -> emit(block) } }
 }
