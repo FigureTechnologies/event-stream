@@ -6,13 +6,12 @@ import io.provenance.eventstream.stream.flows.blockDataFlow
 import io.provenance.eventstream.stream.flows.blockHeaderFlow
 import io.provenance.eventstream.stream.flows.historicalBlockDataFlow
 import io.provenance.eventstream.stream.flows.historicalBlockHeaderFlow
-import io.provenance.eventstream.stream.flows.wsBlockDataFlow
-import io.provenance.eventstream.stream.flows.wsBlockHeaderFlow
 import io.provenance.eventstream.stream.flows.nodeEventStream
 import io.provenance.eventstream.stream.flows.pollingBlockDataFlow
 import io.provenance.eventstream.stream.flows.pollingBlockHeaderFlow
+import io.provenance.eventstream.stream.flows.wsBlockDataFlow
+import io.provenance.eventstream.stream.flows.wsBlockHeaderFlow
 import io.provenance.eventstream.stream.rpc.response.MessageType
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.runBlocking
 import mu.KotlinLogging
@@ -63,6 +62,6 @@ fun main() = runBlocking {
     // Example is not collected.
     pollingBlockHeaderFlow(netAdapter)
         .onEach { println("revc:${it.height}") }
-    
+
     netAdapter.shutdown()
 }
