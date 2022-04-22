@@ -6,6 +6,7 @@ import io.provenance.eventstream.stream.clients.BlockData
 import io.provenance.eventstream.stream.models.BlockHeader
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.channels.ReceiveChannel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.buffer
 import kotlinx.coroutines.flow.channelFlow
@@ -29,7 +30,6 @@ import java.util.concurrent.atomic.AtomicLong
  * @param to The `to` height, if omitted, no end is assumed.
  * @return The [Flow] of [BlockHeader].
  */
-@OptIn(ExperimentalCoroutinesApi::class)
 fun blockHeaderFlow(netAdapter: NetAdapter, decoderAdapter: DecoderAdapter, from: Long? = null, to: Long? = null): Flow<BlockHeader> {
     val getCurrentHeight: suspend () -> Long? = { netAdapter.rpcAdapter.getCurrentHeight() }
     val getHeight: (BlockHeader) -> Long = { it.height }
@@ -50,7 +50,6 @@ fun blockHeaderFlow(netAdapter: NetAdapter, decoderAdapter: DecoderAdapter, from
  * @param to The `to` height, if omitted, no end is assumed.
  * @return The [Flow] of [BlockData].
  */
-@OptIn(ExperimentalCoroutinesApi::class)
 fun blockDataFlow(netAdapter: NetAdapter, decoderAdapter: DecoderAdapter, from: Long? = null, to: Long? = null): Flow<BlockData> {
     val getCurrentHeight: suspend () -> Long? = { netAdapter.rpcAdapter.getCurrentHeight() }
     val getHeight: (BlockData) -> Long = { it.height }
@@ -110,45 +109,71 @@ private fun <T> combinedFlow(
 
     // Live flow. Skip any dupe blocks.
     if (needLive) {
-        var firstLive = channel.receive()
-        var firstLiveHeight = getHeight(firstLive)
-        var lastCurrent = current
+        // Continue receiving everything else live.
+        // Drop anything between current head and the last fetched history record.
+        while (!channel.isClosedForReceive) {
+            gapFill(channel, getHeight, current, historicalFlow).collect { block ->
+                select {
+                    onSend(block) {
+                        lastSeen.set(getHeight(block))
+                    }
+                }
+            }
 
-        // Determine if we have a gap between the last seen current and first received that needs to be filled.
-        // If fetching and emitting the gap takes longer that the time to fetch a new block, loop and do it again
-        // until the next block to be emitted is the head of the channel.
-        do {
-            log.debug { "gap fill from ${lastCurrent + 1} to $firstLiveHeight" }
-            historicalFlow(lastCurrent + 1, firstLiveHeight)
-                .collect { block ->
-                    // Update the lastSeen height after successful send.
+            channel.receiveAsFlow().dropWhile { getHeight(it) <= lastSeen.get() }.collect { block ->
+                val collector: suspend (T) -> Unit = { b ->
                     select {
-                        onSend(block) {
-                            lastSeen.set(getHeight(block))
+                        onSend(b) {
+                            lastSeen.set(getHeight(b))
+                            if (to != null && getHeight(b) >= to) {
+                                parent.close()
+                            }
                         }
                     }
                 }
-            lastCurrent = firstLiveHeight
-            firstLive = channel.receive()
-            firstLiveHeight = getHeight(firstLive)
-        } while (lastCurrent + 1 < firstLiveHeight)
 
-        // Send the last known head of the channel.
-        send(firstLive)
-        lastSeen.set(firstLiveHeight)
-
-        // Continue receiving everything else live.
-        // Drop anything between current head and the last fetched history record.
-        channel.receiveAsFlow().dropWhile {
-            getHeight(it) <= lastSeen.get()
-        }.collect { block ->
-            select {
-                onSend(block) {
-                    if (to != null && getHeight(block) >= to) {
-                        parent.close()
-                    }
+                val curr = getHeight(block)
+                val expected = lastSeen.get() + 1
+                if (curr > expected) {
+                    log.debug { "current:$curr <= expected:$expected, filling the gap..." }
+                    gapFill(channel, getHeight, lastSeen.get() + 1, historicalFlow)
+                        .collect { collector(it) }
+                } else {
+                    collector(block)
                 }
             }
         }
     }
+}
+
+@OptIn(ExperimentalCoroutinesApi::class)
+suspend fun <T> gapFill(
+    channel: ReceiveChannel<T>,
+    getHeight: (T) -> Long,
+    from: Long,
+    historicalFlow: (from: Long, to: Long) -> Flow<T>
+) = channelFlow {
+    val log = KotlinLogging.logger {}
+
+    var firstLive = channel.receive()
+    var firstLiveHeight = getHeight(firstLive)
+    var lastCurrent = from
+
+    // Determine if we have a gap between the last seen current and first received that needs to be filled.
+    // If fetching and emitting the gap takes longer that the time to fetch a new block, loop and do it again
+    // until the next block to be emitted is the head of the channel.
+    do {
+        log.debug { "gap fill from $lastCurrent to $firstLiveHeight" }
+        historicalFlow(lastCurrent, firstLiveHeight)
+            .collect { block ->
+                // Update the lastSeen height after successful send.
+                send(block)
+            }
+        lastCurrent = firstLiveHeight
+        firstLive = channel.receive()
+        firstLiveHeight = getHeight(firstLive)
+    } while (lastCurrent + 1 < firstLiveHeight)
+
+    // Send the last known head of the channel.
+    send(firstLive)
 }
