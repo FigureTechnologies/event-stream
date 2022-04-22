@@ -6,7 +6,6 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.flow
-import mu.KotlinLogging
 import kotlin.time.Duration
 
 /**
@@ -36,17 +35,12 @@ internal fun <T> pollingDataFlow(
     from: Long?,
     fetch: suspend (List<Long>) -> List<T>
 ): Flow<T> = flow {
-    val log = KotlinLogging.logger {}
     var current = from ?: getHeight()
     pollingFlow(pollInterval) {
         val newCurrent = getHeight()
-        log.info { "current:$current newCurrent:$newCurrent" }
         val diff = newCurrent - current
         val data = when {
-            diff >= 0L -> {
-                log.info { "fetching ${(current..newCurrent).toList()}" }
-                fetch((current..newCurrent).toList())
-            }
+            diff >= 0L -> fetch((current..newCurrent).toList())
             else -> null
         }
         current = newCurrent + 1
