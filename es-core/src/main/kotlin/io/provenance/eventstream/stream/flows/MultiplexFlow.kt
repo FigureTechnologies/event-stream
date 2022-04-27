@@ -42,7 +42,6 @@ internal fun <T> combinedFlow(
     }
 
     val current = getCurrentHeight()!!
-    log.debug { "hist//live split point:$current" }
 
     // Determine if we need live data.
     // ie: if to is null, or more than current,
@@ -64,7 +63,7 @@ internal fun <T> combinedFlow(
         val historyFrom = from ?: 1
         log.debug { "processing historical flow from:$historyFrom to:$current" }
         historicalFlow(historyFrom, current).collect {
-            log.info { "sending historical: ${getHeight(it)}" }
+            log.trace { "sending historical: ${getHeight(it)}" }
             send(it)
             getHeight(it).also { h ->
                 if (to != null && h >= to) {
@@ -82,7 +81,7 @@ internal fun <T> combinedFlow(
         // Drop anything between current head and the last fetched history record.
         val lastSeen = AtomicLong(0)
         channel.receiveAsFlow().collect { block ->
-            log.info { "got pending block ${getHeight(block)}" }
+            log.trace { "got pending block ${getHeight(block)}" }
             send(block)
             getHeight(block).also { h ->
                 lastSeen.set(h)
@@ -96,11 +95,11 @@ internal fun <T> combinedFlow(
             val block = channel.receiveCatching().getOrThrow()
             val height = getHeight(block)
 
-            log.debug { "onReceive:$height" }
+            log.trace { "onReceive:$height" }
 
             // Skip if we have seen it already.
             if (height <= lastSeen.get()) {
-                log.trace { "skipping $height" }
+                log.trace { "already seen $height, skipping" }
                 return@channelFlow
             }
 
