@@ -7,21 +7,23 @@ import io.provenance.eventstream.stream.clients.TendermintServiceOpenApiClient
 import mu.KotlinLogging
 import okhttp3.OkHttpClient
 import java.net.URI
-import java.util.concurrent.TimeUnit
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
-import kotlin.time.ExperimentalTime
+import kotlin.time.toJavaDuration
 
 private val SSL_SCHEMES = setOf("grpcs", "https", "tcp+tls", "wss")
 private val NON_SSL_SCHEMES = setOf("grpc", "http", "tcp", "ws")
+
 /**
  * Create a default [OkHttpClient] to use within the event stream.
  */
-@OptIn(ExperimentalTime::class)
 fun defaultOkHttpClient(pingInterval: Duration = 10.seconds, readInterval: Duration = 60.seconds) =
     OkHttpClient.Builder()
-        .pingInterval(pingInterval.inWholeMilliseconds, TimeUnit.MILLISECONDS)
-        .readTimeout(readInterval.inWholeMilliseconds, TimeUnit.MILLISECONDS)
+        .pingInterval(pingInterval.toJavaDuration())
+        .readTimeout(readInterval.toJavaDuration())
+        .connectTimeout(90.seconds.toJavaDuration())
+        .callTimeout(30.seconds.toJavaDuration())
+        .retryOnConnectionFailure(false)
         .build()
 
 /**

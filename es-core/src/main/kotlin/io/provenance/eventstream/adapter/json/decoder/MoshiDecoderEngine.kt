@@ -5,6 +5,7 @@ import com.squareup.moshi.JsonDataException
 import com.squareup.moshi.JsonEncodingException
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.Types
+import java.io.EOFException
 import java.lang.reflect.ParameterizedType
 import java.lang.reflect.Type
 import kotlin.reflect.KClass
@@ -21,6 +22,8 @@ class MoshiDecoderEngine(private val moshi: Moshi) : DecoderEngine {
                     throw DecoderDataException(e)
                 } catch (e: JsonEncodingException) {
                     throw DecoderEncodingException(e)
+                } catch (e: EOFException) {
+                    throw DecoderDataException(e)
                 }
         }
     }

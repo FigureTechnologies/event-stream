@@ -155,6 +155,7 @@ class StreamTests : TestBase() {
 
         @OptIn(ExperimentalCoroutinesApi::class)
         @Test
+        // duped
         fun testBlockResponse() {
 
             val tendermint: TendermintServiceClient = ServiceMocker.Builder()
@@ -185,6 +186,7 @@ class StreamTests : TestBase() {
 
         @OptIn(ExperimentalCoroutinesApi::class)
         @Test
+        // duped
         fun testBlockResultsResponse() {
 
             val tendermint: TendermintServiceClient = ServiceMocker.Builder()
@@ -295,6 +297,7 @@ class StreamTests : TestBase() {
 
         @OptIn(ExperimentalCoroutinesApi::class, kotlinx.coroutines.FlowPreview::class)
         @Test
+        // done
         fun testHistoricalBlockStreaming() {
 
             dispatcherProvider.runBlockingTest {
@@ -325,6 +328,7 @@ class StreamTests : TestBase() {
 
         @OptIn(ExperimentalCoroutinesApi::class, kotlinx.coroutines.FlowPreview::class)
         @Test
+        // done
         fun testMetadataStreaming() {
 
             dispatcherProvider.runBlockingTest {
@@ -357,6 +361,7 @@ class StreamTests : TestBase() {
 
         @OptIn(ExperimentalCoroutinesApi::class)
         @Test
+        //
         fun testLiveBlockStreaming() {
 
             dispatcherProvider.runBlockingTest {
@@ -389,6 +394,7 @@ class StreamTests : TestBase() {
 
         @OptIn(ExperimentalCoroutinesApi::class, kotlinx.coroutines.FlowPreview::class)
         @Test
+        //
         fun testCombinedBlockStreaming() {
 
             dispatcherProvider.runBlockingTest {

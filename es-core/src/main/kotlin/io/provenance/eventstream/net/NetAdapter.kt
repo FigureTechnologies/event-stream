@@ -10,7 +10,7 @@ import io.provenance.eventstream.stream.clients.BlockFetcher
  * @param rpcAdapter The [BlockFetcher] used to make rpc calls to the node.
  * @return The [NetAdapter] instance.
  */
-fun netAdapter(wsAdapter: WsAdapter, rpcAdapter: BlockFetcher, shutdown: () -> Unit): NetAdapter {
+fun netAdapter(wsAdapter: WsAdapter, rpcAdapter: BlockFetcher, shutdown: () -> Unit = {}): NetAdapter {
     return object : NetAdapter {
         override val wsAdapter: WsAdapter = wsAdapter
         override val rpcAdapter: BlockFetcher = rpcAdapter
