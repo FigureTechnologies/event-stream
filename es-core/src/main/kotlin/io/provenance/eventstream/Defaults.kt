@@ -6,12 +6,14 @@ import com.tinder.scarlet.WebSocket
 import com.tinder.scarlet.lifecycle.LifecycleRegistry
 import com.tinder.scarlet.retry.BackoffStrategy
 import com.tinder.scarlet.retry.ExponentialBackoffStrategy
+import com.tinder.scarlet.retry.ExponentialWithJitterBackoffStrategy
 import com.tinder.streamadapter.coroutines.CoroutinesStreamAdapterFactory
 import io.provenance.eventstream.stream.WebSocketChannel
 import io.provenance.eventstream.stream.flows.DEFAULT_THROTTLE_PERIOD
 import kotlinx.coroutines.CancellationException
 import mu.KotlinLogging
 import java.lang.reflect.Type
+import kotlin.math.max
 import kotlin.time.Duration
 
 /**
@@ -45,17 +47,17 @@ fun WsDecoderAdapter.toScarletFactory(): MessageAdapter.Factory {
 /**
  * Create a sane [BackoffStrategy] that will bail after a maximum number of retries.
  *
- * @param maxRetries The maximum number of retries to attempt
+ * @param maxRetries The maximum number of retries to attempt (default: -1 - never gonna give it up).
  * @param fallbackStrategy The fallback [BackoffStrategy] to reference if maxRetries is not exceeded.
  */
 fun defaultBackoffStrategy(
-    maxRetries: Int = 10,
-    fallbackStrategy: BackoffStrategy = ExponentialBackoffStrategy(1000L, 10000L)
+    maxRetries: Int = -1,
+    fallbackStrategy: BackoffStrategy = ExponentialWithJitterBackoffStrategy(1000L, 10000L)
 ): BackoffStrategy {
     return object : BackoffStrategy {
         val log = KotlinLogging.logger {}
         override fun backoffDurationMillisAt(retryCount: Int): Long {
-            if (retryCount > maxRetries) {
+            if (maxRetries != -1 && retryCount > maxRetries) {
                 throw CancellationException("max retry count of $maxRetries exceeded")
             }
 
