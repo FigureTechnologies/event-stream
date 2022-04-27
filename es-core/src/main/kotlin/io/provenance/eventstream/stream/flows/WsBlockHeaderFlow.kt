@@ -45,4 +45,5 @@ fun wsBlockHeaderFlow(
 ): Flow<BlockHeader> {
     return nodeEventStream<MessageType.NewBlockHeader>(netAdapter, decoderAdapter, throttle, lifecycle, backoffStrategy, channel, wss)
         .mapLiveBlockHeader()
+        .contiguous({ netAdapter.rpcAdapter.getBlocksMeta(it, it)!!.first().header!! }) { it.height }
 }

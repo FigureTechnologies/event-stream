@@ -20,6 +20,11 @@ dependencies {
     implementation(libs.json)
     implementation(libs.moshi.kotlin.codegen)
 
+    testFixturesImplementation("io.reactivex.rxjava2:rxjava:2.1.16")
+    testFixturesImplementation("org.reactivestreams:reactive-streams:1.0.3")
+    testFixturesImplementation("com.tinder.scarlet:scarlet-core-internal:0.1.12")
+    testFixturesImplementation(libs.bundles.logback)
+
     testFixturesImplementation(projects.esApiModel)
 }
 

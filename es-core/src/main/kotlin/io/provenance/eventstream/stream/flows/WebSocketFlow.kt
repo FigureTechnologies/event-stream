@@ -25,6 +25,8 @@ import kotlin.time.Duration.Companion.seconds
 
 val DEFAULT_THROTTLE_PERIOD = 1.seconds
 
+private val rx = ".*?chain_id.*?(\"height\": \\d+).*?".toRegex(RegexOption.DOT_MATCHES_ALL)
+
 /**
  * Decode the flow of [Message] into a flow of [MessageType]
  *
@@ -34,11 +36,15 @@ val DEFAULT_THROTTLE_PERIOD = 1.seconds
  */
 @Suppress("unchecked_cast")
 fun <T : MessageType> Flow<Message>.decodeMessages(decoder: MessageDecoder): Flow<T> =
-    map { decoder(it) }.transform {
+    map {
+        if (it is Message.Text && it.value.isBlank()) MessageType.Empty
+        else decoder(it)
+    }.transform {
         val log = KotlinLogging.logger {}
         when (it) {
-            is MessageType.Panic ->
+            is MessageType.Panic -> {
                 throw CancellationException("RPC endpoint panic: ${it.error}")
+            }
 
             is MessageType.Error -> log.error { "failed to handle ws message:${it.error}" }
             is MessageType.Unknown -> log.info { "unknown message type:${it.type}" }
@@ -84,19 +90,22 @@ fun webSocketClient(
             }
 
             is WebSocket.Event.OnMessageReceived -> {
+                log.trace { "message received" }
                 send(event.message)
             }
 
             is WebSocket.Event.OnConnectionClosing -> {
+                log.info { "connection closing" }
                 close(CancellationException("connection closed"))
             }
 
             is WebSocket.Event.OnConnectionFailed -> {
-                log.info("Connection failed", event.throwable)
+                log.info("connection failed", event.throwable)
                 /* no-op: let the scarlet retry takeover from here */
             }
 
             else -> {
+                log.warn { "unexpected event:$event" }
                 throw CancellationException("unexpected event:$event")
             }
         }

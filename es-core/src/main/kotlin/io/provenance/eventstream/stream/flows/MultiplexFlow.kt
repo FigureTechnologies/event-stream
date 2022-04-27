@@ -2,16 +2,15 @@ package io.provenance.eventstream.stream.flows
 
 import io.provenance.eventstream.net.NetAdapter
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.async
 import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.channels.ReceiveChannel
+import kotlinx.coroutines.channels.Channel.Factory.UNLIMITED
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.buffer
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.flow.dropWhile
 import kotlinx.coroutines.flow.receiveAsFlow
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.selects.select
 import mu.KotlinLogging
 import java.util.concurrent.atomic.AtomicLong
 
@@ -31,14 +30,14 @@ internal fun <T> combinedFlow(
     to: Long? = null,
     getHeight: (T) -> Long,
     historicalFlow: (from: Long, to: Long) -> Flow<T>,
-    liveFlow: () -> Flow<T>
+    liveFlow: () -> Flow<T>,
 ): Flow<T> = channelFlow {
-    val parent = this
     val log = KotlinLogging.logger {}
     val channel = Channel<T>(capacity = 10_000) // buffer for: 10_000 * 6s block time / 60s/m / 60m/h == 16 2/3 hrs buffer time.
-    val liveJob = launch {
-        liveFlow.invoke()
-            .buffer()
+    val liveJob = async(coroutineContext) {
+        liveFlow()
+            .catch { channel.close(it) }
+            .buffer(UNLIMITED)
             .collect { channel.send(it) }
     }
 
@@ -61,85 +60,57 @@ internal fun <T> combinedFlow(
     }
 
     // Process historical stream if needed.
-    val lastSeen = AtomicLong(0)
     if (needHist) {
-        historicalFlow(from ?: 1, current)
-            .collect {
-                send(it)
-                lastSeen.set(getHeight(it))
-            }
-    }
-
-    // Live flow. Skip any dupe blocks.
-    if (needLive) {
-        // Continue receiving everything else live.
-        // Drop anything between current head and the last fetched history record.
-        while (!channel.isClosedForReceive) {
-            gapFill(channel, getHeight, current, historicalFlow).collect { block ->
-                select {
-                    onSend(block) {
-                        lastSeen.set(getHeight(block))
-                    }
-                }
-            }
-
-            channel.receiveAsFlow().dropWhile { getHeight(it) <= lastSeen.get() }.collect { block ->
-                val collector: suspend (T) -> Unit = { b ->
-                    select {
-                        onSend(b) {
-                            lastSeen.set(getHeight(b))
-                            if (to != null && getHeight(b) >= to) {
-                                parent.close()
-                            }
-                        }
-                    }
-                }
-
-                val curr = getHeight(block)
-                val expected = lastSeen.get() + 1
-                if (curr > expected) {
-                    log.debug { "current:$curr <= expected:$expected, filling the gap..." }
-                    gapFill(channel, getHeight, lastSeen.get() + 1, historicalFlow)
-                        .collect { collector(it) }
-                } else {
-                    collector(block)
+        val historyFrom = from ?: 1
+        log.debug { "processing historical flow from:$historyFrom to:$current" }
+        historicalFlow(historyFrom, current).collect {
+            log.info { "sending historical: ${getHeight(it)}" }
+            send(it)
+            getHeight(it).also { h ->
+                if (to != null && h >= to) {
+                    close()
                 }
             }
         }
     }
-}
 
-/**
- *
- */
-@OptIn(ExperimentalCoroutinesApi::class)
-suspend fun <T> gapFill(
-    channel: ReceiveChannel<T>,
-    getHeight: (T) -> Long,
-    from: Long,
-    historicalFlow: (from: Long, to: Long) -> Flow<T>
-) = channelFlow {
-    val log = KotlinLogging.logger {}
+    // Live flow. Skip any dupe blocks.
+    if (needLive) {
+        log.debug { "processing live flow to:$to" }
 
-    var firstLive = channel.receive()
-    var firstLiveHeight = getHeight(firstLive)
-    var lastCurrent = from
-
-    // Determine if we have a gap between the last seen current and first received that needs to be filled.
-    // If fetching and emitting the gap takes longer that the time to fetch a new block, loop and do it again
-    // until the next block to be emitted is the head of the channel.
-    do {
-        log.debug { "gap fill from $lastCurrent to $firstLiveHeight" }
-        historicalFlow(lastCurrent, firstLiveHeight)
-            .collect { block ->
-                // Update the lastSeen height after successful send.
-                send(block)
+        // Continue receiving everything else live.
+        // Drop anything between current head and the last fetched history record.
+        val lastSeen = AtomicLong(0)
+        channel.receiveAsFlow().collect { block ->
+            log.info { "got pending block ${getHeight(block)}" }
+            send(block)
+            getHeight(block).also { h ->
+                lastSeen.set(h)
+                if (to != null && h >= to) {
+                    close()
+                }
             }
-        lastCurrent = firstLiveHeight
-        firstLive = channel.receive()
-        firstLiveHeight = getHeight(firstLive)
-    } while (lastCurrent + 1 < firstLiveHeight)
+        }
 
-    // Send the last known head of the channel.
-    send(firstLive)
+        while (!channel.isClosedForReceive) {
+            val block = channel.receiveCatching().getOrThrow()
+            val height = getHeight(block)
+
+            log.debug { "onReceive:$height" }
+
+            // Skip if we have seen it already.
+            if (height <= lastSeen.get()) {
+                log.trace { "skipping $height" }
+                return@channelFlow
+            }
+
+            send(block)
+            getHeight(block).also { h ->
+                lastSeen.set(h)
+                if (to != null && h >= to) {
+                    close()
+                }
+            }
+        }
+    }
 }

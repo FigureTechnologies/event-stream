@@ -8,7 +8,6 @@ import io.provenance.eventstream.coroutines.DispatcherProvider
 import io.provenance.eventstream.stream.WebSocketService
 import io.provenance.eventstream.stream.rpc.request.Subscribe
 import io.provenance.eventstream.test.utils.Defaults
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.ChannelIterator
 import kotlinx.coroutines.channels.ReceiveChannel
@@ -126,7 +125,6 @@ class MockEventStreamService private constructor(
         }
     }
 
-    @OptIn(ExperimentalCoroutinesApi::class)
     override fun subscribe(subscribe: Subscribe) {
         runBlocking(dispatchers.io()) {
             channel.send(WebSocket.Event.OnConnectionOpened(Unit))
