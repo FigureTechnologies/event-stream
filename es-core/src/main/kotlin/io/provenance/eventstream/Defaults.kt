@@ -5,7 +5,6 @@ import com.tinder.scarlet.Scarlet
 import com.tinder.scarlet.WebSocket
 import com.tinder.scarlet.lifecycle.LifecycleRegistry
 import com.tinder.scarlet.retry.BackoffStrategy
-import com.tinder.scarlet.retry.ExponentialBackoffStrategy
 import com.tinder.scarlet.retry.ExponentialWithJitterBackoffStrategy
 import com.tinder.streamadapter.coroutines.CoroutinesStreamAdapterFactory
 import io.provenance.eventstream.stream.WebSocketChannel
@@ -13,7 +12,6 @@ import io.provenance.eventstream.stream.flows.DEFAULT_THROTTLE_PERIOD
 import kotlinx.coroutines.CancellationException
 import mu.KotlinLogging
 import java.lang.reflect.Type
-import kotlin.math.max
 import kotlin.time.Duration
 
 /**

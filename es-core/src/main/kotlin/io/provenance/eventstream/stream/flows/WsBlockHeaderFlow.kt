@@ -14,6 +14,7 @@ import io.provenance.eventstream.stream.models.BlockMeta
 import io.provenance.eventstream.stream.rpc.response.MessageType
 import io.provenance.eventstream.stream.withLifecycle
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.map
 import kotlin.time.Duration
 
@@ -43,7 +44,13 @@ fun wsBlockHeaderFlow(
     channel: WebSocketChannel = defaultWebSocketChannel(netAdapter.wsAdapter, decoderAdapter.wsDecoder, throttle, lifecycle, backoffStrategy),
     wss: WebSocketService = channel.withLifecycle(lifecycle),
 ): Flow<BlockHeader> {
+    val fetcher: suspend (List<Long>) -> Flow<BlockHeader> = {
+        it.chunked(20).flatMap { range ->
+            netAdapter.rpcAdapter.getBlocksMeta(range.first(), range.last()).orEmpty().sortedBy { it.header!!.height }
+        }.asFlow().mapHistoricalHeaderData()
+    }
+
     return nodeEventStream<MessageType.NewBlockHeader>(netAdapter, decoderAdapter, throttle, lifecycle, backoffStrategy, channel, wss)
         .mapLiveBlockHeader()
-        .contiguous({ netAdapter.rpcAdapter.getBlocksMeta(it, it)!!.first().header!! }) { it.height }
+        .contiguous(fetcher) { it.height }
 }

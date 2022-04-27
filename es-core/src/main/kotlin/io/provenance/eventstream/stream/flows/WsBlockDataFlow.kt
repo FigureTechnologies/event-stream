@@ -17,7 +17,6 @@ import io.provenance.eventstream.stream.models.BlockHeader
 import io.provenance.eventstream.stream.rpc.response.MessageType
 import io.provenance.eventstream.stream.withLifecycle
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.transform
@@ -59,7 +58,7 @@ fun wsBlockDataFlow(
 ): Flow<BlockData> {
     return nodeEventStream<MessageType.NewBlock>(netAdapter, decoderAdapter, throttle, lifecycle, backoffStrategy, channel, wss)
         .mapBlockData(netAdapter)
-        .contiguous(netAdapter.rpcAdapter::getBlock) { it.height }
+        .contiguous(netAdapter.rpcAdapter::getBlocks) { it.height }
 }
 
 /**
@@ -83,13 +82,14 @@ fun Flow<MessageType.NewBlock>.mapBlockData(netAdapter: NetAdapter): Flow<BlockD
  *     listOf(1, 5).asFlow().contiguous({ it }) { it }.toList() == listOf(1, 2, 3, 4, 5)
  * ```
  */
-internal fun <T> Flow<T>.contiguous(fallback: suspend (id: Long) -> T, indexer: (T) -> Long): Flow<T> {
+internal fun <T> Flow<T>.contiguous(fallback: suspend (ids: List<Long>) -> Flow<T>, indexer: (T) -> Long): Flow<T> {
     var current: Long? = null
     return transform { item ->
         val index = indexer(item)
         if (current != null && current!!.inc() < index) {
             // Uh-oh! Found a gap. Fill it in. Don't use fallback for current item.
-            emitAll(((current!!.inc()) until index).asFlow().map(fallback))
+            val missingIds = ((current!!.inc()) until index).toList()
+            emitAll(fallback(missingIds))
         }
         current = index
         emit(item)
