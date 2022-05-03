@@ -15,7 +15,6 @@ plugins {
     // Internal plugins.
     id("with-docs")
     id("with-linter")
-    id("jacoco")
 }
 
 group = rootProject.group
