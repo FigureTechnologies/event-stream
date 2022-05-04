@@ -20,8 +20,6 @@ jobs:
           distribution: 'adopt'
       - name: Build
         run: ./gradlew clean build --refresh-dependencies --parallel
-      - name: Generate Coverage Report
-        run: ./gradlew testCodeCoverageReport
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v1.3.1
         with:
