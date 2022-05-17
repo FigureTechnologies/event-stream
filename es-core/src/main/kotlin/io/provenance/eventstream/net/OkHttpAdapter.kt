@@ -23,7 +23,6 @@ fun defaultOkHttpClient(pingInterval: Duration = 10.seconds, readInterval: Durat
         .readTimeout(readInterval.toJavaDuration())
         .connectTimeout(90.seconds.toJavaDuration())
         .callTimeout(30.seconds.toJavaDuration())
-        .retryOnConnectionFailure(false)
         .build()
 
 /**
