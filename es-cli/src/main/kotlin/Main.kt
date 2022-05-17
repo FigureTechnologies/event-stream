@@ -5,6 +5,7 @@ package io.provenance.eventstream
 // ktlint-disable no-wildcard-imports
 import com.sksamuel.hoplite.ConfigLoaderBuilder
 import com.sksamuel.hoplite.PropertySource
+import com.sksamuel.hoplite.addCommandLineSource
 import com.sksamuel.hoplite.sources.EnvironmentVariablesPropertySource
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import com.tinder.scarlet.Scarlet
@@ -64,6 +65,7 @@ fun main(args: Array<String>) {
      */
 
     val config: Config = ConfigLoaderBuilder.default()
+        .addCommandLineSource(args)
         .addSource(EnvironmentVariablesPropertySource(useUnderscoresAsSeparator = true, allowUppercaseNames = true))
         .addSource(PropertySource.resource("/application.yml"))
         .build()
