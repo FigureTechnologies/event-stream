@@ -3,10 +3,9 @@ package io.provenance.eventstream
 // linting is giving a hard time on these kotlinx packages that cannot be auto-corrected,
 // IntelliJ is also giving linting errors if the imports are changed to individual imports.
 // ktlint-disable no-wildcard-imports
-import com.sksamuel.hoplite.ConfigLoader
+import com.sksamuel.hoplite.ConfigLoaderBuilder
 import com.sksamuel.hoplite.PropertySource
-import com.sksamuel.hoplite.addCommandLineSource
-import com.sksamuel.hoplite.addEnvironmentSource
+import com.sksamuel.hoplite.sources.EnvironmentVariablesPropertySource
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import com.tinder.scarlet.Scarlet
 import com.tinder.scarlet.messageadapter.moshi.MoshiMessageAdapter
@@ -63,10 +62,10 @@ fun main(args: Array<String>) {
      *
      * @see https://github.com/sksamuel/hoplite#environmentvariablespropertysource
      */
-    val config: Config = ConfigLoader.Builder()
-        .addCommandLineSource(args)
-        .addEnvironmentSource(useUnderscoresAsSeparator = true, allowUppercaseNames = true)
-        .addPropertySource(PropertySource.resource("/application.yml"))
+
+    val config: Config = ConfigLoaderBuilder.default()
+        .addSource(EnvironmentVariablesPropertySource(useUnderscoresAsSeparator = true, allowUppercaseNames = true))
+        .addSource(PropertySource.resource("/application.yml"))
         .build()
         .loadConfigOrThrow()
 
