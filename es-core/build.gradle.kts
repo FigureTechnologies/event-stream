@@ -6,6 +6,7 @@ plugins {
 
     id("core-config")
     id("with-test-fixtures")
+    jacoco
 }
 
 dependencies {

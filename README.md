@@ -7,6 +7,7 @@ This is a flow based project to create an event listener on the [Provenance](htt
 [![Latest Release][release-badge]][release-latest]
 [![Maven Central][maven-badge]][maven-url]
 [![Apache 2.0 License][license-badge]][license-url]
+[![Code Coverage][code-coverage-badge]][code-coverage-report]
 [![LOC][loc-badge]][loc-report]
 
 [license-badge]: https://img.shields.io/github/license/provenance-io/event-stream.svg
@@ -15,6 +16,8 @@ This is a flow based project to create an event listener on the [Provenance](htt
 [maven-url]: https://maven-badges.herokuapp.com/maven-central/io.provenance.eventstream/es-core
 [release-badge]: https://img.shields.io/github/tag/provenance-io/event-stream.svg
 [release-latest]: https://github.com/provenance-io/event-stream/releases/latest
+[code-coverage-badge]: https://codecov.io/gh/provenance-io/event-stream/branch/main/graph/badge.svg
+[code-coverage-report]: https://app.codecov.io/gh/provenance-io/event-stream
 [loc-badge]: https://tokei.rs/b1/github/provenance-io/event-stream
 [loc-report]: https://github.com/provenance-io/event-stream
 
