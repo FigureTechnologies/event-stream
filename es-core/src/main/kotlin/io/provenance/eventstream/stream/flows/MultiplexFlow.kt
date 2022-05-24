@@ -127,7 +127,7 @@ internal fun <T> combinedFlow(
     .cancellable()
     .retryWhen { cause: Throwable, attempt: Long ->
         log.warn("flow::error; recovering Flow (attempt ${attempt + 1})")
-        when(cause) {
+        when (cause) {
             is EOFException,
             is CompletionException,
             is ConnectException,
