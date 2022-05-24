@@ -4,7 +4,7 @@ import com.google.common.io.BaseEncoding
 import cosmos.tx.v1beta1.TxOuterClass
 import io.provenance.eventstream.stream.models.Block
 import io.provenance.eventstream.stream.models.BlockEvent
-import io.provenance.eventstream.stream.models.TxInfo
+import io.provenance.eventstream.stream.models.TxData
 import io.provenance.eventstream.stream.models.BlockHeader
 import io.provenance.eventstream.stream.models.BlockResponse
 import io.provenance.eventstream.stream.models.BlockResultsResponse
@@ -44,19 +44,25 @@ fun String.hash(): String = sha256(BaseEncoding.base64().decode(this)).toHexStri
 
 // === Date/time methods ===============================================================================================
 
-fun Block.txData(index: Int): TxInfo? {
+fun Block.txData(index: Int): TxData? {
     val tx = this.data?.txs?.get(index)
+    return if (tx != null) {
+        val decodedTxData = TxOuterClass.Tx.parseFrom(BaseEncoding.base64().decode(tx))
+        val feeData = decodedTxData.authInfo.fee
 
-    if (tx != null) {
-        val feeInfo = TxOuterClass.Tx.parseFrom(BaseEncoding.base64().decode(tx)).authInfo.fee
-        val amount = feeInfo.amountList.getOrNull(0)?.amount?.toLong()
-        val denom = feeInfo.amountList.getOrNull(0)?.denom
-        return TxInfo(
+        val amount = feeData.amountList.getOrNull(0)?.amount?.toLong()
+        val denom = feeData.amountList.getOrNull(0)?.denom
+
+        val note = decodedTxData.body.memo ?: ""
+
+        TxData(
             this.data?.txs?.get(index)?.hash(),
-            Pair(amount, denom)
+            Pair(amount, denom),
+            note
         )
+    } else {
+        null
     }
-    return null
 }
 
 fun Block.txHashes(): List<String> = this.data?.txs?.map { it.hash() } ?: emptyList()
@@ -66,12 +72,12 @@ fun Block.dateTime() = this.header?.dateTime()
 fun BlockHeader.dateTime(): OffsetDateTime? =
     runCatching { OffsetDateTime.parse(this.time, DateTimeFormatter.ISO_DATE_TIME) }.getOrNull()
 
-fun BlockResponse.txHash(index: Int): TxInfo? = this.result?.block?.txData(index)
+fun BlockResponse.txHash(index: Int): TxData? = this.result?.block?.txData(index)
 
-fun BlockResultsResponse.txEvents(blockDate: OffsetDateTime, txHash: (index: Int) -> TxInfo): List<TxEvent> =
+fun BlockResultsResponse.txEvents(blockDate: OffsetDateTime, txHash: (index: Int) -> TxData): List<TxEvent> =
     this.result.txEvents(blockDate, txHash)
 
-fun BlockResultsResponseResult.txEvents(blockDateTime: OffsetDateTime?, txHash: (Int) -> TxInfo?): List<TxEvent> =
+fun BlockResultsResponseResult.txEvents(blockDateTime: OffsetDateTime?, txHash: (Int) -> TxData?): List<TxEvent> =
     run {
         txsResults?.flatMapIndexed { index: Int, tx: BlockResultsResponseResultTxsResults ->
             tx.events
@@ -91,7 +97,7 @@ fun BlockResultsResponseResult.blockEvents(blockDateTime: OffsetDateTime?): List
     }
 } ?: emptyList()
 
-fun BlockResultsResponseResult.txErroredEvents(blockDateTime: OffsetDateTime?, txHash: (Int) -> TxInfo?): List<TxError> =
+fun BlockResultsResponseResult.txErroredEvents(blockDateTime: OffsetDateTime?, txHash: (Int) -> TxData?): List<TxError> =
     run {
         txsResults?.mapIndexed { index: Int, tx: BlockResultsResponseResultTxsResults ->
             if (tx.code?.toInt() != 0) {
