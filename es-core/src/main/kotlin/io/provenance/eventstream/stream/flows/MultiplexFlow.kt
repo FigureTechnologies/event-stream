@@ -1,6 +1,7 @@
 package io.provenance.eventstream.stream.flows
 
 import io.provenance.eventstream.net.NetAdapter
+import io.provenance.eventstream.stream.infrastructure.ServerException
 import io.provenance.eventstream.utils.backoff
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
@@ -132,6 +133,7 @@ internal fun <T> combinedFlow(
             is CompletionException,
             is ConnectException,
             is SocketTimeoutException,
+            is ServerException, // 502 Bad Gateway
             is SocketException -> {
                 val duration = backoff(attempt, jitter = false)
                 log.error("Reconnect attempt #$attempt; waiting ${duration.inWholeSeconds}s before trying again: $cause")
