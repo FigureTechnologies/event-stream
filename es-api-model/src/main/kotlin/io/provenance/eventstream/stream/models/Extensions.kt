@@ -45,24 +45,21 @@ fun String.hash(): String = sha256(BaseEncoding.base64().decode(this)).toHexStri
 // === Date/time methods ===============================================================================================
 
 fun Block.txData(index: Int): TxData? {
-    val tx = this.data?.txs?.get(index)
-    return if (tx != null) {
-        val decodedTxData = TxOuterClass.Tx.parseFrom(BaseEncoding.base64().decode(tx))
-        val feeData = decodedTxData.authInfo.fee
+    val tx = this.data?.txs?.get(index) ?: return null
 
-        val amount = feeData.amountList.getOrNull(0)?.amount?.toLong()
-        val denom = feeData.amountList.getOrNull(0)?.denom
+    val decodedTxData = TxOuterClass.Tx.parseFrom(BaseEncoding.base64().decode(tx))
+    val feeData = decodedTxData.authInfo.fee
 
-        val note = decodedTxData.body.memo ?: ""
+    val amount = feeData.amountList.getOrNull(0)?.amount?.toLong()
+    val denom = feeData.amountList.getOrNull(0)?.denom
 
-        TxData(
-            this.data?.txs?.get(index)?.hash(),
-            Pair(amount, denom),
-            note
-        )
-    } else {
-        null
-    }
+    val note = decodedTxData.body.memo ?: ""
+
+    return TxData(
+        this.data?.txs?.get(index)?.hash(),
+        Pair(amount, denom),
+        note
+    )
 }
 
 fun Block.txHashes(): List<String> = this.data?.txs?.map { it.hash() } ?: emptyList()
