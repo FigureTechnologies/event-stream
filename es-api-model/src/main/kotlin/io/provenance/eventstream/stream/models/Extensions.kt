@@ -79,8 +79,15 @@ fun BlockResultsResponseResult.txEvents(blockDateTime: OffsetDateTime?, txHash: 
         txsResults?.flatMapIndexed { index: Int, tx: BlockResultsResponseResultTxsResults ->
             tx.events
                 ?.filter { tx.code?.toInt() == 0 }
-                ?.map { it.toTxEvent(height, blockDateTime, txHash(index)?.txHash, txHash(index)?.fee, txHash(index)?.note) }
-                ?: emptyList()
+                ?.map { blockResultResponseEvents ->
+                    blockResultResponseEvents.toTxEvent(
+                        height,
+                        blockDateTime,
+                        txHash(index)?.txHash,
+                        txHash(index)?.fee,
+                        txHash(index)?.note
+                    )
+                } ?: emptyList()
         }
     } ?: emptyList()
 
