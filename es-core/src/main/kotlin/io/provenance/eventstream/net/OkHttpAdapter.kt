@@ -9,6 +9,7 @@ import okhttp3.OkHttpClient
 import java.net.URI
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
+import kotlin.time.ExperimentalTime
 import kotlin.time.toJavaDuration
 
 private val SSL_SCHEMES = setOf("grpcs", "https", "tcp+tls", "wss")
@@ -17,6 +18,7 @@ private val NON_SSL_SCHEMES = setOf("grpc", "http", "tcp", "ws")
 /**
  * Create a default [OkHttpClient] to use within the event stream.
  */
+@OptIn(ExperimentalTime::class)
 fun defaultOkHttpClient(pingInterval: Duration = 10.seconds, readInterval: Duration = 60.seconds) =
     OkHttpClient.Builder()
         .pingInterval(pingInterval.toJavaDuration())

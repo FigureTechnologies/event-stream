@@ -7,7 +7,6 @@ import io.provenance.eventstream.stream.models.BlockEvent
 import io.provenance.eventstream.stream.models.StreamBlockImpl
 import io.provenance.eventstream.stream.models.TxEvent
 import io.provenance.eventstream.stream.models.TxError
-import io.provenance.eventstream.stream.models.TxInfo
 import io.provenance.eventstream.stream.models.EncodedBlockchainEvent
 import io.provenance.eventstream.stream.models.extensions.dateTime
 import io.provenance.eventstream.stream.models.extensions.txData
@@ -39,7 +38,7 @@ suspend fun queryBlock(
         val blockDatetime = header?.dateTime()
         val blockResponse = fetcher.getBlockResults(header!!.height)!!.result
         val blockEvents: List<BlockEvent> = blockResponse.blockEvents(blockDatetime)
-        val txEvents: List<TxEvent> = blockResponse.txEvents(blockDatetime) { index: Int -> txData(index) ?: TxInfo() }
+        val txEvents: List<TxEvent> = blockResponse.txEvents(blockDatetime) { index: Int -> txData(index) }
         val txErrors: List<TxError> = blockResponse.txErroredEvents(blockDatetime) { index: Int -> block.txData(index) }
         val streamBlock = StreamBlockImpl(this, blockEvents, blockResponse.txsResults, txEvents, txErrors, historical)
         val matchBlock = matchesBlockEvent(blockEvents, options)
