@@ -22,7 +22,7 @@ dependencies {
     implementation(libs.moshi.kotlin.codegen)
 
     testFixturesImplementation("io.reactivex.rxjava2:rxjava:2.2.21")
-    testFixturesImplementation("org.reactivestreams:reactive-streams:1.0.3")
+    testFixturesImplementation("org.reactivestreams:reactive-streams:1.0.4")
     testFixturesImplementation("com.tinder.scarlet:scarlet-core-internal:0.1.12")
     testFixturesImplementation(libs.bundles.logback)
 
