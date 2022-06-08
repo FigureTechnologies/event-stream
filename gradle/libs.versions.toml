@@ -22,7 +22,7 @@ scarlet = "0.1.12"
 
 pluginProtobuf = "0.18.7"
 pluginNexusPublishPlugin = "1.1.0"
-pluginOpenAPI = "5.4.0"
+pluginOpenAPI = "6.0.0"
 
 [libraries]
 arrow = { module = "io.arrow-kt:arrow-core", version.ref = "arrow" }
