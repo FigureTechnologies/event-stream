@@ -52,7 +52,7 @@ jobs:
           OSSRH_PASSWORD: ${{ secrets.OSSRH_PASSWORD }}
         if: github.event_name == 'release'
       - name: Generate Coverage Report
-        run: ./gradlew testCodeCoverageReport
+        run: ./gradlew jacocoAggregateReport
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v3.1.0
         with:

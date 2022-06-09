@@ -21,7 +21,7 @@ jobs:
       - name: Build
         run: ./gradlew clean build --refresh-dependencies --parallel
       - name: Generate Coverage Report
-        run: ./gradlew testCodeCoverageReport
+        run: ./gradlew jacocoAggregateReport
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v3.1.0
         with:
