@@ -20,7 +20,9 @@ jobs:
           distribution: 'adopt'
       - name: Build
         run: ./gradlew clean build --refresh-dependencies --parallel
+      - name: Generate Coverage Report
+        run: ./gradlew jacocoAggregateReport
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v3.1.0
         with:
-          directory: build/reports/jacoco/jacocoAggregateReport/*.xml
+          file: ./build/reports/jacoco/jacocoAggregateReport/jacocoAggregateReport.xml
