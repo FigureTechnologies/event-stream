@@ -25,4 +25,4 @@ jobs:
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v3.1.0
         with:
-          directory: build/reports/jacoco/jacocoAggregateReport/*.xml
+          file: ./build/reports/jacoco/jacocoAggregateReport/jacocoAggregateReport.xml
