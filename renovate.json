@@ -2,6 +2,9 @@
   "extends": [
     "config:base"
   ],
+  "gradle": {
+    "fileMatch": ["^Versions\\.kt$"]
+  },
   "packageRules": [
     {
       "matchDatasources": ["docker"],
@@ -9,11 +12,6 @@
         "openjdk"
       ],
       "allowedVersions": "11"
-    },
-    {
-      "gradle": {
-        "fileMatch": ["^Versions\\.kt$"]
-      }
     },
     {
       "matchPackageNames": [
