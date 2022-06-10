@@ -3,7 +3,7 @@
     "config:base"
   ],
   "gradle": {
-    "fileMatch": ["^Versions\\.kt$"]
+    "fileMatch": ["^buildSrc/src/main/kotlin/Versions\\.kt$"]
   },
   "packageRules": [
     {
