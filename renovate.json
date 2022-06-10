@@ -11,6 +11,11 @@
       "allowedVersions": "11"
     },
     {
+      "gradle": {
+        "fileMatch": ["^Versions\\.kt$"]
+      }
+    },
+    {
       "matchPackageNames": [
         "openapi-generator"
       ],
