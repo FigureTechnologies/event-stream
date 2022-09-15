@@ -25,7 +25,7 @@ dependencies {
 
 application {
     applicationName = "event-stream"
-    mainClass.set("io.provenance.eventstream.MainKt")
+    mainClass.set("MainKt")
 }
 
 tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
