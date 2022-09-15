@@ -1,5 +1,3 @@
-package io.provenance.eventstream
-
 // linting is giving a hard time on these kotlinx packages that cannot be auto-corrected,
 // IntelliJ is also giving linting errors if the imports are changed to individual imports.
 // ktlint-disable no-wildcard-imports

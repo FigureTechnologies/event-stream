@@ -10,16 +10,16 @@ This is a flow based project to create an event listener on the [Provenance](htt
 [![Code Coverage][code-coverage-badge]][code-coverage-report]
 [![LOC][loc-badge]][loc-report]
 
-[license-badge]: https://img.shields.io/github/license/provenance-io/event-stream.svg
-[license-url]: https://github.com/provenance-io/event-stream/blob/main/LICENSE
-[maven-badge]: https://maven-badges.herokuapp.com/maven-central/io.provenance.eventstream/es-core/badge.svg
-[maven-url]: https://maven-badges.herokuapp.com/maven-central/io.provenance.eventstream/es-core
-[release-badge]: https://img.shields.io/github/tag/provenance-io/event-stream.svg
-[release-latest]: https://github.com/provenance-io/event-stream/releases/latest
-[code-coverage-badge]: https://codecov.io/gh/provenance-io/event-stream/branch/main/graph/badge.svg
-[code-coverage-report]: https://app.codecov.io/gh/provenance-io/event-stream
-[loc-badge]: https://tokei.rs/b1/github/provenance-io/event-stream
-[loc-report]: https://github.com/provenance-io/event-stream
+[license-badge]: https://img.shields.io/github/license/FigureTechnologies/event-stream.svg
+[license-url]: https://github.com/FigureTechnologies/event-stream/blob/main/LICENSE
+[maven-badge]: https://maven-badges.herokuapp.com/maven-central/tech.figure.eventstream/es-core/badge.svg
+[maven-url]: https://maven-badges.herokuapp.com/maven-central/tech.figure.eventstream/es-core
+[release-badge]: https://img.shields.io/github/tag/FigureTechnologies/event-stream.svg
+[release-latest]: https://github.com/FigureTechnologies/event-stream/releases/latest
+[code-coverage-badge]: https://codecov.io/gh/FigureTechnologies/event-stream/branch/main/graph/badge.svg
+[code-coverage-report]: https://app.codecov.io/gh/FigureTechnologies/event-stream
+[loc-badge]: https://tokei.rs/b1/github/FigureTechnologies/event-stream
+[loc-report]: https://github.com/FigureTechnologies/event-stream
 
 
 ## Installation
@@ -29,17 +29,17 @@ This is a flow based project to create an event listener on the [Provenance](htt
 ```xml
 <dependencies>
     <dependency>
-        <groupId>io.provenance.eventstream</groupId>
+        <groupId>tech.figure.eventstream</groupId>
         <artifactId>es-core</artifactId>
         <version>${version}</version>
     </dependency>
     <dependency>
-        <groupId>io.provenance.eventstream</groupId>
+        <groupId>tech.figure.eventstream</groupId>
         <artifactId>es-api</artifactId>
         <version>${version}</version>
     </dependency>
     <dependency>
-        <groupId>io.provenance.eventstream</groupId>
+        <groupId>tech.figure.eventstream</groupId>
         <artifactId>es-api-model</artifactId>
         <version>${version}</version>
     </dependency>
@@ -53,9 +53,9 @@ This is a flow based project to create an event listener on the [Provenance](htt
 In `build.gradle`:
 
 ```groovy
-implementation 'io.provenance.eventstream:es-core:${version}'
-implementation 'io.provenance.eventstream:es-api:${version}'
-implementation 'io.provenance.eventstream:es-api-model:${version}'
+implementation 'tech.figure.eventstream:es-core:${version}'
+implementation 'tech.figure.eventstream:es-api:${version}'
+implementation 'tech.figure.eventstream:es-api-model:${version}'
 ```
 
 #### Kotlin
@@ -63,9 +63,9 @@ implementation 'io.provenance.eventstream:es-api-model:${version}'
 In `build.gradle.kts`:
 
 ```kotlin
-implementation("io.provenance.eventstream:es-core:${version}")
-implementation("io.provenance.eventstream:es-api:${version}")
-implementation("io.provenance.eventstream:es-api-model:${version}")
+implementation("tech.figure.eventstream:es-core:${version}")
+implementation("tech.figure.eventstream:es-api:${version}")
+implementation("tech.figure.eventstream:es-api-model:${version}")
 ```
 
 ## Setup

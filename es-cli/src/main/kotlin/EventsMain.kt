@@ -1,5 +1,3 @@
-package tech.figure.eventstream
-
 import tech.figure.eventstream.decoder.moshiDecoderAdapter
 import tech.figure.eventstream.net.okHttpNetAdapter
 import tech.figure.eventstream.stream.flows.blockDataFlow
