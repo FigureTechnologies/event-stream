@@ -7,13 +7,14 @@ import tech.figure.eventstream.stream.models.TxError
 import tech.figure.eventstream.stream.models.TxEvent
 import io.provenance.kafka.coroutine.AckedConsumerRecord
 import io.provenance.kafka.coroutine.UnAckedConsumerRecord
+import tech.figure.eventstream.stream.models.BlockEvent
 
 class KafkaStreamBlock(
     private val record: UnAckedConsumerRecord<ByteArray, ByteArray>,
 ) : StreamBlock {
     private val streamBlock: StreamBlock by lazy { record.value.toStreamBlock()!! }
     override val block: Block by lazy { streamBlock.block }
-    override val blockEvents: List<tech.figure.eventstream.stream.models.BlockEvent> by lazy { streamBlock.blockEvents }
+    override val blockEvents: List<BlockEvent> by lazy { streamBlock.blockEvents }
     override val txEvents: List<TxEvent> by lazy { streamBlock.txEvents }
     override val historical: Boolean by lazy { streamBlock.historical }
     override val blockResult: List<BlockResultsResponseResultTxsResults>? by lazy { streamBlock.blockResult }

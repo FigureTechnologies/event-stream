@@ -13,6 +13,7 @@ import tech.figure.eventstream.defaultBackoffStrategy
 import tech.figure.eventstream.defaultLifecycle
 import tech.figure.eventstream.defaultWebSocketChannel
 import tech.figure.eventstream.net.NetAdapter
+import tech.figure.eventstream.stream.NewBlockResult
 import tech.figure.eventstream.stream.WebSocketChannel
 import tech.figure.eventstream.stream.WebSocketService
 import tech.figure.eventstream.stream.clients.BlockData
@@ -23,7 +24,7 @@ import kotlin.time.Duration
 /**
  * Convert a [Flow] of type [MessageType.NewBlockHeader] into a flow of [BlockHeader]
  */
-fun Flow<MessageType.NewBlock>.mapLiveBlockResult(): Flow<tech.figure.eventstream.stream.NewBlockResult> = map { it.block }
+fun Flow<MessageType.NewBlock>.mapLiveBlockResult(): Flow<NewBlockResult> = map { it.block }
 
 /**
  * Convert a [Flow] of type [MessageType.NewBlock] into a [Flow] of [Block].

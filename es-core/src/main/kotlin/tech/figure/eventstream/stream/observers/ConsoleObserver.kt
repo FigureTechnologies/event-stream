@@ -5,6 +5,7 @@ import tech.figure.eventstream.stream.models.Event
 import mu.KotlinLogging
 import tech.figure.eventstream.decodeBase64
 import tech.figure.eventstream.isAsciiPrintable
+import tech.figure.eventstream.stream.models.BlockEvent
 import tech.figure.eventstream.stream.models.StreamBlock
 import tech.figure.eventstream.stream.models.StreamBlockImpl
 import tech.figure.eventstream.stream.models.TxEvent
@@ -24,7 +25,7 @@ class ConsoleOutput(private val verbose: Boolean, private val nth: Int) : BlockS
         it.attributes.forEach(logAttribute)
     }
 
-    private val logBlockEvent: (tech.figure.eventstream.stream.models.BlockEvent) -> Unit = {
+    private val logBlockEvent: (BlockEvent) -> Unit = {
         log.info { "  Block-Event: ${it.eventType}" }
         it.attributes.forEach(logAttribute)
     }

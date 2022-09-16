@@ -3,6 +3,7 @@ package tech.figure.eventstream.stream.transformers
 import tech.figure.eventstream.stream.models.Block
 import tech.figure.eventstream.config.Options
 import tech.figure.eventstream.stream.clients.TendermintBlockFetcher
+import tech.figure.eventstream.stream.models.BlockEvent
 import tech.figure.eventstream.stream.models.StreamBlockImpl
 import tech.figure.eventstream.stream.models.TxEvent
 import tech.figure.eventstream.stream.models.TxError
@@ -36,7 +37,7 @@ suspend fun queryBlock(
     return block.run {
         val blockDatetime = header?.dateTime()
         val blockResponse = fetcher.getBlockResults(header!!.height)!!.result
-        val blockEvents: List<tech.figure.eventstream.stream.models.BlockEvent> = blockResponse.blockEvents(blockDatetime)
+        val blockEvents: List<BlockEvent> = blockResponse.blockEvents(blockDatetime)
         val txEvents: List<TxEvent> = blockResponse.txEvents(blockDatetime) { index: Int -> txData(index) }
         val txErrors: List<TxError> = blockResponse.txErroredEvents(blockDatetime) { index: Int -> block.txData(index) }
         val streamBlock = StreamBlockImpl(this, blockEvents, blockResponse.txsResults, txEvents, txErrors, historical)

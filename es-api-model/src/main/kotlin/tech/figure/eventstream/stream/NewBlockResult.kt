@@ -13,7 +13,7 @@ import tech.figure.eventstream.stream.models.ConsensusParamsValidator
 @JsonClass(generateAdapter = true)
 data class NewBlockResult(
     val query: String?,
-    val data: tech.figure.eventstream.stream.NewBlockEventResultData,
+    val data: NewBlockEventResultData,
     val events: Map<String, List<String>>?,
 )
 
@@ -23,7 +23,7 @@ data class NewBlockResult(
 @JsonClass(generateAdapter = true)
 data class NewBlockEventResultData(
     val type: String,
-    val value: tech.figure.eventstream.stream.NewBlockEventResultValue
+    val value: NewBlockEventResultValue
 )
 
 /**
@@ -40,8 +40,8 @@ data class NewBlockEventResultBeginBlock(
 @JsonClass(generateAdapter = true)
 data class NewBlockEventResultValue(
     val block: Block,
-    val result_begin_block: tech.figure.eventstream.stream.NewBlockEventResultBeginBlock,
-    val result_end_block: tech.figure.eventstream.stream.NewBlockEventResultEndBlock?,
+    val result_begin_block: NewBlockEventResultBeginBlock,
+    val result_end_block: NewBlockEventResultEndBlock?,
 )
 
 @JsonClass(generateAdapter = true)

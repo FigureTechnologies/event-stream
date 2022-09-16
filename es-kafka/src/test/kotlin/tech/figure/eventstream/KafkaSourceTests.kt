@@ -26,6 +26,7 @@ import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.assertThrows
+import tech.figure.eventstream.stream.models.BlockEvent
 import tech.figure.eventstream.stream.models.BlockResponse
 import tech.figure.eventstream.stream.models.StreamBlockImpl
 import tech.figure.eventstream.utils.Defaults.moshi
@@ -61,7 +62,7 @@ class KafkaSourceTests : TestBase() {
         }
         blockResultsResponses.forEach { k, v ->
             val blockEvents = v.result.beginBlockEvents!!.map {
-                tech.figure.eventstream.stream.models.BlockEvent(
+                BlockEvent(
                     v.result.height,
                     OffsetDateTime.now(),
                     it.type!!,
