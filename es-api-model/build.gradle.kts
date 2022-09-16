@@ -54,8 +54,8 @@ tasks.register<org.openapitools.generator.gradle.plugin.tasks.GenerateTask>("gen
     validateSpec.set(true)
     inputSpec.set(tendermintOpenApiYaml)
     outputDir.set("$buildDir/generated")
-    packageName.set("io.provenance.eventstream.stream")
-    modelPackage.set("io.provenance.eventstream.stream.models")
+    packageName.set("tech.figure.eventstream.stream")
+    modelPackage.set("tech.figure.eventstream.stream.models")
     library.set("jvm-okhttp4")
     configOptions.set(
         mapOf(

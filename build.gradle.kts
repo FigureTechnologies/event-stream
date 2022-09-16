@@ -1,7 +1,3 @@
-import org.gradle.api.tasks.testing.logging.TestExceptionFormat
-import org.gradle.api.tasks.testing.logging.TestLogEvent
-
-
 plugins {
     id("with-publish-maven-central")
     jacoco
@@ -27,8 +23,8 @@ task<JacocoReport>("jacocoAggregateReport") {
     afterEvaluate {
         classDirectories.setFrom(files(classDirectories.files.map {
             fileTree(it).exclude(
-                "io/provenance/eventstream/stream/models/*",
-                "io/provenance/eventstream/stream/apis/*",
+                "tech/figure/eventstream/stream/models/*",
+                "tech/figure/eventstream/stream/apis/*",
             )})
         )
     }

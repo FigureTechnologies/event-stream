@@ -25,5 +25,12 @@ dependencies {
 
 application {
     applicationName = "event-stream"
-    mainClass.set("io.provenance.eventstream.MainKt")
+    mainClass.set("MainKt")
+}
+
+tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
+    kotlinOptions {
+        freeCompilerArgs = listOf("-Xjsr305=strict", "-Xopt-in=kotlin.RequiresOptIn", "-Xopt-in=kotlin.time.ExperimentalTime")
+        jvmTarget = "11"
+    }
 }
