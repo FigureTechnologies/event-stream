@@ -44,13 +44,13 @@ fun main() = runBlocking {
     // This will combine the historical flow and live flow to create an ordered stream of BlockHeaders.
     // Example is not collected.
     val current = netAdapter.rpcAdapter.getCurrentHeight()!!
-    blockHeaderFlow(netAdapter, decoderAdapter, from = current - 1000, to = current)
+    blockHeaderFlow(netAdapter, decoderAdapter, from = current - 1000, to = current, current)
         .onEach { println("recv:${it.height}") }
 
     // Use metadataFlow to fetch from:(current - 10000) to:(current).
     // This will combine the historical flow and live flow to create an ordered stream of BlockHeaders.
     // Example is not collected.
-    blockDataFlow(netAdapter, decoderAdapter, from = current - 1000, to = current)
+    blockDataFlow(netAdapter, decoderAdapter, from = current - 1000, to = current, current)
         .onEach { println("recv:$it") }
 
     // Example is not collected.
