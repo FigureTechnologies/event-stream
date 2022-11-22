@@ -1,6 +1,7 @@
 package tech.figure.eventstream.stream.flows
 
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.runBlocking
 import tech.figure.eventstream.decoder.DecoderAdapter
 import tech.figure.eventstream.net.NetAdapter
 import tech.figure.eventstream.stream.clients.BlockData
@@ -43,14 +44,20 @@ fun blockDataFlow(
     decoderAdapter: DecoderAdapter,
     from: Long? = null,
     to: Long? = null,
-    currentHeight: Long
-): Flow<BlockData> = blockDataFlow(
-    netAdapter,
-    from,
-    to,
-    historicalFlow = { f, t -> historicalBlockDataFlow(netAdapter, f, t, currentHeight = currentHeight) },
-    liveFlow = { wsBlockDataFlow(netAdapter, decoderAdapter, currentHeight = currentHeight) },
-)
+): Flow<BlockData> {
+    var currentHeight = 0L
+    runBlocking {
+        currentHeight = netAdapter.rpcAdapter.getCurrentHeight()!!
+    }
+
+    return blockDataFlow(
+        netAdapter,
+        from,
+        to,
+        historicalFlow = { f, t -> historicalBlockDataFlow(netAdapter, f, t, currentHeight = currentHeight) },
+        liveFlow = { wsBlockDataFlow(netAdapter, decoderAdapter, currentHeight = currentHeight) },
+    )
+}
 
 /**
  * ----
