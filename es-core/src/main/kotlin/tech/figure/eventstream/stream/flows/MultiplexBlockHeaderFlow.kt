@@ -43,13 +43,14 @@ fun blockHeaderFlow(
     netAdapter: NetAdapter,
     decoderAdapter: DecoderAdapter,
     from: Long? = null,
-    to: Long? = null
+    to: Long? = null,
+    currentHeight: Long
 ): Flow<BlockHeader> = blockHeaderFlow(
     netAdapter,
     from,
     to,
-    historicalFlow = { f, t -> historicalBlockHeaderFlow(netAdapter, f, t) },
-    liveFlow = { wsBlockHeaderFlow(netAdapter, decoderAdapter) },
+    historicalFlow = { f, t -> historicalBlockHeaderFlow(netAdapter, f, t, currentHeight = currentHeight) },
+    liveFlow = { wsBlockHeaderFlow(netAdapter, decoderAdapter, currentHeight = currentHeight) },
 )
 
 /**

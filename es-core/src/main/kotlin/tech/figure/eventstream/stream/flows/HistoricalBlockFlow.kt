@@ -28,12 +28,13 @@ fun historicalBlockDataFlow(
     from: Long = 1,
     to: Long? = null,
     concurrency: Int = DEFAULT_CONCURRENCY,
-    context: CoroutineContext = EmptyCoroutineContext
+    context: CoroutineContext = EmptyCoroutineContext,
+    currentHeight: Long? = null
 ): Flow<BlockData> = flow {
     suspend fun currentHeight() =
         netAdapter.rpcAdapter.getCurrentHeight() ?: throw RuntimeException("cannot fetch current height")
 
-    val realTo = to ?: currentHeight()
+    val realTo = currentHeight ?: (to ?: currentHeight())
     require(from <= realTo) { "from:$from must be less than to:$realTo" }
 
     emitAll((from..realTo).toList().toBlockData(netAdapter, concurrency, context))

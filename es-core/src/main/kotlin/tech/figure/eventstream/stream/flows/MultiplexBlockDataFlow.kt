@@ -42,13 +42,14 @@ fun blockDataFlow(
     netAdapter: NetAdapter,
     decoderAdapter: DecoderAdapter,
     from: Long? = null,
-    to: Long? = null
+    to: Long? = null,
+    currentHeight: Long
 ): Flow<BlockData> = blockDataFlow(
     netAdapter,
     from,
     to,
-    historicalFlow = { f, t -> historicalBlockDataFlow(netAdapter, f, t) },
-    liveFlow = { wsBlockDataFlow(netAdapter, decoderAdapter) },
+    historicalFlow = { f, t -> historicalBlockDataFlow(netAdapter, f, t, currentHeight = currentHeight) },
+    liveFlow = { wsBlockDataFlow(netAdapter, decoderAdapter, currentHeight = currentHeight) },
 )
 
 /**

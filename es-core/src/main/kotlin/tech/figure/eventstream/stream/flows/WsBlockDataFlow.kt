@@ -54,10 +54,11 @@ fun wsBlockDataFlow(
     lifecycle: LifecycleRegistry = defaultLifecycle(throttle),
     channel: WebSocketChannel = defaultWebSocketChannel(netAdapter.wsAdapter, decoderAdapter.wsDecoder, throttle, lifecycle),
     wss: WebSocketService = channel.withLifecycle(lifecycle),
+    currentHeight: Long? = null
 ): Flow<BlockData> {
     return nodeEventStream<MessageType.NewBlock>(netAdapter, decoderAdapter, throttle, lifecycle, backoffStrategy, channel, wss)
         .mapBlockData(netAdapter)
-        .contiguous(netAdapter.rpcAdapter::getBlocks) { it.height }
+        .contiguous(fallback = netAdapter.rpcAdapter::getBlocks, current = currentHeight) { it.height }
 }
 
 /**
@@ -81,16 +82,16 @@ fun Flow<MessageType.NewBlock>.mapBlockData(netAdapter: NetAdapter): Flow<BlockD
  *     listOf(1, 5).asFlow().contiguous({ it }) { it }.toList() == listOf(1, 2, 3, 4, 5)
  * ```
  */
-internal fun <T> Flow<T>.contiguous(fallback: suspend (ids: List<Long>) -> Flow<T>, indexer: (T) -> Long): Flow<T> {
-    var current: Long? = null
+internal fun <T> Flow<T>.contiguous(current: Long? = null, fallback: suspend (ids: List<Long>) -> Flow<T>, indexer: (T) -> Long): Flow<T> {
+    var currentHeight = current
     return transform { item ->
         val index = indexer(item)
-        if (current != null && current!!.inc() < index) {
+        if (currentHeight != null && currentHeight!!.inc() < index) {
             // Uh-oh! Found a gap. Fill it in. Don't use fallback for current item.
-            val missingIds = ((current!!.inc()) until index).toList()
+            val missingIds = ((currentHeight!!.inc()) until index).toList()
             emitAll(fallback(missingIds))
         }
-        current = index
+        currentHeight = index
         emit(item)
     }
 }

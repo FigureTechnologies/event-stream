@@ -39,9 +39,10 @@ fun historicalBlockHeaderFlow(
     from: Long = 1,
     to: Long? = null,
     concurrency: Int = DEFAULT_CONCURRENCY,
-    context: CoroutineContext = EmptyCoroutineContext
+    context: CoroutineContext = EmptyCoroutineContext,
+    currentHeight: Long? = null
 ): Flow<BlockHeader> =
-    historicalBlockMetaFlow(netAdapter, from, to, concurrency, context).mapHistoricalHeaderData()
+    historicalBlockMetaFlow(netAdapter, from, to, concurrency, context, currentHeight = currentHeight).mapHistoricalHeaderData()
 
 /**
  * Create a [Flow] of historical [BlockMeta] from a node.
@@ -58,12 +59,13 @@ internal fun historicalBlockMetaFlow(
     from: Long = 1,
     to: Long? = null,
     concurrency: Int = DEFAULT_CONCURRENCY,
-    context: CoroutineContext = EmptyCoroutineContext
+    context: CoroutineContext = EmptyCoroutineContext,
+    currentHeight: Long? = null
 ): Flow<BlockMeta> = flow {
     suspend fun currentHeight() =
         netAdapter.rpcAdapter.getCurrentHeight() ?: throw RuntimeException("cannot fetch current height")
 
-    val realTo = to ?: currentHeight()
+    val realTo = currentHeight ?: (to ?: currentHeight())
     require(from <= realTo) { "from:$from must be less than to:$realTo" }
 
     emitAll((from..realTo).toList().toBlockMeta(netAdapter, concurrency, context))
