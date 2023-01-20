@@ -33,100 +33,9 @@ val log = KotlinLogging.logger {}
 internal fun currentHeightFn(netAdapter: NetAdapter): suspend () -> Long? =
     { netAdapter.rpcAdapter.getCurrentHeight() }
 
-/**
- *
- */
-@OptIn(ExperimentalCoroutinesApi::class, ExperimentalTime::class)
-internal fun <T> combinedFlow(
-    getCurrentHeight: suspend () -> Long?,
-    from: Long? = null,
-    to: Long? = null,
-    getHeight: (T) -> Long,
-    historicalFlow: (from: Long, to: Long) -> Flow<T>,
-    liveFlow: () -> Flow<T>,
-): Flow<T> = channelFlow<T> {
-    val channel = Channel<T>(capacity = 10_000) // buffer for: 10_000 * 6s block time / 60s/m / 60m/h == 16 2/3 hrs buffer time.
-    val liveJob = async(coroutineContext) {
-        liveFlow()
-            .catch { channel.close(it) }
-            .buffer(UNLIMITED)
-            .collect { channel.send(it) }
-    }
-
-    val current = getCurrentHeight()!!
-
-    // Determine if we need live data.
-    // ie: if to is null, or more than current,
-    val needLive = to == null || to > current
-
-    // Determine if we need historical data.
-    // ie: if from is null, or less than current, then we do.
-    val needHist = from == null || from < current
-    log.debug { "from:$from to:$to current:$current needHist:$needHist needLive:$needLive" }
-
-    // Cancel live job and channel if unneeded.
-    if (!needLive) {
-        liveJob.cancel()
-        channel.close()
-    }
-
-    // Process historical stream if needed.
-    if (needHist) {
-        val historyFrom = from ?: 1
-        log.debug { "processing historical flow from:$historyFrom to:$current" }
-        historicalFlow(historyFrom, current).collect {
-            log.trace { "sending historical: ${getHeight(it)}" }
-            send(it)
-            getHeight(it).also { h ->
-                if (to != null && h >= to) {
-                    close()
-                }
-            }
-        }
-    }
-
-    // Live flow. Skip any dupe blocks.
-    if (needLive) {
-        log.debug { "processing live flow to:$to" }
-
-        // Continue receiving everything else live.
-        // Drop anything between current head and the last fetched history record.
-        val lastSeen = AtomicLong(0)
-        channel.receiveAsFlow().collect { block ->
-            log.trace { "got pending block ${getHeight(block)}" }
-            send(block)
-            getHeight(block).also { h ->
-                lastSeen.set(h)
-                if (to != null && h >= to) {
-                    close()
-                }
-            }
-        }
-
-        while (!channel.isClosedForReceive) {
-            val block = channel.receiveCatching().getOrThrow()
-            val height = getHeight(block)
-
-            log.trace { "onReceive:$height" }
-
-            // Skip if we have seen it already.
-            if (height <= lastSeen.get()) {
-                log.trace { "already seen $height, skipping" }
-                return@channelFlow
-            }
-
-            send(block)
-            getHeight(block).also { h ->
-                lastSeen.set(h)
-                if (to != null && h >= to) {
-                    close()
-                }
-            }
-        }
-    }
-}
-    .cancellable()
-    .retryWhen { cause: Throwable, attempt: Long ->
+@OptIn(ExperimentalTime::class)
+internal fun shouldRetryFn(): suspend (Throwable, Long) -> Boolean =
+    { cause, attempt ->
         log.warn("flow::error; recovering Flow (attempt ${attempt + 1})")
         when (cause) {
             is EOFException,
@@ -143,3 +52,107 @@ internal fun <T> combinedFlow(
             else -> false
         }
     }
+
+/**
+ *
+ */
+@OptIn(ExperimentalCoroutinesApi::class)
+internal fun <T> combinedFlow(
+    getCurrentHeight: suspend () -> Long?,
+    from: Long? = null,
+    to: Long? = null,
+    getHeight: (T) -> Long,
+    historicalFlow: (from: Long, to: Long) -> Flow<T>,
+    liveFlow: () -> Flow<T>,
+    shouldRetry: suspend (cause: Throwable, attempt: Long) -> Boolean,
+): Flow<T> {
+    // track recovery point if flow is restarted
+    var currentFrom = from
+
+    return channelFlow<T> {
+        val channel = Channel<T>(capacity = 10_000) // buffer for: 10_000 * 6s block time / 60s/m / 60m/h == 16 2/3 hrs buffer time.
+        val liveJob = async(coroutineContext) {
+            liveFlow()
+                .catch { channel.close(it) }
+                .buffer(UNLIMITED)
+                .collect { channel.send(it) }
+        }
+
+        val current = getCurrentHeight()!!
+
+        // Determine if we need live data.
+        // ie: if to is null, or more than current,
+        val needLive = to == null || to > current
+
+        // Determine if we need historical data.
+        // ie: if from is null, or less than current, then we do.
+        val needHist = currentFrom.let { it == null || it < current }
+        log.debug { "from:$currentFrom to:$to current:$current needHist:$needHist needLive:$needLive" }
+
+        // Cancel live job and channel if unneeded.
+        if (!needLive) {
+            liveJob.cancel()
+            channel.close()
+        }
+
+        // Process historical stream if needed.
+        if (needHist) {
+            val historyFrom = currentFrom ?: 1
+            log.debug { "processing historical flow from:$historyFrom to:$current" }
+            historicalFlow(historyFrom, current).collect {
+                log.trace { "sending historical: ${getHeight(it)}" }
+                send(it)
+                getHeight(it).also { h ->
+                    // update recovery point
+                    currentFrom = h
+
+                    if (to != null && h >= to) {
+                        close()
+                    }
+                }
+            }
+        }
+
+        // Live flow. Skip any dupe blocks.
+        if (needLive) {
+            log.debug { "processing live flow to:$to" }
+
+            // Continue receiving everything else live.
+            // Drop anything between current head and the last fetched history record.
+            val lastSeen = AtomicLong(0)
+            channel.receiveAsFlow().collect { block ->
+                log.trace { "got pending block ${getHeight(block)}" }
+                send(block)
+                getHeight(block).also { h ->
+                    lastSeen.set(h)
+                    if (to != null && h >= to) {
+                        close()
+                    }
+                }
+            }
+
+            while (!channel.isClosedForReceive) {
+                val block = channel.receiveCatching().getOrThrow()
+                val height = getHeight(block)
+
+                log.trace { "onReceive:$height" }
+
+                // Skip if we have seen it already.
+                if (height <= lastSeen.get()) {
+                    log.trace { "already seen $height, skipping" }
+                    return@channelFlow
+                }
+
+                send(block)
+                getHeight(block).also { h ->
+                    lastSeen.set(h)
+                    if (to != null && h >= to) {
+                        close()
+                    }
+                }
+            }
+        }
+    }
+        .cancellable()
+        .retryWhen { cause, attempt -> shouldRetry(cause, attempt) }
+}
