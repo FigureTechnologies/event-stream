@@ -26,7 +26,8 @@ fun blockHeaderFlow(
     to: Long? = null,
     historicalFlow: (Long, Long) -> Flow<BlockHeader> = { f, t -> historicalBlockHeaderFlow(netAdapter, f, t) },
     liveFlow: () -> Flow<BlockHeader> = { pollingBlockHeaderFlow(netAdapter) },
-): Flow<BlockHeader> = combinedFlow(currentHeightFn(netAdapter), from, to, blockHeaderHeightFn, historicalFlow, liveFlow)
+    shouldRetry: suspend (Throwable, Long) -> Boolean = shouldRetryFn(),
+): Flow<BlockHeader> = combinedFlow(currentHeightFn(netAdapter), from, to, blockHeaderHeightFn, historicalFlow, liveFlow, shouldRetry)
 
 /**
  * Create a [Flow] of [BlockHeader] from height to height. Uses web sockets under the hood for live data.
