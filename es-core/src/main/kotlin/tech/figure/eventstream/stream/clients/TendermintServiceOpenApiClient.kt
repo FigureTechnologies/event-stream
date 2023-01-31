@@ -1,7 +1,9 @@
 package tech.figure.eventstream.stream.clients
 
+import okhttp3.OkHttpClient
 import tech.figure.eventstream.stream.apis.ABCIApi
 import tech.figure.eventstream.stream.apis.InfoApi
+import tech.figure.eventstream.stream.infrastructure.ApiClient
 import tech.figure.eventstream.stream.models.ABCIInfoResponse
 import tech.figure.eventstream.stream.models.BlockResponse
 import tech.figure.eventstream.stream.models.BlockResultsResponse
@@ -13,8 +15,16 @@ import tech.figure.eventstream.stream.models.BlockchainResponse
  * All requests and responses are HTTP+JSON.
  *
  * @param rpcUrlBase The base URL of the Tendermint RPC API to use when making requests.
+ * @param configureBuilderFn Builder lambda to configure the underlying [OkHttpClient]
  */
-class TendermintServiceOpenApiClient(rpcUrlBase: String) : TendermintServiceClient {
+class TendermintServiceOpenApiClient(
+    rpcUrlBase: String,
+    configureBuilderFn: OkHttpClient.Builder.() -> OkHttpClient.Builder = { this }
+) : TendermintServiceClient {
+    init {
+        ApiClient.builder.apply { configureBuilderFn() }
+    }
+
     private val abciApi = ABCIApi(rpcUrlBase)
     private val infoApi = InfoApi(rpcUrlBase)
 
