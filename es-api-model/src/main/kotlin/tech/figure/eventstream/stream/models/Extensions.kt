@@ -3,6 +3,7 @@ package tech.figure.eventstream.stream.models
 import com.google.common.io.BaseEncoding
 import cosmos.base.v1beta1.CoinOuterClass.Coin
 import cosmos.tx.v1beta1.TxOuterClass
+import java.math.BigInteger
 import java.security.MessageDigest
 import java.security.NoSuchAlgorithmException
 import java.time.OffsetDateTime
@@ -116,7 +117,8 @@ fun BlockResultsResponseResultTxsResults.toBlockError(blockHeight: Long, blockDa
         code = this.code?.toLong() ?: 0L,
         info = this.log ?: "",
         txHash = txHash ?: "",
-        fee = fee
+        fee = fee?.amount ?: BigInteger.ZERO,
+        denom = fee?.denom ?: "",
     )
 
 fun BlockResultsResponseResultEvents.toBlockEvent(blockHeight: Long, blockDateTime: OffsetDateTime?): BlockEvent =
@@ -140,7 +142,8 @@ fun BlockResultsResponseResultEvents.toTxEvent(
         txHash = txHash ?: "",
         eventType = this.type ?: "",
         attributes = this.attributes ?: emptyList(),
-        fee = fee,
+        fee = fee?.amount,
+        denom = fee?.denom,
         note = note
     )
 

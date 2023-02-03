@@ -1,6 +1,7 @@
 package tech.figure.eventstream.stream.models
 
 import com.squareup.moshi.JsonClass
+import java.math.BigInteger
 import java.time.OffsetDateTime
 
 /**
@@ -14,6 +15,7 @@ data class TxEvent(
     val txHash: String,
     override val eventType: String,
     override val attributes: List<Event>,
-    val fee: InnerCoin?,
+    val fee: BigInteger?,
+    val denom: String?,
     val note: String?
 ) : EncodedBlockchainEvent
