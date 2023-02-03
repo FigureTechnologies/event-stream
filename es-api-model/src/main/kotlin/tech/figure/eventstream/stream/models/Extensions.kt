@@ -43,9 +43,9 @@ fun Block.txData(index: Int): TxData? {
     val note = decodedTxData.body.memo ?: ""
 
     return TxData(
-        this.data?.txs?.get(index)?.hash(),
-        feeData.amountList.getOrNull(0),
-        note
+        txHash = this.data?.txs?.get(index)?.hash(),
+        fee = feeData.amountList.firstOrNull()?.toInnerCoin(),
+        note = note,
     )
 }
 
@@ -67,13 +67,15 @@ fun BlockResultsResponseResult.txEvents(blockDateTime: OffsetDateTime?, txHash: 
             tx.events
                 ?.filter { tx.code?.toInt() == 0 }
                 ?.map { blockResultResponseEvents ->
-                    blockResultResponseEvents.toTxEvent(
-                        height,
-                        blockDateTime,
-                        txHash(index)?.txHash,
-                        txHash(index)?.fee,
-                        txHash(index)?.note
-                    )
+                    txHash(index).let { txData ->
+                        blockResultResponseEvents.toTxEvent(
+                            blockHeight = height,
+                            blockDateTime = blockDateTime,
+                            txHash = txData?.txHash,
+                            fee = txData?.fee,
+                            note = txData?.note
+                        )
+                    }
                 } ?: emptyList()
         }
     } ?: emptyList()
@@ -93,14 +95,19 @@ fun BlockResultsResponseResult.txErroredEvents(blockDateTime: OffsetDateTime?, t
     run {
         txsResults?.mapIndexed { index: Int, tx: BlockResultsResponseResultTxsResults ->
             if (tx.code?.toInt() != 0) {
-                tx.toBlockError(height, blockDateTime, txHash(index)?.txHash, txHash(index)?.fee)
+                tx.toBlockError(
+                    blockHeight = height,
+                    blockDateTime = blockDateTime,
+                    txHash = txHash(index)?.txHash,
+                    fee = txHash(index)?.fee,
+                )
             } else {
                 null
             }
         }?.filterNotNull()
     } ?: emptyList()
 
-fun BlockResultsResponseResultTxsResults.toBlockError(blockHeight: Long, blockDateTime: OffsetDateTime?, txHash: String?, fee: Coin?): TxError? =
+fun BlockResultsResponseResultTxsResults.toBlockError(blockHeight: Long, blockDateTime: OffsetDateTime?, txHash: String?, fee: InnerCoin?): TxError =
     TxError(
         blockHeight = blockHeight,
         blockDateTime = blockDateTime,
@@ -122,7 +129,7 @@ fun BlockResultsResponseResultEvents.toTxEvent(
     blockHeight: Long,
     blockDateTime: OffsetDateTime?,
     txHash: String?,
-    fee: Coin?,
+    fee: InnerCoin?,
     note: String?
 ): TxEvent =
     TxEvent(
@@ -134,3 +141,5 @@ fun BlockResultsResponseResultEvents.toTxEvent(
         fee = fee,
         note = note
     )
+
+fun Coin.toInnerCoin(): InnerCoin = InnerCoin(coin = this)

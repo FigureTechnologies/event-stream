@@ -14,5 +14,5 @@ data class TxError(
     val code: Long,
     val info: String,
     val txHash: String,
-    val fee: Coin?,
+    val fee: InnerCoin?,
 )
