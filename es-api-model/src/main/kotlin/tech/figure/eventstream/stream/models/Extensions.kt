@@ -1,7 +1,9 @@
 package tech.figure.eventstream.stream.models
 
 import com.google.common.io.BaseEncoding
+import cosmos.base.v1beta1.CoinOuterClass.Coin
 import cosmos.tx.v1beta1.TxOuterClass
+import java.math.BigInteger
 import java.security.MessageDigest
 import java.security.NoSuchAlgorithmException
 import java.time.OffsetDateTime
@@ -39,15 +41,12 @@ fun Block.txData(index: Int): TxData? {
     val decodedTxData = TxOuterClass.Tx.parseFrom(BaseEncoding.base64().decode(tx))
     val feeData = decodedTxData.authInfo.fee
 
-    val amount = feeData.amountList.getOrNull(0)?.amount?.toLong()
-    val denom = feeData.amountList.getOrNull(0)?.denom
-
     val note = decodedTxData.body.memo ?: ""
 
     return TxData(
-        this.data?.txs?.get(index)?.hash(),
-        Pair(amount, denom),
-        note
+        txHash = this.data?.txs?.get(index)?.hash(),
+        fee = feeData.amountList.firstOrNull()?.toInnerCoin(),
+        note = note,
     )
 }
 
@@ -69,13 +68,15 @@ fun BlockResultsResponseResult.txEvents(blockDateTime: OffsetDateTime?, txHash: 
             tx.events
                 ?.filter { tx.code?.toInt() == 0 }
                 ?.map { blockResultResponseEvents ->
-                    blockResultResponseEvents.toTxEvent(
-                        height,
-                        blockDateTime,
-                        txHash(index)?.txHash,
-                        txHash(index)?.fee,
-                        txHash(index)?.note
-                    )
+                    txHash(index).let { txData ->
+                        blockResultResponseEvents.toTxEvent(
+                            blockHeight = height,
+                            blockDateTime = blockDateTime,
+                            txHash = txData?.txHash,
+                            fee = txData?.fee,
+                            note = txData?.note
+                        )
+                    }
                 } ?: emptyList()
         }
     } ?: emptyList()
@@ -95,22 +96,29 @@ fun BlockResultsResponseResult.txErroredEvents(blockDateTime: OffsetDateTime?, t
     run {
         txsResults?.mapIndexed { index: Int, tx: BlockResultsResponseResultTxsResults ->
             if (tx.code?.toInt() != 0) {
-                tx.toBlockError(height, blockDateTime, txHash(index)?.txHash, txHash(index)?.fee)
+                txHash(index).let { txData ->
+                    tx.toBlockError(
+                        blockHeight = height,
+                        blockDateTime = blockDateTime,
+                        txHash = txData?.txHash,
+                        fee = txData?.fee,
+                    )
+                }
             } else {
                 null
             }
         }?.filterNotNull()
     } ?: emptyList()
 
-fun BlockResultsResponseResultTxsResults.toBlockError(blockHeight: Long, blockDateTime: OffsetDateTime?, txHash: String?, fee: Pair<Long?, String?>?): TxError? =
+fun BlockResultsResponseResultTxsResults.toBlockError(blockHeight: Long, blockDateTime: OffsetDateTime?, txHash: String?, fee: InnerCoin?): TxError =
     TxError(
         blockHeight = blockHeight,
         blockDateTime = blockDateTime,
         code = this.code?.toLong() ?: 0L,
         info = this.log ?: "",
         txHash = txHash ?: "",
-        fee = fee?.first ?: 0L,
-        denom = fee?.second ?: ""
+        fee = fee?.amount ?: BigInteger.ZERO,
+        denom = fee?.denom ?: "",
     )
 
 fun BlockResultsResponseResultEvents.toBlockEvent(blockHeight: Long, blockDateTime: OffsetDateTime?): BlockEvent =
@@ -125,7 +133,7 @@ fun BlockResultsResponseResultEvents.toTxEvent(
     blockHeight: Long,
     blockDateTime: OffsetDateTime?,
     txHash: String?,
-    fee: Pair<Long?, String?>?,
+    fee: InnerCoin?,
     note: String?
 ): TxEvent =
     TxEvent(
@@ -134,7 +142,9 @@ fun BlockResultsResponseResultEvents.toTxEvent(
         txHash = txHash ?: "",
         eventType = this.type ?: "",
         attributes = this.attributes ?: emptyList(),
-        fee = fee?.first,
-        denom = fee?.second,
+        fee = fee?.amount,
+        denom = fee?.denom,
         note = note
     )
+
+fun Coin.toInnerCoin(): InnerCoin = InnerCoin(coin = this)

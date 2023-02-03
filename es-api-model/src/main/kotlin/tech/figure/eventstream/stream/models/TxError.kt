@@ -1,6 +1,7 @@
 package tech.figure.eventstream.stream.models
 
 import com.squareup.moshi.JsonClass
+import java.math.BigInteger
 import java.time.OffsetDateTime
 
 /**
@@ -13,6 +14,6 @@ data class TxError(
     val code: Long,
     val info: String,
     val txHash: String,
-    val fee: Long,
-    val denom: String
+    val fee: BigInteger,
+    val denom: String,
 )

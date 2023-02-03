@@ -40,6 +40,26 @@ tasks.test {
     finalizedBy("jacocoTestReport")
 }
 
+val javaVersion = JavaVersion.VERSION_11
+subprojects {
+    tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
+        kotlinOptions {
+            freeCompilerArgs = freeCompilerArgs + listOf("-Xjsr305=strict", "-opt-in=kotlin.RequiresOptIn", "-opt-in=kotlin.time.ExperimentalTime")
+            jvmTarget = "11"
+        }
+    }
+    tasks.withType<JavaCompile> {
+        sourceCompatibility = JavaVersion.VERSION_11.toString()
+        targetCompatibility = JavaVersion.VERSION_11.toString()
+    }
+
+    // Set the java version
+    configure<JavaPluginExtension> {
+        sourceCompatibility = JavaVersion.VERSION_11
+        targetCompatibility = JavaVersion.VERSION_11
+    }
+}
+
 dependencies {
     implementation(projects.esCore)
     implementation(projects.esKafka)

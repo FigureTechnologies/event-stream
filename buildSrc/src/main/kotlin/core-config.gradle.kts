@@ -57,27 +57,6 @@ dependencies {
     implementation("com.sksamuel.hoplite", "hoplite-yaml", Versions.Hoplite)
 }
 
-// Compilation:
-tasks.withType<KotlinCompile> {
-    kotlinOptions {
-        freeCompilerArgs = listOf("-Xjsr305=strict", "-Xopt-in=kotlin.RequiresOptIn", "-Xopt-in=kotlin.time.ExperimentalTime")
-        jvmTarget = "11"
-    }
-}
-
-tasks.withType<JavaCompile> {
-    sourceCompatibility = JavaVersion.VERSION_11.toString()
-    targetCompatibility = JavaVersion.VERSION_11.toString()
-}
-
-// Set the java version
-configure<JavaPluginExtension> {
-    sourceCompatibility = JavaVersion.VERSION_11
-    targetCompatibility = JavaVersion.VERSION_11
-}
-
-
-
 // Testing:
 tasks.test {
     useJUnitPlatform()
