@@ -95,12 +95,14 @@ fun BlockResultsResponseResult.txErroredEvents(blockDateTime: OffsetDateTime?, t
     run {
         txsResults?.mapIndexed { index: Int, tx: BlockResultsResponseResultTxsResults ->
             if (tx.code?.toInt() != 0) {
-                tx.toBlockError(
-                    blockHeight = height,
-                    blockDateTime = blockDateTime,
-                    txHash = txHash(index)?.txHash,
-                    fee = txHash(index)?.fee,
-                )
+                txHash(index).let { txData ->
+                    tx.toBlockError(
+                        blockHeight = height,
+                        blockDateTime = blockDateTime,
+                        txHash = txData?.txHash,
+                        fee = txData?.fee,
+                    )
+                }
             } else {
                 null
             }
