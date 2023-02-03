@@ -1,6 +1,7 @@
 package tech.figure.eventstream.stream.models
 
 import com.google.common.io.BaseEncoding
+import cosmos.base.v1beta1.CoinOuterClass.Coin
 import cosmos.tx.v1beta1.TxOuterClass
 import java.security.MessageDigest
 import java.security.NoSuchAlgorithmException
@@ -39,14 +40,11 @@ fun Block.txData(index: Int): TxData? {
     val decodedTxData = TxOuterClass.Tx.parseFrom(BaseEncoding.base64().decode(tx))
     val feeData = decodedTxData.authInfo.fee
 
-    val amount = feeData.amountList.getOrNull(0)?.amount?.toLong()
-    val denom = feeData.amountList.getOrNull(0)?.denom
-
     val note = decodedTxData.body.memo ?: ""
 
     return TxData(
         this.data?.txs?.get(index)?.hash(),
-        Pair(amount, denom),
+        feeData.amountList.getOrNull(0),
         note
     )
 }
@@ -102,15 +100,14 @@ fun BlockResultsResponseResult.txErroredEvents(blockDateTime: OffsetDateTime?, t
         }?.filterNotNull()
     } ?: emptyList()
 
-fun BlockResultsResponseResultTxsResults.toBlockError(blockHeight: Long, blockDateTime: OffsetDateTime?, txHash: String?, fee: Pair<Long?, String?>?): TxError? =
+fun BlockResultsResponseResultTxsResults.toBlockError(blockHeight: Long, blockDateTime: OffsetDateTime?, txHash: String?, fee: Coin?): TxError? =
     TxError(
         blockHeight = blockHeight,
         blockDateTime = blockDateTime,
         code = this.code?.toLong() ?: 0L,
         info = this.log ?: "",
         txHash = txHash ?: "",
-        fee = fee?.first ?: 0L,
-        denom = fee?.second ?: ""
+        fee = fee
     )
 
 fun BlockResultsResponseResultEvents.toBlockEvent(blockHeight: Long, blockDateTime: OffsetDateTime?): BlockEvent =
@@ -125,7 +122,7 @@ fun BlockResultsResponseResultEvents.toTxEvent(
     blockHeight: Long,
     blockDateTime: OffsetDateTime?,
     txHash: String?,
-    fee: Pair<Long?, String?>?,
+    fee: Coin?,
     note: String?
 ): TxEvent =
     TxEvent(
@@ -134,7 +131,6 @@ fun BlockResultsResponseResultEvents.toTxEvent(
         txHash = txHash ?: "",
         eventType = this.type ?: "",
         attributes = this.attributes ?: emptyList(),
-        fee = fee?.first,
-        denom = fee?.second,
+        fee = fee,
         note = note
     )
