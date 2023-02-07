@@ -5,10 +5,6 @@ plugins {
     id("core-config")
 }
 
-repositories {
-    mavenCentral()
-}
-
 dependencies {
     implementation(projects.esApi)
     implementation(projects.esApiModel)
@@ -25,5 +21,5 @@ dependencies {
 
 application {
     applicationName = "event-stream"
-    mainClass.set("io.provenance.eventstream.MainKt")
+    mainClass.set("MainKt")
 }

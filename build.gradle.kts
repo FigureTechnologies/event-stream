@@ -1,7 +1,3 @@
-import org.gradle.api.tasks.testing.logging.TestExceptionFormat
-import org.gradle.api.tasks.testing.logging.TestLogEvent
-
-
 plugins {
     id("with-publish-maven-central")
     jacoco
@@ -27,8 +23,8 @@ task<JacocoReport>("jacocoAggregateReport") {
     afterEvaluate {
         classDirectories.setFrom(files(classDirectories.files.map {
             fileTree(it).exclude(
-                "io/provenance/eventstream/stream/models/*",
-                "io/provenance/eventstream/stream/apis/*",
+                "tech/figure/eventstream/stream/models/*",
+                "tech/figure/eventstream/stream/apis/*",
             )})
         )
     }
@@ -42,6 +38,26 @@ task<JacocoReport>("jacocoAggregateReport") {
 
 tasks.test {
     finalizedBy("jacocoTestReport")
+}
+
+val javaVersion = JavaVersion.VERSION_11
+subprojects {
+    tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
+        kotlinOptions {
+            freeCompilerArgs = freeCompilerArgs + listOf("-Xjsr305=strict", "-opt-in=kotlin.RequiresOptIn", "-opt-in=kotlin.time.ExperimentalTime")
+            jvmTarget = "11"
+        }
+    }
+    tasks.withType<JavaCompile> {
+        sourceCompatibility = JavaVersion.VERSION_11.toString()
+        targetCompatibility = JavaVersion.VERSION_11.toString()
+    }
+
+    // Set the java version
+    configure<JavaPluginExtension> {
+        sourceCompatibility = JavaVersion.VERSION_11
+        targetCompatibility = JavaVersion.VERSION_11
+    }
 }
 
 dependencies {

@@ -1,5 +1,3 @@
-package io.provenance.eventstream
-
 // linting is giving a hard time on these kotlinx packages that cannot be auto-corrected,
 // IntelliJ is also giving linting errors if the imports are changed to individual imports.
 // ktlint-disable no-wildcard-imports
@@ -12,22 +10,22 @@ import com.tinder.scarlet.Scarlet
 import com.tinder.scarlet.messageadapter.moshi.MoshiMessageAdapter
 import com.tinder.scarlet.websocket.okhttp.newWebSocketFactory
 import com.tinder.streamadapter.coroutines.CoroutinesStreamAdapterFactory
-import io.provenance.blockchain.stream.api.BlockSink
-import io.provenance.blockchain.stream.api.BlockSource
-import io.provenance.eventstream.adapter.json.JSONObjectAdapter
-import io.provenance.eventstream.adapter.json.decoder.MoshiDecoderEngine
-import io.provenance.eventstream.config.Config
-import io.provenance.eventstream.stream.BlockStreamFactory
-import io.provenance.eventstream.stream.DefaultBlockStreamFactory
-import io.provenance.eventstream.stream.clients.TendermintBlockFetcher
-import io.provenance.eventstream.stream.clients.TendermintServiceOpenApiClient
-import io.provenance.eventstream.stream.infrastructure.Serializer
-import io.provenance.eventstream.stream.infrastructure.Serializer.moshi
-import io.provenance.eventstream.stream.models.StreamBlock
-import io.provenance.eventstream.stream.models.StreamBlockImpl
-import io.provenance.eventstream.stream.models.StreamBlockImplJsonAdapter
-import io.provenance.eventstream.stream.observers.consoleOutput
-import io.provenance.eventstream.stream.observers.fileOutput
+import tech.figure.blockchain.stream.api.BlockSink
+import tech.figure.blockchain.stream.api.BlockSource
+import tech.figure.eventstream.adapter.json.JSONObjectAdapter
+import tech.figure.eventstream.adapter.json.decoder.MoshiDecoderEngine
+import tech.figure.eventstream.config.Config
+import tech.figure.eventstream.BlockStreamFactory
+import tech.figure.eventstream.DefaultBlockStreamFactory
+import tech.figure.eventstream.stream.clients.TendermintBlockFetcher
+import tech.figure.eventstream.stream.clients.TendermintServiceOpenApiClient
+import tech.figure.eventstream.stream.infrastructure.Serializer
+import tech.figure.eventstream.stream.infrastructure.Serializer.moshi
+import tech.figure.eventstream.stream.models.StreamBlock
+import tech.figure.eventstream.stream.models.StreamBlockImpl
+import tech.figure.eventstream.stream.models.StreamBlockImplJsonAdapter
+import tech.figure.eventstream.stream.observers.consoleOutput
+import tech.figure.eventstream.stream.observers.fileOutput
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
