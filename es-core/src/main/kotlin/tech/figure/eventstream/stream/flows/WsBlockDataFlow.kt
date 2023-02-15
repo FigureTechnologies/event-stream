@@ -2,13 +2,8 @@ package tech.figure.eventstream.stream.flows
 
 import com.tinder.scarlet.lifecycle.LifecycleRegistry
 import com.tinder.scarlet.retry.BackoffStrategy
-import tech.figure.eventstream.stream.models.Block
-import tech.figure.eventstream.stream.models.BlockHeader
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.asFlow
-import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.transform
 import tech.figure.eventstream.common.flows.contiguous
 import tech.figure.eventstream.decoder.DecoderAdapter
 import tech.figure.eventstream.defaultBackoffStrategy
@@ -19,6 +14,8 @@ import tech.figure.eventstream.stream.NewBlockResult
 import tech.figure.eventstream.stream.WebSocketChannel
 import tech.figure.eventstream.stream.WebSocketService
 import tech.figure.eventstream.stream.clients.BlockData
+import tech.figure.eventstream.stream.models.Block
+import tech.figure.eventstream.stream.models.BlockHeader
 import tech.figure.eventstream.stream.rpc.response.MessageType
 import tech.figure.eventstream.stream.withLifecycle
 import kotlin.time.Duration

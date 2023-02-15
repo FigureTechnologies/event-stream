@@ -5,6 +5,7 @@ import com.tinder.scarlet.retry.BackoffStrategy
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.map
+import tech.figure.eventstream.common.flows.contiguous
 import tech.figure.eventstream.decoder.DecoderAdapter
 import tech.figure.eventstream.defaultBackoffStrategy
 import tech.figure.eventstream.defaultLifecycle

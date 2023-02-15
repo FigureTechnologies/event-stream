@@ -28,7 +28,7 @@ internal fun <T> grpcFlow(
     fromHeight: Long? = null,
     pollInterval: Duration = DEFAULT_POLL_INTERVAL,
     fetcher: PbClient.(Long) -> T,
-) : Flow<T> {
+): Flow<T> {
     return pollingFlow(pollInterval) { pbClient.tendermintService.getCurrentBlockHeight() }
         .distinctUntilChanged()
         .contiguous(current = fromHeight, fallback = { it.asFlow() }) { it }
