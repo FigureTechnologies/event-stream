@@ -25,8 +25,6 @@ import kotlin.time.Duration.Companion.seconds
 
 val DEFAULT_THROTTLE_PERIOD = 1.seconds
 
-private val rx = ".*?chain_id.*?(\"height\": \\d+).*?".toRegex(RegexOption.DOT_MATCHES_ALL)
-
 /**
  * Decode the flow of [Message] into a flow of [MessageType]
  *

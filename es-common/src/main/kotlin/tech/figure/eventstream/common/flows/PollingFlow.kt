@@ -1,4 +1,4 @@
-package tech.figure.eventstream.stream.flows
+package tech.figure.eventstream.common.flows
 
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
@@ -29,11 +29,11 @@ inline fun <T> pollingFlow(pollInterval: Duration, crossinline block: suspend ()
 /**
  *
  */
-internal fun <T> pollingDataFlow(
-    getHeight: suspend () -> Long,
+inline fun <T> pollingDataFlow(
+    crossinline getHeight: suspend () -> Long,
     pollInterval: Duration,
     from: Long?,
-    fetch: suspend (List<Long>) -> List<T>
+    crossinline fetch: suspend (List<Long>) -> List<T>
 ): Flow<T> = flow {
     var current = from ?: getHeight()
     pollingFlow(pollInterval) {
