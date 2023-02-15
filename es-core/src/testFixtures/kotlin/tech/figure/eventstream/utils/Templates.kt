@@ -26,7 +26,7 @@ data class Template(private val moshi: Moshi) {
      */
     fun read(filename: String, vars: Map<String, Any> = emptyMap()): String {
         val stream: InputStream = try {
-            this.javaClass.classLoader.getResourceAsStream("templates/$filename")
+            this.javaClass.classLoader.getResourceAsStream("templates/$filename") as InputStream
         } catch (e: Exception) {
             throw MissingTemplate(filename)
         }
@@ -50,7 +50,7 @@ data class Template(private val moshi: Moshi) {
         val clazz = object {}.javaClass
         val jarUrl: URL = clazz.protectionDomain.codeSource.location
         val jarPath: Path = Paths.get(jarUrl.toString().substring("file:".length))
-        val fs = FileSystems.newFileSystem(jarPath, null)
+        val fs = FileSystems.newFileSystem(jarPath, null as ClassLoader?)
         val dirStream = Files.newDirectoryStream(fs.getPath("templates/$directory"))
 
         return sequence {
