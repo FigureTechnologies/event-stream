@@ -3,6 +3,7 @@ package tech.figure.eventstream.stream.flows
 import tech.figure.eventstream.stream.models.BlockHeader
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.toList
+import tech.figure.eventstream.common.flows.pollingDataFlow
 import tech.figure.eventstream.net.NetAdapter
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
