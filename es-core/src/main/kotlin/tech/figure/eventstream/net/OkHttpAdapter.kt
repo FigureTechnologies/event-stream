@@ -70,7 +70,7 @@ fun okHttpNetAdapter(
     )
 }
 
-private fun nodeToNetAdapterURIs(node: String): Pair<String, String> {
+fun nodeToNetAdapterURIs(node: String): Pair<String, String> {
     val parsed = URI(node).normalize()
     require(parsed.scheme in SSL_SCHEMES + NON_SSL_SCHEMES) { "invalid scheme in uri '$node'" }
     require(parsed.host != null) { "host is required in uri '$node'" }
