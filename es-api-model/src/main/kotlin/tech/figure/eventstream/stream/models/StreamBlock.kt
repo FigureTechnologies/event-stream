@@ -10,6 +10,8 @@ interface StreamBlock {
     val txErrors: List<TxError>
     val historical: Boolean
     val height: Long? get() = block.header?.height
+
+    fun isEmpty(): Boolean = block.data?.txs?.isEmpty() ?: true
 }
 
 /**

@@ -5,23 +5,18 @@ import tech.figure.blockchain.stream.api.BlockSource
 import tech.figure.eventstream.adapter.json.decoder.DecoderEngine
 import tech.figure.eventstream.coroutines.DefaultDispatcherProvider
 import tech.figure.eventstream.coroutines.DispatcherProvider
-import tech.figure.eventstream.stream.clients.BlockData
 import tech.figure.eventstream.stream.clients.TendermintBlockFetcher
 import tech.figure.eventstream.stream.models.Block
 import tech.figure.eventstream.stream.models.BlockMeta
 import tech.figure.eventstream.stream.models.EncodedBlockchainEvent
 import tech.figure.eventstream.stream.models.StreamBlock
 import tech.figure.eventstream.stream.models.StreamBlockImpl
-import tech.figure.eventstream.stream.models.dateTime
 import tech.figure.eventstream.stream.models.blockEvents
-import tech.figure.eventstream.stream.models.txData
 import tech.figure.eventstream.stream.models.txEvents
-import tech.figure.eventstream.stream.models.txErroredEvents
 import tech.figure.eventstream.utils.backoff
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
-import kotlinx.coroutines.InternalCoroutinesApi
 import kotlinx.coroutines.async
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
@@ -97,10 +92,10 @@ class EventStream(
      *  block data.
      * @return A Flow of found historical blocks along with events associated with each block, if any.
      */
-    private suspend fun queryBlocks(blockHeights: List<Long>): kotlinx.coroutines.flow.Flow<StreamBlockImpl> =
+    private suspend fun queryBlocks(blockHeights: List<Long>): Flow<StreamBlock> =
         fetcher.getBlocks(blockHeights).map { it.toStreamBlock() }
 
-    fun streamLiveBlocks(): Flow<StreamBlockImpl> {
+    fun streamLiveBlocks(): Flow<StreamBlock> {
         return streamLiveMetaBlocks()
             .toLiveStream()
     }
@@ -131,9 +126,7 @@ class EventStream(
         }
     }
 
-    private fun StreamBlock.isEmpty() = block.data?.txs?.isEmpty() ?: true
-
-    private fun Flow<StreamBlockImpl>.filterNonEmptyIfSet(): Flow<StreamBlockImpl> =
+    private fun Flow<StreamBlock>.filterNonEmptyIfSet(): Flow<StreamBlock> =
         filter { !(options.skipEmptyBlocks && it.isEmpty()) }
 
     private fun Flow<StreamBlock>.filterByEvents(): Flow<StreamBlock> =
@@ -159,12 +152,18 @@ class EventStream(
         (startingHeight..endingHeight)
             .chunked(options.batchSize)
             .asFlow()
-            .doFlatmap { queryBlocks(it).map { b -> b.copy(historical = true) } }
+            .doFlatmap {
+                queryBlocks(it).map { b: StreamBlock ->
+                    object : StreamBlock by b {
+                        override val historical: Boolean = true
+                    }
+                }
+            }
             .filterNonEmptyIfSet()
             .filterByEvents()
 
-    @OptIn(InternalCoroutinesApi::class, ExperimentalCoroutinesApi::class)
-    fun Flow<Block>.toLiveStream(): Flow<StreamBlockImpl> {
+    @OptIn(ExperimentalCoroutinesApi::class)
+    fun Flow<Block>.toLiveStream(): Flow<StreamBlock> {
         return channelFlow {
             this@toLiveStream
                 .flowOn(dispatchers.io())
@@ -197,15 +196,6 @@ class EventStream(
      */
     private suspend fun getEndingHeight(): Long? =
         options.toHeight ?: fetcher.getCurrentHeight()
-
-    private fun BlockData.toStreamBlock(): StreamBlockImpl {
-        val blockDatetime = block.header?.dateTime()
-        val blockEvents = blockResult.blockEvents(blockDatetime)
-        val blockTxResults = blockResult.txsResults
-        val txEvents = blockResult.txEvents(blockDatetime) { index: Int -> block.txData(index) }
-        val txErrors = blockResult.txErroredEvents(blockDatetime) { index: Int -> block.txData(index) }
-        return StreamBlockImpl(block, blockEvents, blockTxResults, txEvents, txErrors)
-    }
 
     /**
      * Constructs a Flow of live and historical blocks, plus associated event data.
@@ -242,11 +232,11 @@ class EventStream(
         }
     }
 
-    /*
-    * @return A Flow of live and historical blocks, plus associated event data.
-    */
+    /**
+     * @return A Flow of live and historical blocks, plus associated event data.
+     */
     override suspend fun streamBlocks(from: Long?, toInclusive: Long?): Flow<StreamBlock> = channelFlow {
-        val liveChannel = Channel<StreamBlockImpl>(720)
+        val liveChannel = Channel<StreamBlock>(720)
         val liveJob = async {
             streamLiveBlocks()
                 .buffer()
