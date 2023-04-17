@@ -186,5 +186,6 @@ fun Event.toAttribute(): Pair<String, String?> {
  *
  * @return A [Map] containing the base64 decoded key/value pairs.
  */
-fun EncodedBlockchainEvent.toMap(): Map<String, String?> =
-    attributes.map { it.toAttribute() }.associate { it.first to it.second }.toMap()
+fun List<Event>.toDecodedMap(): Map<String, String?> = associate { e ->
+    Base64.getDecoder().decode(e.key).decodeToString() to e.value
+}
