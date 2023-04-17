@@ -15,7 +15,7 @@ import tech.figure.eventstream.test.base.TestBase
 import tech.figure.eventstream.mocks.MockTendermintServiceClient
 import tech.figure.eventstream.mocks.ServiceMocker
 import tech.figure.eventstream.utils.EXPECTED_NONEMPTY_BLOCKS
-import tech.figure.eventstream.utils.EXPECTED_TOTAL_BLOCKS
+import tech.figure.eventstream.utils.EXPECTED_HISTORICAL_BLOCK_COUNT
 import tech.figure.eventstream.utils.MAX_HISTORICAL_BLOCK_HEIGHT
 import tech.figure.eventstream.utils.MIN_HISTORICAL_BLOCK_HEIGHT
 import tech.figure.eventstream.utils.Builders
@@ -304,7 +304,7 @@ class StreamTests : TestBase() {
                     .streamHistoricalBlocks(MIN_HISTORICAL_BLOCK_HEIGHT)
                     .toList()
 
-                assert(collectedNoSkip.size.toLong() == EXPECTED_TOTAL_BLOCKS)
+                assert(collectedNoSkip.size.toLong() == EXPECTED_HISTORICAL_BLOCK_COUNT)
                 assert(collectedNoSkip.all { it.historical })
 
                 // If skipping empty blocks, we should get EXPECTED_NONEMPTY_BLOCKS:
@@ -335,7 +335,7 @@ class StreamTests : TestBase() {
                     .streamMetaBlocks()
                     .toList()
 
-                assert(collectedNoSkip.size.toLong() == EXPECTED_TOTAL_BLOCKS)
+                assert(collectedNoSkip.size.toLong() == EXPECTED_HISTORICAL_BLOCK_COUNT)
 
                 // If skipping empty blocks, we should get EXPECTED_NONEMPTY_BLOCKS:
                 val collectedSkip = Builders.eventStream()
