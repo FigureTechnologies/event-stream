@@ -74,7 +74,7 @@ fun mockWsAdapter(template: Template): WsAdapter {
     }
 }
 
-fun mockBlockFetcher(template: Template): BlockFetcher {
+fun mockBlockFetcher(template: Template, currentHeight: Long? = null): BlockFetcher {
     return object : BlockFetcher {
         override suspend fun getBlocksMeta(min: Long, max: Long): List<BlockMeta>? {
             val response = template.readAs(BlockchainResponse::class.java, "blockchain/$min-$max.json")
@@ -82,7 +82,11 @@ fun mockBlockFetcher(template: Template): BlockFetcher {
         }
 
         override suspend fun getCurrentHeight(): Long {
-            val response = template.readAs(ABCIInfoResponse::class.java, "abci_info/success.json")
+            val vars: MutableMap<String, Any> = mutableMapOf()
+            if (currentHeight != null) {
+                vars["last_block_height"] = currentHeight
+            }
+            val response = template.readAs(ABCIInfoResponse::class.java, "abci_info/success.json", vars)
             return response!!.result!!.response.lastBlockHeight!!
         }
 
@@ -102,6 +106,6 @@ fun mockBlockFetcher(template: Template): BlockFetcher {
     }
 }
 
-fun mockNetAdapter(template: Template): NetAdapter {
-    return netAdapter(mockWsAdapter(template), mockBlockFetcher(template))
+fun mockNetAdapter(template: Template, currentHeight: Long? = null): NetAdapter {
+    return netAdapter(mockWsAdapter(template), mockBlockFetcher(template, currentHeight))
 }
