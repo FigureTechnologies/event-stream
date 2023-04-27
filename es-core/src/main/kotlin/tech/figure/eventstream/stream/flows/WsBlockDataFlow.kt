@@ -53,7 +53,7 @@ fun wsBlockDataFlow(
     lifecycle: LifecycleRegistry = defaultLifecycle(throttle),
     channel: WebSocketChannel = defaultWebSocketChannel(netAdapter.wsAdapter, decoderAdapter.wsDecoder, throttle, lifecycle),
     wss: WebSocketService = channel.withLifecycle(lifecycle),
-    currentHeight: Long? = null
+    currentHeight: Long? = null,
 ): Flow<BlockData> {
     return nodeEventStream<MessageType.NewBlock>(netAdapter, decoderAdapter, throttle, lifecycle, backoffStrategy, channel, wss)
         .mapBlockData(netAdapter)

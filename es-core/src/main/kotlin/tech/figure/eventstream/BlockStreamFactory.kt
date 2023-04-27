@@ -27,8 +27,8 @@ interface BlockStreamFactory {
             withFromHeight(config.from),
             withToHeight(config.to),
             withConcurrency(config.eventStream.concurrency),
-            withOrdered(config.ordered)
-        )
+            withOrdered(config.ordered),
+        ),
     )
 
     fun createSource(list: List<BlockStreamCfg>) = createSource(*list.toTypedArray())
@@ -60,7 +60,7 @@ class DefaultBlockStreamFactory(
             blockFetcher,
             decoderEngine,
             options = options,
-            dispatchers = dispatchers
+            dispatchers = dispatchers,
         )
     }
 }

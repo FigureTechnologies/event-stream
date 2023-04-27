@@ -45,7 +45,7 @@ fun blockHeaderFlow(
     netAdapter: NetAdapter,
     decoderAdapter: DecoderAdapter,
     from: Long? = null,
-    to: Long? = null
+    to: Long? = null,
 ): Flow<BlockHeader> {
     var currentHeight = 0L
     runBlocking {

@@ -115,7 +115,7 @@ class StreamTests : TestBase() {
             val eventAttributes: List<Event> = listOf(
                 Event(key = "cmVjb3JkX2FkZHI=", value = recordAddrValue, index = false),
                 Event(key = "c2Vzc2lvbl9hZGRy", value = sessionAddrValue, index = false),
-                Event(key = "c2NvcGVfYWRkcg==", value = scopeAddrValue, index = false)
+                Event(key = "c2NvcGVfYWRkcg==", value = scopeAddrValue, index = false),
             )
             val attributeMap = eventAttributes.toDecodedMap()
             assert("record_addr" in attributeMap && attributeMap["record_addr"] == recordAddrValue)
@@ -143,7 +143,7 @@ class StreamTests : TestBase() {
                     templates.readAs(
                         ABCIInfoResponse::class.java,
                         "abci_info/success.json",
-                        mapOf("last_block_height" to expectBlockHeight)
+                        mapOf("last_block_height" to expectBlockHeight),
                     )
                 }
                 .build(MockTendermintServiceClient::class.java)
@@ -153,11 +153,10 @@ class StreamTests : TestBase() {
             }
         }
 
+        // duped
         @OptIn(ExperimentalCoroutinesApi::class)
         @Test
-        // duped
         fun testBlockResponse() {
-
             val tendermint: TendermintServiceClient = ServiceMocker.Builder()
                 .doFor("block") { templates.readAs(BlockResponse::class.java, "block/${it[0]}.json") }
                 .build(MockTendermintServiceClient::class.java)
@@ -184,16 +183,15 @@ class StreamTests : TestBase() {
             }
         }
 
+        // duped
         @OptIn(ExperimentalCoroutinesApi::class)
         @Test
-        // duped
         fun testBlockResultsResponse() {
-
             val tendermint: TendermintServiceClient = ServiceMocker.Builder()
                 .doFor("blockResults") {
                     templates.readAs(
                         BlockResultsResponse::class.java,
-                        "block_results/${it[0]}.json"
+                        "block_results/${it[0]}.json",
                     )
                 }
                 .build(MockTendermintServiceClient::class.java)
@@ -223,12 +221,11 @@ class StreamTests : TestBase() {
         @OptIn(ExperimentalCoroutinesApi::class)
         @Test
         fun testBlockchainResponse() {
-
             val tendermint: TendermintServiceClient = ServiceMocker.Builder()
                 .doFor("blockchain") {
                     templates.readAs(
                         BlockchainResponse::class.java,
-                        "blockchain/${it[0]}-${it[1]}.json"
+                        "blockchain/${it[0]}-${it[1]}.json",
                     )
                 }
                 .build(MockTendermintServiceClient::class.java)
@@ -262,12 +259,11 @@ class StreamTests : TestBase() {
         @OptIn(ExperimentalCoroutinesApi::class)
         @Test
         fun testWebsocketReceiver() {
-
             dispatcherProvider.runBlockingTest {
                 val heights: Set<Long> = setOf(
                     MIN_HISTORICAL_BLOCK_HEIGHT,
                     MIN_HISTORICAL_BLOCK_HEIGHT + 1,
-                    MIN_HISTORICAL_BLOCK_HEIGHT + 2
+                    MIN_HISTORICAL_BLOCK_HEIGHT + 2,
                 )
                 val blocks: Array<BlockResponse> =
                     heights
@@ -295,13 +291,11 @@ class StreamTests : TestBase() {
             }
         }
 
+        // done
         @OptIn(ExperimentalCoroutinesApi::class, kotlinx.coroutines.FlowPreview::class)
         @Test
-        // done
         fun testHistoricalBlockStreaming() {
-
             dispatcherProvider.runBlockingTest {
-
                 // If not skipping empty blocks, we should get EXPECTED_TOTAL_BLOCKS:
                 val collectedNoSkip = Builders.eventStream()
                     .dispatchers(dispatcherProvider)
@@ -326,13 +320,11 @@ class StreamTests : TestBase() {
             }
         }
 
+        // done
         @OptIn(ExperimentalCoroutinesApi::class, kotlinx.coroutines.FlowPreview::class)
         @Test
-        // done
         fun testMetadataStreaming() {
-
             dispatcherProvider.runBlockingTest {
-
                 // If not skipping empty blocks, we should get 100:
                 val collectedNoSkip = Builders.eventStream()
                     .dispatchers(dispatcherProvider)
@@ -359,13 +351,11 @@ class StreamTests : TestBase() {
             }
         }
 
+        //
         @OptIn(ExperimentalCoroutinesApi::class)
         @Test
-        //
         fun testLiveBlockStreaming() {
-
             dispatcherProvider.runBlockingTest {
-
                 val eventStreamService = Builders.eventStreamService(includeLiveBlocks = true)
                     .dispatchers(dispatcherProvider)
                     .build()
@@ -392,13 +382,11 @@ class StreamTests : TestBase() {
             }
         }
 
+        //
         @OptIn(ExperimentalCoroutinesApi::class, kotlinx.coroutines.FlowPreview::class)
         @Test
-        //
         fun testCombinedBlockStreaming() {
-
             dispatcherProvider.runBlockingTest {
-
                 val eventStreamService = Builders.eventStreamService(includeLiveBlocks = true)
                     .dispatchers(dispatcherProvider)
                     .build()
@@ -432,7 +420,6 @@ class StreamTests : TestBase() {
         fun testCombinedBlockStreamingCancelledOnpanic() {
             assertThrows<CancellationException> {
                 dispatcherProvider.runBlockingTest {
-
                     val eventStreamService = Builders.eventStreamService(includeLiveBlocks = true)
                         // Add a panic, which should cause the stream to terminate.
                         .response(templates.read("rpc/responses/panic.json"))
@@ -463,7 +450,6 @@ class StreamTests : TestBase() {
         @Test
         fun testTxEventFilteringByEventIfNotMatching() {
             dispatcherProvider.runBlockingTest {
-
                 val eventStreamService = Builders.eventStreamService(includeLiveBlocks = true)
                     .dispatchers(dispatcherProvider)
                     .build()
@@ -491,7 +477,6 @@ class StreamTests : TestBase() {
         @Test
         fun testTxEventFilteringByEventIfMatching() {
             dispatcherProvider.runBlockingTest {
-
                 val eventStreamService = Builders.eventStreamService(includeLiveBlocks = true)
                     .dispatchers(dispatcherProvider)
                     .build()
@@ -517,7 +502,7 @@ class StreamTests : TestBase() {
                 assert(
                     collected.all {
                         requireTxEvent in it.txEvents.map { e -> e.eventType }
-                    }
+                    },
                 )
             }
         }

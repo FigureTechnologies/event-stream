@@ -50,7 +50,7 @@ fun WsDecoderAdapter.toScarletFactory(): MessageAdapter.Factory {
  */
 fun defaultBackoffStrategy(
     maxRetries: Int = -1,
-    fallbackStrategy: BackoffStrategy = ExponentialWithJitterBackoffStrategy(1000L, 10000L)
+    fallbackStrategy: BackoffStrategy = ExponentialWithJitterBackoffStrategy(1000L, 10000L),
 ): BackoffStrategy {
     return object : BackoffStrategy {
         val log = KotlinLogging.logger {}

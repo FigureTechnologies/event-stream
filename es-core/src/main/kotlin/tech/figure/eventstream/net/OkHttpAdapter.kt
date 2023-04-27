@@ -19,7 +19,7 @@ private val NON_SSL_SCHEMES = setOf("grpc", "http", "tcp", "ws")
  */
 fun defaultOkHttpClientBuilderFn(
     pingInterval: Duration = 10.seconds,
-    readInterval: Duration = 60.seconds
+    readInterval: Duration = 60.seconds,
 ): OkHttpClient.Builder.() -> OkHttpClient.Builder =
     {
         pingInterval(pingInterval.toJavaDuration())
@@ -47,13 +47,13 @@ fun okHttpNetAdapter(node: String, okHttpClient: OkHttpClient): NetAdapter {
     return netAdapter(
         okHttpClient.newWebSocketFactory("$wsUri/websocket")::create,
         TendermintBlockFetcher(TendermintServiceOpenApiClient(rpcUri)),
-        okHttpClient::awaitShutdown
+        okHttpClient::awaitShutdown,
     )
 }
 
 fun okHttpNetAdapter(
     node: String,
-    clientBuilderFn: OkHttpClient.Builder.() -> OkHttpClient.Builder = defaultOkHttpClientBuilderFn()
+    clientBuilderFn: OkHttpClient.Builder.() -> OkHttpClient.Builder = defaultOkHttpClientBuilderFn(),
 ): NetAdapter {
     val log = KotlinLogging.logger {}
     val (rpcUri, wsUri) = nodeToNetAdapterURIs(node)
@@ -66,7 +66,7 @@ fun okHttpNetAdapter(
     return netAdapter(
         okHttpClient.newWebSocketFactory("$wsUri/websocket")::create,
         TendermintBlockFetcher(TendermintServiceOpenApiClient(rpcUri, clientBuilderFn)),
-        okHttpClient::awaitShutdown
+        okHttpClient::awaitShutdown,
     )
 }
 
@@ -78,9 +78,14 @@ fun nodeToNetAdapterURIs(node: String): Pair<String, String> {
     val scheme = if (parsed.scheme in SSL_SCHEMES) "s" else ""
     val port =
         if (parsed.port == -1) {
-            if (parsed.scheme in SSL_SCHEMES) 443
-            else 80
-        } else parsed.port
+            if (parsed.scheme in SSL_SCHEMES) {
+                443
+            } else {
+                80
+            }
+        } else {
+            parsed.port
+        }
 
     val base = "${parsed.host}:$port"
     return "http$scheme://$base" to "ws$scheme://$base"

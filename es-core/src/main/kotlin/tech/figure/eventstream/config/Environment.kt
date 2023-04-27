@@ -4,15 +4,15 @@ package tech.figure.eventstream.config
  * An enumeration encoding various runtime environments.
  */
 enum class Environment {
-    local {
+    Local {
         override fun isLocal(): Boolean = true
     },
-    development {
+    Development {
         override fun isDevelopment(): Boolean = true
     },
-    production {
+    Production {
         override fun isProduction() = true
-    };
+    }, ;
 
     open fun isLocal(): Boolean = false
     open fun isDevelopment(): Boolean = false

@@ -66,7 +66,7 @@ class KafkaSourceTests : TestBase() {
                     v.result.height,
                     OffsetDateTime.now(),
                     it.type!!,
-                    it.attributes!!
+                    it.attributes!!,
                 )
             }
             streamBlocks[k] = StreamBlockImpl(blockResponses[k]!!.result!!.block!!, blockEvents, mutableListOf(), mutableListOf(), mutableListOf())
@@ -102,7 +102,7 @@ class KafkaSourceTests : TestBase() {
     @Test
     fun testKafkaConsumerMultipleRecords() {
         val mockConsumer = MockConsumer<ByteArray, ByteArray>(
-            OffsetResetStrategy.EARLIEST
+            OffsetResetStrategy.EARLIEST,
         )
         val tp1 = TopicPartition("test-topic", 0)
         mockConsumer.schedulePollTask {
@@ -115,8 +115,8 @@ class KafkaSourceTests : TestBase() {
                     0,
                     0L,
                     "testing1".toByteArray(),
-                    streamBlocks["2270370"]!!.toByteArray()
-                )
+                    streamBlocks["2270370"]!!.toByteArray(),
+                ),
             )
             mockConsumer.addRecord(
                 ConsumerRecord(
@@ -124,8 +124,8 @@ class KafkaSourceTests : TestBase() {
                     0,
                     1L,
                     "testing2".toByteArray(),
-                    streamBlocks["2270371"]!!.toByteArray()
-                )
+                    streamBlocks["2270371"]!!.toByteArray(),
+                ),
             )
             mockConsumer.addRecord(
                 ConsumerRecord(
@@ -133,8 +133,8 @@ class KafkaSourceTests : TestBase() {
                     0,
                     3L,
                     "testing3".toByteArray(),
-                    streamBlocks["2270372"]!!.toByteArray()
-                )
+                    streamBlocks["2270372"]!!.toByteArray(),
+                ),
             )
         }
         val startOffsets: HashMap<TopicPartition, Long> = HashMap()
@@ -147,7 +147,7 @@ class KafkaSourceTests : TestBase() {
                 val kafkaChannel = kafkaConsumerChannel<ByteArray, ByteArray>(
                     consumerProps,
                     setOf("test-topic"),
-                    consumer = mockConsumer
+                    consumer = mockConsumer,
                 )
                 mockConsumer.scheduleNopPollTask()
                 mockConsumer.schedulePollTask {
@@ -169,7 +169,7 @@ class KafkaSourceTests : TestBase() {
     @Test
     fun testKafkaConsumerEmptyPoll() {
         val mockConsumer = MockConsumer<ByteArray, ByteArray>(
-            OffsetResetStrategy.EARLIEST
+            OffsetResetStrategy.EARLIEST,
         )
         val tp1 = TopicPartition("test-topic", 0)
         mockConsumer.schedulePollTask {
@@ -183,8 +183,8 @@ class KafkaSourceTests : TestBase() {
                     0,
                     0L,
                     "testing1".toByteArray(),
-                    streamBlocks["2270370"]!!.toByteArray()
-                )
+                    streamBlocks["2270370"]!!.toByteArray(),
+                ),
             )
         }
         val startOffsets: HashMap<TopicPartition, Long> = HashMap()
@@ -197,7 +197,7 @@ class KafkaSourceTests : TestBase() {
                 val kafkaChannel = kafkaConsumerChannel<ByteArray, ByteArray>(
                     consumerProps,
                     setOf("test-topic"),
-                    consumer = mockConsumer
+                    consumer = mockConsumer,
                 )
                 mockConsumer.scheduleNopPollTask()
                 mockConsumer.schedulePollTask {
@@ -219,7 +219,7 @@ class KafkaSourceTests : TestBase() {
     @Test
     fun testKafkaConsumerClosedError() {
         val mockConsumer = MockConsumer<ByteArray, ByteArray>(
-            OffsetResetStrategy.EARLIEST
+            OffsetResetStrategy.EARLIEST,
         )
         val tp1 = TopicPartition("test-topic", 0)
         val startOffsets: HashMap<TopicPartition, Long> = HashMap()
@@ -232,7 +232,7 @@ class KafkaSourceTests : TestBase() {
                 val kafkaChannel = kafkaConsumerChannel<ByteArray, ByteArray>(
                     consumerProps,
                     setOf("test-topic"),
-                    consumer = mockConsumer
+                    consumer = mockConsumer,
                 )
                 mockConsumer.schedulePollTask {
                     mockConsumer.close()
@@ -250,7 +250,7 @@ class KafkaSourceTests : TestBase() {
     @Test
     fun testKafkaConsumerWrongBytes() {
         val mockConsumer = MockConsumer<ByteArray, ByteArray>(
-            OffsetResetStrategy.EARLIEST
+            OffsetResetStrategy.EARLIEST,
         )
         val tp1 = TopicPartition("test-topic", 0)
         mockConsumer.schedulePollTask {
@@ -263,8 +263,8 @@ class KafkaSourceTests : TestBase() {
                     0,
                     0L,
                     "testing1".toByteArray(),
-                    "Wrong value for testing".toByteArray()
-                )
+                    "Wrong value for testing".toByteArray(),
+                ),
             )
         }
         val startOffsets: HashMap<TopicPartition, Long> = HashMap()
@@ -277,7 +277,7 @@ class KafkaSourceTests : TestBase() {
                 val kafkaChannel = kafkaConsumerChannel<ByteArray, ByteArray>(
                     consumerProps,
                     setOf("test-topic"),
-                    consumer = mockConsumer
+                    consumer = mockConsumer,
                 )
                 mockConsumer.schedulePollTask {
                     mockConsumer.close()

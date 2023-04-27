@@ -29,7 +29,7 @@ fun historicalBlockDataFlow(
     to: Long? = null,
     concurrency: Int = DEFAULT_CONCURRENCY,
     context: CoroutineContext = EmptyCoroutineContext,
-    currentHeight: Long? = null
+    currentHeight: Long? = null,
 ): Flow<BlockData> = flow {
     suspend fun currentHeight() =
         netAdapter.rpcAdapter.getCurrentHeight() ?: throw RuntimeException("cannot fetch current height")
@@ -52,7 +52,7 @@ fun historicalBlockDataFlow(
 fun List<Long>.toBlockData(
     netAdapter: NetAdapter,
     concurrency: Int = DEFAULT_CONCURRENCY,
-    context: CoroutineContext = EmptyCoroutineContext
+    context: CoroutineContext = EmptyCoroutineContext,
 ): Flow<BlockData> {
     val list = this
     val fetcher = netAdapter.rpcAdapter

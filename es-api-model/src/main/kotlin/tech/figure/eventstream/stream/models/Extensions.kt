@@ -74,7 +74,7 @@ fun BlockResultsResponseResult.txEvents(blockDateTime: OffsetDateTime?, txHash: 
                             blockDateTime = blockDateTime,
                             txHash = txData?.txHash,
                             fee = txData?.fee,
-                            note = txData?.note
+                            note = txData?.note,
                         )
                     }
                 } ?: emptyList()
@@ -87,7 +87,7 @@ fun BlockResultsResponseResult.blockEvents(blockDateTime: OffsetDateTime?): List
             blockHeight = height,
             blockDateTime = blockDateTime,
             eventType = e.type ?: "",
-            attributes = e.attributes ?: emptyList()
+            attributes = e.attributes ?: emptyList(),
         )
     }
 } ?: emptyList()
@@ -126,7 +126,7 @@ fun BlockResultsResponseResultEvents.toBlockEvent(blockHeight: Long, blockDateTi
         blockHeight = blockHeight,
         blockDateTime = blockDateTime,
         eventType = this.type ?: "",
-        attributes = this.attributes ?: emptyList()
+        attributes = this.attributes ?: emptyList(),
     )
 
 fun BlockResultsResponseResultEvents.toTxEvent(
@@ -134,7 +134,7 @@ fun BlockResultsResponseResultEvents.toTxEvent(
     blockDateTime: OffsetDateTime?,
     txHash: String?,
     fee: InnerCoin?,
-    note: String?
+    note: String?,
 ): TxEvent =
     TxEvent(
         blockHeight = blockHeight,
@@ -144,7 +144,7 @@ fun BlockResultsResponseResultEvents.toTxEvent(
         attributes = this.attributes ?: emptyList(),
         fee = fee?.amount,
         denom = fee?.denom,
-        note = note
+        note = note,
     )
 
 fun Coin.toInnerCoin(): InnerCoin = InnerCoin(coin = this)

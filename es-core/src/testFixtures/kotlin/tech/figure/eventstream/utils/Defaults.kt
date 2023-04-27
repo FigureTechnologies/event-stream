@@ -39,7 +39,7 @@ object Defaults {
             .map { (minHeight, maxHeight) ->
                 templates.unsafeReadAs(
                     BlockchainResponse::class.java,
-                    "blockchain/$minHeight-$maxHeight.json"
+                    "blockchain/$minHeight-$maxHeight.json",
                 )
             }
             .toTypedArray()

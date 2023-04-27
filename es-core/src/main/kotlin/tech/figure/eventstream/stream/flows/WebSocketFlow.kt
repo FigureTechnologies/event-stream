@@ -35,8 +35,11 @@ val DEFAULT_THROTTLE_PERIOD = 1.seconds
 @Suppress("unchecked_cast")
 fun <T : MessageType> Flow<Message>.decodeMessages(decoder: MessageDecoder): Flow<T> =
     map {
-        if (it is Message.Text && it.value.isBlank()) MessageType.Empty
-        else decoder(it)
+        if (it is Message.Text && it.value.isBlank()) {
+            MessageType.Empty
+        } else {
+            decoder(it)
+        }
     }.transform {
         val log = KotlinLogging.logger {}
         when (it) {

@@ -14,7 +14,7 @@ class ErrorMessageDecoder(decoderEngine: DecoderEngine) : Decoder(decoderEngine)
     // The response will come come wrapped in a "response" { } property in the event of an error.
 
     private val adapter: Adapter<RpcResponse<JSONObject>> = decoderEngine.adapter(
-        decoderEngine.parameterizedType(RpcResponse::class.java, JSONObject::class.java)
+        decoderEngine.parameterizedType(RpcResponse::class.java, JSONObject::class.java),
     )
 
     private fun toError(obj: JSONObject): RpcError? {

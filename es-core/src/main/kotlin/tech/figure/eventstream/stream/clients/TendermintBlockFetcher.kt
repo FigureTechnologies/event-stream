@@ -15,7 +15,7 @@ import org.slf4j.LoggerFactory
 import kotlin.coroutines.CoroutineContext
 
 class TendermintBlockFetcher(
-    private val tendermintServiceClient: TendermintServiceClient
+    private val tendermintServiceClient: TendermintServiceClient,
 ) : BlockFetcher {
 
     private val log = LoggerFactory.getLogger(javaClass)
@@ -52,7 +52,7 @@ class TendermintBlockFetcher(
                     coroutineScope {
                         // Concurrently process <concurrency> blocks at a time:
                         chunkOfHeights.map { height -> async { getBlock(height) } }.awaitAll()
-                    }.asFlow()
+                    }.asFlow(),
                 )
             }
         }

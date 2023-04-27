@@ -65,7 +65,7 @@ tasks.register<org.openapitools.generator.gradle.plugin.tasks.GenerateTask>("gen
             "moshiCodeGen" to "true",
             "modelMutable" to "false",
             "serializableModel" to "true",
-            "useCoroutines" to "true"
-        )
+            "useCoroutines" to "true",
+        ),
     )
 }

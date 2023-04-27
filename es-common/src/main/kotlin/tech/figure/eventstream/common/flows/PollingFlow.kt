@@ -33,7 +33,7 @@ inline fun <T> pollingDataFlow(
     crossinline getHeight: suspend () -> Long,
     pollInterval: Duration,
     from: Long?,
-    crossinline fetch: suspend (List<Long>) -> List<T>
+    crossinline fetch: suspend (List<Long>) -> List<T>,
 ): Flow<T> = flow {
     var current = from ?: getHeight()
     pollingFlow(pollInterval) {

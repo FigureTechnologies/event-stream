@@ -11,5 +11,5 @@ data class BlockEvent(
     val blockHeight: Long,
     val blockDateTime: OffsetDateTime?,
     override val eventType: String,
-    override val attributes: List<Event>
+    override val attributes: List<Event>,
 ) : EncodedBlockchainEvent

@@ -13,7 +13,7 @@ class NewBlockDecoder(decoderEngine: DecoderEngine) : Decoder(decoderEngine) {
     // because it's not possible to do something like `RpcResponse<NewBlockResult>::class.java`:
     // See https://stackoverflow.com/questions/46193355/moshi-generic-type-adapter
     private val adapter: Adapter<RpcResponse<NewBlockResult>> = decoderEngine.adapter(
-        decoderEngine.parameterizedType(RpcResponse::class.java, NewBlockResult::class.java)
+        decoderEngine.parameterizedType(RpcResponse::class.java, NewBlockResult::class.java),
     )
 
     override fun decode(input: String): MessageType.NewBlock? {

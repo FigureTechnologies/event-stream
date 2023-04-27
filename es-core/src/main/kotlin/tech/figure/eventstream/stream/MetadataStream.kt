@@ -18,7 +18,7 @@ import kotlin.math.min
 
 class MetadataStream(
     val options: BlockStreamOptions,
-    val fetcher: TendermintBlockFetcher
+    val fetcher: TendermintBlockFetcher,
 ) {
 
     private val log = KotlinLogging.logger { }

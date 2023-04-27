@@ -13,7 +13,7 @@ class EmptyMessageDecoder(decoderEngine: DecoderEngine) : Decoder(decoderEngine)
     // because it's not possible to do something like `RpcResponse<NewBlockResult>::class.java`:
     // See https://stackoverflow.com/questions/46193355/moshi-generic-type-adapter
     private val adapter: JsonDecoder<RpcResponse<JSONObject>> = decoderEngine.adapter(
-        decoderEngine.parameterizedType(RpcResponse::class.java, JSONObject::class.java)
+        decoderEngine.parameterizedType(RpcResponse::class.java, JSONObject::class.java),
     )
 
     override fun decode(input: String): MessageType? {

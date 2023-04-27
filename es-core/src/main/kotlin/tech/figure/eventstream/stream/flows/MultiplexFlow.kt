@@ -43,7 +43,8 @@ internal fun shouldRetryFn(): suspend (Throwable, Long) -> Boolean =
             is ConnectException,
             is SocketTimeoutException,
             is ServerException, // 502 Bad Gateway
-            is SocketException -> {
+            is SocketException,
+            -> {
                 val duration = backoff(attempt, jitter = false)
                 log.error("Reconnect attempt #$attempt; waiting ${duration.inWholeSeconds}s before trying again: $cause")
                 delay(duration)

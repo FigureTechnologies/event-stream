@@ -21,5 +21,5 @@ fun pollingBlockHeaderFlow(netAdapter: NetAdapter, pollInterval: Duration = 10.s
         { netAdapter.rpcAdapter.getCurrentHeight()!! },
         pollInterval,
         from,
-        { historicalBlockHeaderFlow(netAdapter, it.first(), it.last()).toList() }
+        { historicalBlockHeaderFlow(netAdapter, it.first(), it.last()).toList() },
     )

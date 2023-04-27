@@ -11,7 +11,7 @@ data class Options(
     val skipIfEmpty: Boolean,
     val blockEventPredicate: ((event: String) -> Boolean)?,
     val txEventPredicate: ((event: String) -> Boolean)?,
-    val ordered: Boolean = true
+    val ordered: Boolean = true,
 ) {
     companion object {
         val DEFAULT: Options = Builder().build()
@@ -116,7 +116,7 @@ data class Options(
             skipIfEmpty = skipIfEmpty,
             blockEventPredicate = blockEventPredicate,
             txEventPredicate = txEventPredicate,
-            ordered = ordered
+            ordered = ordered,
         )
     }
 }

@@ -50,7 +50,7 @@ class BlockDataFlowTest : TestBase() {
             MIN_HISTORICAL_BLOCK_HEIGHT,
             MAX_LIVE_BLOCK_HEIGHT,
             { _, _ -> hFlow },
-            { wsFlow }
+            { wsFlow },
         )
     }
 
@@ -62,7 +62,7 @@ class BlockDataFlowTest : TestBase() {
             MIN_HISTORICAL_BLOCK_HEIGHT,
             MAX_LIVE_BLOCK_HEIGHT,
             { _, _ -> hFlow },
-            { wsFlow }
+            { wsFlow },
         )
     }
 
@@ -98,7 +98,7 @@ class BlockDataFlowTest : TestBase() {
                 val collectedSkip = historicalBlockDataFlow(
                     netAdapter,
                     MIN_HISTORICAL_BLOCK_HEIGHT,
-                    MAX_HISTORICAL_BLOCK_HEIGHT
+                    MAX_HISTORICAL_BLOCK_HEIGHT,
                 ).filter { (it.block.data?.txs.orEmpty()).isNotEmpty() }.toList()
 
                 assert(collectedSkip.size.toLong() == EXPECTED_NONEMPTY_BLOCKS)
@@ -109,7 +109,7 @@ class BlockDataFlowTest : TestBase() {
                 val collectedSkip = historicalBlockHeaderFlow(
                     netAdapter,
                     MIN_HISTORICAL_BLOCK_HEIGHT,
-                    MAX_HISTORICAL_BLOCK_HEIGHT
+                    MAX_HISTORICAL_BLOCK_HEIGHT,
                 ).filter { it.height == MIN_HISTORICAL_BLOCK_HEIGHT }.toList()
 
                 assert(collectedSkip.size == 1)
@@ -123,7 +123,7 @@ class BlockDataFlowTest : TestBase() {
                 val collectedNoSkip = historicalBlockMetaFlow(
                     netAdapter,
                     MIN_HISTORICAL_BLOCK_HEIGHT,
-                    MAX_HISTORICAL_BLOCK_HEIGHT
+                    MAX_HISTORICAL_BLOCK_HEIGHT,
                 ).toList()
 
                 assert(collectedNoSkip.size.toLong() == EXPECTED_TOTAL_BLOCKS)
@@ -132,7 +132,7 @@ class BlockDataFlowTest : TestBase() {
                 val collectedSkip = historicalBlockMetaFlow(
                     netAdapter,
                     MIN_HISTORICAL_BLOCK_HEIGHT,
-                    MAX_HISTORICAL_BLOCK_HEIGHT
+                    MAX_HISTORICAL_BLOCK_HEIGHT,
                 ).filter { (it.numTxs ?: 0) > 0 }.toList()
 
                 assert(collectedSkip.size.toLong() == EXPECTED_NONEMPTY_BLOCKS)
