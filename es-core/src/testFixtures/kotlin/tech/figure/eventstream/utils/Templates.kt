@@ -26,7 +26,7 @@ data class Template(private val moshi: Moshi) {
      */
     fun read(filename: String, vars: Map<String, Any> = emptyMap()): String {
         val stream: InputStream = try {
-            this.javaClass.classLoader.getResourceAsStream("templates/$filename") as InputStream
+            this.javaClass.classLoader.getResourceAsStream("templates/$filename")!!
         } catch (e: Exception) {
             throw MissingTemplate(filename)
         }
