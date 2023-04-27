@@ -37,6 +37,8 @@ kapt {
 project.afterEvaluate {
     // Force generation of the API and models based on the
     tasks.get("kaptGenerateStubsKotlin").dependsOn("generateTendermintAPI")
+    tasks.get("sourcesJar").dependsOn("generateTendermintAPI")
+    tasks.get("runKtlintCheckOverMainSourceSet").dependsOn("generateTendermintAPI")
 }
 
 val tendermintOpenApiYaml = "$rootDir/es-api-model/src/main/resources/tendermint-v0.34.12-rpc-openapi-FIXED.yaml"
