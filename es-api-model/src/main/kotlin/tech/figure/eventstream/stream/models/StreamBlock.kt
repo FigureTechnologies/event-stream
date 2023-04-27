@@ -23,5 +23,5 @@ data class StreamBlockImpl(
     override val blockResult: List<BlockResultsResponseResultTxsResults>?,
     override val txEvents: List<TxEvent>,
     override val txErrors: List<TxError>,
-    override val historical: Boolean = false
+    override val historical: Boolean = false,
 ) : StreamBlock

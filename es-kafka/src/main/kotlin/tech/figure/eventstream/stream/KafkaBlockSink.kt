@@ -16,7 +16,7 @@ fun kafkaBlockSink(producerProps: Map<String, Any>, topicName: String, kafkaProd
 class KafkaBlockSink(
     producerProps: Map<String, Any>,
     private val topicName: String,
-    kafkaProducer: Producer<ByteArray, ByteArray>? = null
+    kafkaProducer: Producer<ByteArray, ByteArray>? = null,
 ) : BlockSink {
     private val serializer = Serdes.ByteArray().serializer()
     private val byteArrayProps = mapOf<String, Any>(
@@ -31,7 +31,7 @@ class KafkaBlockSink(
         val record = ProducerRecord(
             topicName,
             key.toByteArray(),
-            (block as StreamBlockImpl).toByteArray()!!
+            (block as StreamBlockImpl).toByteArray()!!,
         )
         producer.send(record)
     }

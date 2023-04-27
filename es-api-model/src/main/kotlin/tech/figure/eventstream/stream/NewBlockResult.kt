@@ -23,7 +23,7 @@ data class NewBlockResult(
 @JsonClass(generateAdapter = true)
 data class NewBlockEventResultData(
     val type: String,
-    val value: NewBlockEventResultValue
+    val value: NewBlockEventResultValue,
 )
 
 /**
@@ -31,7 +31,7 @@ data class NewBlockEventResultData(
  */
 @JsonClass(generateAdapter = true)
 data class NewBlockEventResultBeginBlock(
-    val events: List<BlockResultsResponseResultEvents>
+    val events: List<BlockResultsResponseResultEvents>,
 )
 
 /**

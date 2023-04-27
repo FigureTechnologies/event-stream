@@ -22,11 +22,11 @@ import tech.figure.eventstream.BlockStreamOptions
 @ExperimentalCoroutinesApi
 class EventStreamViewer(
     private val eventStream: EventStream,
-    private val options: BlockStreamOptions
+    private val options: BlockStreamOptions,
 ) {
     constructor(
         eventStreamFactory: BlockStreamFactory,
-        options: BlockStreamOptions
+        options: BlockStreamOptions,
     ) : this(eventStreamFactory.createSource(options) as EventStream, options)
 
     private val log = KotlinLogging.logger { }
@@ -41,7 +41,7 @@ class EventStreamViewer(
 
     suspend fun consume(
         error: (Throwable) -> Unit = ::onError,
-        ok: (block: StreamBlock, serialize: (StreamBlockImpl) -> String) -> Unit
+        ok: (block: StreamBlock, serialize: (StreamBlockImpl) -> String) -> Unit,
     ) {
         eventStream.streamBlocks()
             .buffer()

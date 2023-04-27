@@ -7,7 +7,7 @@ interface ServiceMock {
 }
 
 class ServiceMocker private constructor(
-    private val actions: Map<String, Action>
+    private val actions: Map<String, Action>,
 ) : ServiceMock {
 
     private val calls: MutableMap<String, Int> = mutableMapOf()

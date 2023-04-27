@@ -24,7 +24,6 @@ class KafkaSinkTests : TestBase() {
     @OptIn(ExperimentalCoroutinesApi::class)
     @Test
     fun testKafkaSinkSendSuccess() = dispatcherProvider.runBlockingTest {
-
         val serializer = Serdes.ByteArray().serializer()
 
         val producerProps = mapOf(
@@ -48,7 +47,7 @@ class KafkaSinkTests : TestBase() {
                 blockResultsResponse.result.height,
                 OffsetDateTime.now(),
                 it.type!!,
-                it.attributes!!
+                it.attributes!!,
             )
         }
         val streamBlock = StreamBlockImpl(blockResponse!!.result!!.block!!, blockEvents, mutableListOf(), mutableListOf(), mutableListOf())
@@ -70,7 +69,6 @@ class KafkaSinkTests : TestBase() {
     @OptIn(ExperimentalCoroutinesApi::class)
     @Test
     fun testKafkaSinkSendFail() = dispatcherProvider.runBlockingTest {
-
         val serializer = Serdes.ByteArray().serializer()
         val producerProps = mapOf(
             CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG to "localhost:9092",
@@ -95,7 +93,7 @@ class KafkaSinkTests : TestBase() {
                 blockResultsResponse.result.height,
                 OffsetDateTime.now(),
                 it.type!!,
-                it.attributes!!
+                it.attributes!!,
             )
         }
         val streamBlock = StreamBlockImpl(blockResponse!!.result!!.block!!, blockEvents, mutableListOf(), mutableListOf(), mutableListOf())

@@ -8,14 +8,14 @@ import kotlinx.coroutines.flow.DEFAULT_CONCURRENCY
 
 data class WebsocketStreamConfig(
     val uri: String,
-    @ConfigAlias("throttle_duration_ms") val throttleDurationMs: Long = 0
+    @ConfigAlias("throttle_duration_ms") val throttleDurationMs: Long = 0,
 )
 
 data class RpcStreamConfig(val uri: String)
 
 data class StreamEventsFilterConfig(
     @ConfigAlias("tx_events") val txEvents: Set<String> = emptySet(),
-    @ConfigAlias("block_events") val blockEvents: Set<String> = emptySet()
+    @ConfigAlias("block_events") val blockEvents: Set<String> = emptySet(),
 ) {
     companion object {
         val empty: StreamEventsFilterConfig get() = StreamEventsFilterConfig()
@@ -45,7 +45,7 @@ data class HeightConfig(
 )
 
 data class UploadConfig(
-    val extractors: List<String> = emptyList()
+    val extractors: List<String> = emptyList(),
 ) {
     companion object {
         val empty: UploadConfig get() = UploadConfig()

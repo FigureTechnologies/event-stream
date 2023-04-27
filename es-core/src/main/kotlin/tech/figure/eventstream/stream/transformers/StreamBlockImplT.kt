@@ -26,7 +26,7 @@ suspend fun queryBlock(
     skipIfNoTxs: Boolean = true,
     historical: Boolean = false,
     fetcher: TendermintBlockFetcher,
-    options: Options
+    options: Options,
 ): StreamBlockImpl? {
     val block: Block = fetcher.getBlock(height).block
 

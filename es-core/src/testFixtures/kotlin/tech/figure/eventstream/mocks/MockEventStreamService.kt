@@ -17,7 +17,7 @@ import java.util.concurrent.atomic.AtomicLong
 class MockEventStreamService private constructor(
     private val channel: Channel<WebSocket.Event>,
     private val responseCount: Long,
-    private val dispatchers: DispatcherProvider
+    private val dispatchers: DispatcherProvider,
 ) : WebSocketService {
 
     class Builder {
@@ -80,7 +80,7 @@ class MockEventStreamService private constructor(
             return MockEventStreamService(
                 channel = channel,
                 responseCount = payloads.size.toLong(),
-                dispatchers = dispatchers ?: error("dispatchers must be provided")
+                dispatchers = dispatchers ?: error("dispatchers must be provided"),
             )
         }
     }
@@ -103,7 +103,6 @@ class MockEventStreamService private constructor(
         return object : ReceiveChannel<WebSocket.Event> by channel {
 
             override fun iterator(): ChannelIterator<WebSocket.Event> {
-
                 return object : ChannelIterator<WebSocket.Event> by iterator {
 
                     override fun next(): WebSocket.Event {

@@ -19,7 +19,7 @@ import tech.figure.eventstream.stream.models.BlockchainResponse
  */
 class TendermintServiceOpenApiClient(
     rpcUrlBase: String,
-    configureBuilderFn: OkHttpClient.Builder.() -> OkHttpClient.Builder = { this }
+    configureBuilderFn: OkHttpClient.Builder.() -> OkHttpClient.Builder = { this },
 ) : TendermintServiceClient {
     init {
         ApiClient.builder.apply { configureBuilderFn() }

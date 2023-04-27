@@ -45,11 +45,13 @@ fun <T> Flow<T>.cancelOnSignal(signal: Channel<Unit>): Flow<T> = flow {
                 this@coroutineScope.cancel()
             }
 
-            collect(object : FlowCollector<T> {
-                override suspend fun emit(value: T) {
-                    outer.emit(value)
-                }
-            })
+            collect(
+                object : FlowCollector<T> {
+                    override suspend fun emit(value: T) {
+                        outer.emit(value)
+                    }
+                },
+            )
         }
     } catch (e: CancellationException) {
         // ignore
@@ -190,7 +192,7 @@ fun <T, R> Flow<T>.windowed(
     partialWindows: Boolean,
     timeout: Duration? = null,
     pollInterval: Duration = DEFAULT_POLL_INTERVAL,
-    transform: suspend (Flow<T>) -> R
+    transform: suspend (Flow<T>) -> R,
 ): Flow<R> {
     require(size > 0 && step > 0) { "Size and step should be greater than 0, but was size: $size, step: $step" }
 
@@ -233,24 +235,26 @@ fun <T, R> Flow<T>.windowed(
             }
         }
 
-        collect(object : FlowCollector<T> {
-            override suspend fun emit(value: T) {
-                if (toSkip == skipped) {
-                    buffer.addLast(value)
-                } else {
-                    skipped++
-                }
-
-                if (buffer.size == size) {
-                    send(transform(buffer.asFlow()))
-                    updateEmissionTime()
-                    repeat(toDrop) {
-                        buffer.removeFirst()
+        collect(
+            object : FlowCollector<T> {
+                override suspend fun emit(value: T) {
+                    if (toSkip == skipped) {
+                        buffer.addLast(value)
+                    } else {
+                        skipped++
                     }
-                    skipped = 0
+
+                    if (buffer.size == size) {
+                        send(transform(buffer.asFlow()))
+                        updateEmissionTime()
+                        repeat(toDrop) {
+                            buffer.removeFirst()
+                        }
+                        skipped = 0
+                    }
                 }
-            }
-        })
+            },
+        )
 
         while (partialWindows && buffer.isNotEmpty()) {
             send(transform(buffer.asFlow()))

@@ -33,3 +33,19 @@ include("es-common")
 include("es-core")
 include("es-grpc")
 include("es-kafka")
+
+plugins {
+    id("org.danilopianini.gradle-pre-commit-git-hooks") version "1.1.7"
+}
+
+gitHooks {
+    preCommit {
+        from {
+            """
+                echo "Running pre-commit ktlint check"
+                ./gradlew ktlintCheck
+            """.trimIndent()
+        }
+    }
+    createHooks()
+}

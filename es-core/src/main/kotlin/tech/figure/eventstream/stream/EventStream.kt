@@ -62,13 +62,14 @@ class EventStream(
     private val decoder: DecoderEngine,
     private val dispatchers: DispatcherProvider = DefaultDispatcherProvider(),
     private val checkpoint: Checkpoint = FileCheckpoint(),
-    private val options: BlockStreamOptions = BlockStreamOptions()
+    private val options: BlockStreamOptions = BlockStreamOptions(),
 ) : BlockSource<StreamBlockImpl> {
     companion object {
         /**
          * The default number of blocks that will be contained in a batch.
          */
         const val DEFAULT_BATCH_SIZE = 128
+
         /**
          * The maximum size of the query range for block heights allowed by the Tendermint API.
          * This means, for a given block height `H`, we can ask for blocks in the range [`H`, `H` + `TENDERMINT_MAX_QUERY_RANGE`].
@@ -164,7 +165,6 @@ class EventStream(
 
     @OptIn(InternalCoroutinesApi::class, ExperimentalCoroutinesApi::class)
     fun Flow<Block>.toLiveStream(): Flow<StreamBlockImpl> {
-
         return channelFlow {
             this@toLiveStream
                 .flowOn(dispatchers.io())
@@ -222,12 +222,12 @@ class EventStream(
                 log.info("Listening for live and historical blocks from height $startingHeight")
                 merge(
                     streamHistoricalBlocks(startingHeight),
-                    streamLiveBlocks().filterByEvents()
+                    streamLiveBlocks().filterByEvents(),
                 )
             } else {
                 log.info("Listening for live blocks only")
                 streamLiveBlocks().filterByEvents()
-            }
+            },
         )
     }.cancellable().retryWhen { cause: Throwable, attempt: Long ->
         log.warn("streamBlocks::error; recovering Flow (attempt ${attempt + 1})")
@@ -299,7 +299,8 @@ class EventStream(
                 is CompletionException,
                 is ConnectException,
                 is SocketTimeoutException,
-                is SocketException -> {
+                is SocketException,
+                -> {
                     val duration = backoff(attempt, jitter = false)
                     log.error("streamblocks::Reconnect attempt #$attempt; waiting ${duration.inWholeSeconds}s before trying again: $cause")
                     delay(duration)

@@ -28,20 +28,20 @@ object Builders {
             Defaults.templates.readAs(
                 ABCIInfoResponse::class.java,
                 "abci_info/success.json",
-                mapOf("last_block_height" to MAX_HISTORICAL_BLOCK_HEIGHT)
+                mapOf("last_block_height" to MAX_HISTORICAL_BLOCK_HEIGHT),
             )
         }
         .doFor("block") { Defaults.templates.readAs(BlockResponse::class.java, "block/${it[0]}.json") }
         .doFor("blockResults") {
             Defaults.templates.readAs(
                 BlockResultsResponse::class.java,
-                "block_results/${it[0]}.json"
+                "block_results/${it[0]}.json",
             )
         }
         .doFor("blockchain") {
             Defaults.templates.readAs(
                 BlockchainResponse::class.java,
-                "blockchain/${it[0]}-${it[1]}.json"
+                "blockchain/${it[0]}-${it[1]}.json",
             )
         }
 
@@ -94,11 +94,11 @@ object Builders {
                         .build(),
                 fetcher = TendermintBlockFetcher(
                     tendermintServiceClient
-                        ?: builders.tendermintService().build(MockTendermintServiceClient::class.java)
+                        ?: builders.tendermintService().build(MockTendermintServiceClient::class.java),
                 ),
                 decoder = if (moshi != null) MoshiDecoderEngine(moshi!!) else Defaults.decoderEngine(),
                 dispatchers = dispatchers,
-                options = options
+                options = options,
             )
         }
     }

@@ -17,5 +17,5 @@ data class TxEvent(
     override val attributes: List<Event>,
     val fee: BigInteger?,
     val denom: String?,
-    val note: String?
+    val note: String?,
 ) : EncodedBlockchainEvent

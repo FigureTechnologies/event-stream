@@ -33,7 +33,6 @@ class LiveMetaDataStream(
      */
     @OptIn(ExperimentalCoroutinesApi::class)
     fun streamBlocks(): Flow<Block> {
-
         // Toggle the Lifecycle register start state:
         eventStreamService.start()
 

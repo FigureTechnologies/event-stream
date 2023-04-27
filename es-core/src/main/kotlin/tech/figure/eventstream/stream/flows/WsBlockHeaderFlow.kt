@@ -44,7 +44,7 @@ fun wsBlockHeaderFlow(
     backoffStrategy: BackoffStrategy = defaultBackoffStrategy(),
     channel: WebSocketChannel = defaultWebSocketChannel(netAdapter.wsAdapter, decoderAdapter.wsDecoder, throttle, lifecycle, backoffStrategy),
     wss: WebSocketService = channel.withLifecycle(lifecycle),
-    currentHeight: Long? = null
+    currentHeight: Long? = null,
 ): Flow<BlockHeader> {
     val fetcher: suspend (List<Long>) -> Flow<BlockHeader> = {
         it.chunked(20).flatMap { range ->

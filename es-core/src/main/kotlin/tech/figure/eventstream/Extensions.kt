@@ -60,7 +60,7 @@ fun OffsetDateTime.toISOString() = this.format(DateTimeFormatter.ISO_DATE_TIME).
 fun <T, R> Flow<List<T>>.doFlatMap(
     ordered: Boolean,
     concurrency: Int,
-    block: (List<T>) -> Flow<R>
+    block: (List<T>) -> Flow<R>,
 ): Flow<R> {
     return if (ordered) {
         flatMapConcat { block(it) }
