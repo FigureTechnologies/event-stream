@@ -2,12 +2,9 @@ package tech.figure.eventstream.stream.flows
 
 import com.tinder.scarlet.lifecycle.LifecycleRegistry
 import com.tinder.scarlet.retry.BackoffStrategy
-import tech.figure.eventstream.stream.models.Block
-import tech.figure.eventstream.stream.models.BlockHeader
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.transform
+import tech.figure.eventstream.common.flows.contiguous
 import tech.figure.eventstream.decoder.DecoderAdapter
 import tech.figure.eventstream.defaultBackoffStrategy
 import tech.figure.eventstream.defaultLifecycle
@@ -17,6 +14,8 @@ import tech.figure.eventstream.stream.NewBlockResult
 import tech.figure.eventstream.stream.WebSocketChannel
 import tech.figure.eventstream.stream.WebSocketService
 import tech.figure.eventstream.stream.clients.BlockData
+import tech.figure.eventstream.stream.models.Block
+import tech.figure.eventstream.stream.models.BlockHeader
 import tech.figure.eventstream.stream.rpc.response.MessageType
 import tech.figure.eventstream.stream.withLifecycle
 import kotlin.time.Duration
@@ -70,28 +69,4 @@ fun wsBlockDataFlow(
 fun Flow<MessageType.NewBlock>.mapBlockData(netAdapter: NetAdapter): Flow<BlockData> {
     val fetcher = netAdapter.rpcAdapter
     return map { fetcher.getBlock(it.block.data.value.block.header!!.height) }
-}
-
-/**
- * Generate contiguous runs of data, aka: fill in the gaps.
- *
- * @param fallback Method to pull any missing T's by the id provided.
- * @param indexer Method to pull id from the next T.
- *
- * ```kotlin
- *     listOf(1, 5).asFlow().contiguous({ it }) { it }.toList() == listOf(1, 2, 3, 4, 5)
- * ```
- */
-internal fun <T> Flow<T>.contiguous(current: Long? = null, fallback: suspend (ids: List<Long>) -> Flow<T>, indexer: (T) -> Long): Flow<T> {
-    var currentHeight = current
-    return transform { item ->
-        val index = indexer(item)
-        if (currentHeight != null && currentHeight!!.inc() < index) {
-            // Uh-oh! Found a gap. Fill it in. Don't use fallback for current item.
-            val missingIds = ((currentHeight!!.inc()) until index).toList()
-            emitAll(fallback(missingIds))
-        }
-        currentHeight = index
-        emit(item)
-    }
 }

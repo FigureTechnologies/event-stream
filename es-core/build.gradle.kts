@@ -13,6 +13,7 @@ dependencies {
     kapt(libs.moshi.kotlin.codegen)
     implementation(projects.esApi)
     implementation(projects.esApiModel)
+    implementation(projects.esCommon)
 
     implementation(libs.bundles.hoplite)
     implementation(libs.bundles.scarlet)

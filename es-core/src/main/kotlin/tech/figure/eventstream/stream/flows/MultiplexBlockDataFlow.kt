@@ -46,11 +46,7 @@ fun blockDataFlow(
     from: Long? = null,
     to: Long? = null,
 ): Flow<BlockData> {
-    var currentHeight = 0L
-    runBlocking {
-        currentHeight = netAdapter.rpcAdapter.getCurrentHeight()!!
-    }
-
+    val currentHeight = runBlocking { netAdapter.rpcAdapter.getCurrentHeight()!! }
     return blockDataFlow(
         netAdapter,
         from,
