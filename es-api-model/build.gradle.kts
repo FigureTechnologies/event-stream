@@ -12,7 +12,6 @@ dependencies {
     implementation(libs.bundles.hoplite)
     implementation(libs.bundles.scarlet)
 
-    implementation(libs.arrow)
     implementation(libs.commons.lang)
     implementation(libs.json)
 
