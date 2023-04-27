@@ -48,6 +48,7 @@ class LiveMetaDataStream(
                     is WebSocket.Event.OnMessageReceived -> when (event.message) {
                         is Message.Text -> {
                             val message = event.message as Message.Text
+                            @Suppress("must_be_exhaustive")
                             when (val type = responseMessageDecoder.decode(message.value)) {
                                 is MessageType.Empty -> log.info("received empty ACK message => ${message.value}")
                                 is MessageType.NewBlock -> {
@@ -61,6 +62,7 @@ class LiveMetaDataStream(
                                     throw CancellationException("RPC endpoint panic: ${type.error}")
                                 }
                                 is MessageType.Unknown -> log.info("unknown message type; skipping message => ${message.value}")
+                                else -> throw CancellationException("Unknown type: $type")
                             }
                         }
                         is Message.Bytes -> {

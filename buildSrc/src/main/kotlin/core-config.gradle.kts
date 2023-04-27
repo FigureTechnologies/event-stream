@@ -20,9 +20,6 @@ plugins {
 group = rootProject.group
 version = rootProject.version
 
-val nexusUser = findProperty("nexusUser")?.toString() ?: System.getenv("NEXUS_USER")
-val nexusPass = findProperty("nexusPass")?.toString() ?: System.getenv("NEXUS_PASS")
-
 repositories {
     mavenCentral()
 }
@@ -31,12 +28,12 @@ dependencies {
     // Align versions of all Kotlin components.
     // See https://medium.com/@gabrielshanahan/a-deep-dive-into-an-initial-kotlin-build-gradle-kts-8950b81b214
     implementation(platform("org.jetbrains.kotlin:kotlin-bom"))
-
     implementation("org.jetbrains.kotlin", "kotlin-reflect")
     implementation("org.jetbrains.kotlin", "kotlin-stdlib")
     implementation("org.jetbrains.kotlin", "kotlin-stdlib-jdk8")
     implementation("org.jetbrains.kotlinx", "kotlinx-datetime", Versions.Kotlinx.DateTime)
     implementation("org.jetbrains.kotlinx", "kotlinx-coroutines-core", Versions.Kotlinx.Core)
+    implementation("org.jetbrains.kotlinx", "kotlinx-coroutines-core-jvm", Versions.Kotlinx.Core)
     implementation("org.jetbrains.kotlinx", "kotlinx-coroutines-jdk8", Versions.Kotlinx.Core)
     implementation("org.jetbrains.kotlinx", "kotlinx-coroutines-reactive", Versions.Kotlinx.Core)
 
