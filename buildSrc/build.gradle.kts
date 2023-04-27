@@ -5,7 +5,7 @@ plugins {
 val gradleNexusVersion = "1.3.0"
 val kotlinVersion = "1.7.10"
 val ktLintVersion = "10.3.0"
-val dokkaVersion = kotlinVersion
+val dokkaVersion = "1.7.20"
 
 repositories {
     gradlePluginPortal()
