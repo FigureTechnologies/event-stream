@@ -157,7 +157,7 @@ class BlockDataFlowBuilder {
             getHeight = blockDataHeightFn,
             historicalFlow = historicalFlow,
             liveFlow = liveFlow,
-            shouldRetry = shouldRetry
+            shouldRetry = shouldRetry,
         )
     }
 }
@@ -211,7 +211,7 @@ fun blockDataFlow(
         from = from,
         to = to,
         historicalFlow = { f, t -> historicalBlockDataFlow(netAdapter, f, t, currentHeight = currentHeight) },
-        liveFlow = { wsBlockDataFlow(netAdapter, decoderAdapter, currentHeight = currentHeight) }
+        liveFlow = { wsBlockDataFlow(netAdapter, decoderAdapter, currentHeight = currentHeight) },
     )
 }
 
