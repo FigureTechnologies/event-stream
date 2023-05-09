@@ -8,6 +8,7 @@ import java.security.MessageDigest
 import java.security.NoSuchAlgorithmException
 import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
+import java.util.Base64
 
 /**
  * Compute a hex-encoded (printable) version of a SHA-256 encoded byte array.
@@ -33,8 +34,6 @@ fun sha256(input: ByteArray?): ByteArray =
  */
 fun String.hash(): String = sha256(BaseEncoding.base64().decode(this)).toHexString()
 
-// === Date/time methods ===============================================================================================
-
 fun Block.txData(index: Int): TxData? {
     val tx = this.data?.txs?.get(index) ?: return null
 
@@ -50,10 +49,25 @@ fun Block.txData(index: Int): TxData? {
     )
 }
 
+/**
+ * Return the hashes of the transactions contained in this block.
+ *
+ * @return A list of transaction hashes.
+ */
 fun Block.txHashes(): List<String> = this.data?.txs?.map { it.hash() } ?: emptyList()
 
-fun Block.dateTime() = this.header?.dateTime()
+/**
+ * Return the creation time of the block.
+ *
+ * @return The time the block was created.  If the date is missing or invalid, null will be returned
+ */
+fun Block.dateTime(): OffsetDateTime? = this.header?.dateTime()
 
+/**
+ * Return the creation time of the block header.
+ *
+ * @return The time the block was created.  If the date is missing or invalid, null will be returned
+ */
 fun BlockHeader.dateTime(): OffsetDateTime? =
     runCatching { OffsetDateTime.parse(this.time, DateTimeFormatter.ISO_DATE_TIME) }.getOrNull()
 
@@ -148,3 +162,30 @@ fun BlockResultsResponseResultEvents.toTxEvent(
     )
 
 fun Coin.toInnerCoin(): InnerCoin = InnerCoin(coin = this)
+
+/**
+ * Check if a [TxEvent] contains a specific attribute.
+ *
+ * @param key The name of the attribute to check for.
+ * @return boolean
+ */
+fun TxEvent.hasAttribute(key: String): Boolean = attributes.any { it.key == key }
+
+/**
+ * Convert an [Event] to an attribute, e.g. a String key/value pair, where the key and value are base64 decoded.
+ *
+ * @return A base64 decoded key/value value.
+ */
+fun Event.toAttribute(): Pair<String, String?> {
+    val decoder = Base64.getDecoder()
+    return String(decoder.decode(key)) to (value?.run { String(decoder.decode(this)) })
+}
+
+/**
+ * Base64 decodes the contents of [EncodedBlockchainEvent.attributes], collecting the key/value pairs into a [Map]
+ *
+ * @return A [Map] containing the base64 decoded key/value pairs.
+ */
+fun List<Event>.toDecodedMap(): Map<String, String?> = associate { e ->
+    Base64.getDecoder().decode(e.key).decodeToString() to e.value
+}

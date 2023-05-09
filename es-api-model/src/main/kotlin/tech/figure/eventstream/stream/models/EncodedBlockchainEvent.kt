@@ -1,7 +1,5 @@
 package tech.figure.eventstream.stream.models
 
-import java.util.Base64
-
 /**
  * Common interface for various blockchain event types that are encoded as an event type followed by a series of
  * event key/value attributes conforming to the format defined in `provenance/attribute/v1/attribute.proto`.
@@ -107,6 +105,3 @@ interface EncodedBlockchainEvent {
  *     "scope_addr"   to "InNjb3BlMXF6bTN4YWd4NzZ1eXZnNGs3eXZ4Yzd1aG51Z3F6ZW1tbTci"
  *   }
  */
-fun List<Event>.toDecodedMap(): Map<String, String?> = associate { e ->
-    Base64.getDecoder().decode(e.key).decodeToString() to e.value
-}
