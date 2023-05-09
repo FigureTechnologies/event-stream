@@ -80,7 +80,6 @@ fun BlockResultsResponseResult.txEvents(blockDateTime: OffsetDateTime?, txHash: 
     run {
         txsResults?.flatMapIndexed { index: Int, tx: BlockResultsResponseResultTxsResults ->
             tx.events
-                ?.filter { tx.code?.toInt() == 0 }
                 ?.map { blockResultResponseEvents ->
                     txHash(index).let { txData ->
                         blockResultResponseEvents.toTxEvent(
