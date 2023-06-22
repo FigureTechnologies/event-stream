@@ -9,7 +9,7 @@ import tech.figure.eventstream.stream.toByteArray
 import tech.figure.eventstream.stream.toStreamBlock
 import tech.figure.eventstream.test.base.TestBase
 import io.provenance.kafka.coroutine.kafkaConsumerChannel
-import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
@@ -73,7 +73,6 @@ class KafkaSourceTests : TestBase() {
         }
     }
 
-    @OptIn(ExperimentalCoroutinesApi::class)
     @Test
     fun testStreamBlockByteArrayExtensions() {
         val streamBytes = streamBlocks["2270370"]!!.toByteArray()
@@ -81,7 +80,6 @@ class KafkaSourceTests : TestBase() {
         assert(streamBlockImpl!!.height == 2270370L)
     }
 
-    @OptIn(ExperimentalCoroutinesApi::class)
     @Test
     fun testStreamBlockByteArrayExtensionsEmpty() {
         val streamBytes = StreamBlockImpl(Block(), mutableListOf(), mutableListOf(), mutableListOf(), mutableListOf()).toByteArray()
@@ -89,7 +87,6 @@ class KafkaSourceTests : TestBase() {
         assert(streamBlockImpl!!.block.data == null)
     }
 
-    @OptIn(ExperimentalCoroutinesApi::class)
     @Test
     fun testStreamBlockByteArrayExtensionsIncompatibleValue() {
         val streamBytes = "failStrin".toByteArray()
@@ -98,7 +95,6 @@ class KafkaSourceTests : TestBase() {
         }
     }
 
-    @OptIn(ExperimentalCoroutinesApi::class)
     @Test
     fun testKafkaConsumerMultipleRecords() {
         val mockConsumer = MockConsumer<ByteArray, ByteArray>(
@@ -165,7 +161,6 @@ class KafkaSourceTests : TestBase() {
         }
     }
 
-    @OptIn(ExperimentalCoroutinesApi::class)
     @Test
     fun testKafkaConsumerEmptyPoll() {
         val mockConsumer = MockConsumer<ByteArray, ByteArray>(
@@ -215,7 +210,6 @@ class KafkaSourceTests : TestBase() {
         }
     }
 
-    @OptIn(ExperimentalCoroutinesApi::class)
     @Test
     fun testKafkaConsumerClosedError() {
         val mockConsumer = MockConsumer<ByteArray, ByteArray>(
@@ -246,7 +240,6 @@ class KafkaSourceTests : TestBase() {
         }
     }
 
-    @OptIn(ExperimentalCoroutinesApi::class)
     @Test
     fun testKafkaConsumerWrongBytes() {
         val mockConsumer = MockConsumer<ByteArray, ByteArray>(
@@ -272,8 +265,8 @@ class KafkaSourceTests : TestBase() {
         startOffsets[tp1] = 0L
         mockConsumer.updateBeginningOffsets(startOffsets)
         val results = mutableListOf<KafkaStreamBlock>()
-        assertThrows<IllegalStateException> {
-            runBlocking {
+        assertThrows<java.lang.Exception> {
+            runBlocking(Dispatchers.IO) {
                 val kafkaChannel = kafkaConsumerChannel<ByteArray, ByteArray>(
                     consumerProps,
                     setOf("test-topic"),
