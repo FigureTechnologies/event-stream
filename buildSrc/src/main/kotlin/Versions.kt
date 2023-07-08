@@ -16,7 +16,7 @@ object Versions {
     }
 
     const val KotlinLogging = "2.0.11"
-    const val Moshi = "1.13.0"
+    const val Moshi = "1.15.0"
     object Plugins {
         const val OpenAPI = "5.2.1"
     }
