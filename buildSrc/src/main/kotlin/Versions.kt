@@ -11,7 +11,7 @@ object Versions {
     }
 
     object Kotlinx {
-        const val Core = "1.5.2"
+        const val Core = "1.7.2"
         const val DateTime = "0.3.0"
     }
 
