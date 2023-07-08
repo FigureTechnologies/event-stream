@@ -4,7 +4,7 @@ object Versions {
         const val Lang3 = "3.12.0"
         const val Text = "1.9"
     }
-    const val Hoplite = "2.1.4"
+    const val Hoplite = "2.7.4"
     object JUnit {
         const val Core = "5.3.1"
         const val Pioneer = "1.4.2"
