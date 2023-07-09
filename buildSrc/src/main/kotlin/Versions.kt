@@ -15,7 +15,7 @@ object Versions {
         const val DateTime = "0.3.0"
     }
 
-    const val KotlinLogging = "2.0.11"
+    const val KotlinLogging = "2.1.23"
     const val Moshi = "1.15.0"
     object Plugins {
         const val OpenAPI = "5.2.1"
