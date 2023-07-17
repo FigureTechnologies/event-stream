@@ -433,7 +433,6 @@ class StreamTests : TestBase() {
                         .dispatchers(dispatcherProvider)
                         .eventStreamService(eventStreamService)
                         .tendermintService(tendermintService)
-                        .fromHeight(MIN_HISTORICAL_BLOCK_HEIGHT)
                         .skipEmptyBlocks(true)
                         .build()
 
