@@ -11,6 +11,7 @@ import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.EmptyCoroutineContext
 import tech.figure.eventstream.stream.models.StreamBlock
 import tech.figure.eventstream.stream.models.StreamBlockImpl
+import tech.figure.eventstream.stream.models.TxError
 import tech.figure.eventstream.stream.models.TxEvent
 import tech.figure.eventstream.stream.models.blockEvents
 import tech.figure.eventstream.stream.models.dateTime
@@ -33,9 +34,18 @@ data class BlockData(val block: Block, val blockResult: BlockResultsResponseResu
     /**
      * List all transaction events occurring in the block.
      *
+     * Note: this includes all events, including events with a non-zero code.
+     *
      * @return A list of all events associated with transactions that are a part of this block.
      */
     fun txEvents(): List<TxEvent> = blockResult.txEvents(block.dateTime()) { index -> block.txData(index) }
+
+    /**
+     * List only transaction events with a non-zero code.
+     *
+     * Note: non-zero codes are indicative of an error state for the transaction.
+     */
+    fun txErrors(): List<TxError> = blockResult.txErroredEvents(block.dateTime()) { index -> block.txData(index) }
 
     /**
      * Converts this block data container into an instance of [StreamBlock].
@@ -43,7 +53,7 @@ data class BlockData(val block: Block, val blockResult: BlockResultsResponseResu
      * @return A [StreamBlock] instance.
      */
     fun toStreamBlock(): StreamBlock {
-        val blockDatetime = block.header?.dateTime()
+        val blockDatetime = block.dateTime()
         val blockEvents = blockResult.blockEvents(blockDatetime)
         val blockTxResults = blockResult.txsResults
         val txEvents = blockResult.txEvents(blockDatetime) { index: Int -> block.txData(index) }
