@@ -7,7 +7,7 @@ object Versions {
     const val Hoplite = "2.7.4"
     object JUnit {
         const val Core = "5.10.0"
-        const val Pioneer = "1.4.2"
+        const val Pioneer = "1.9.1"
     }
 
     object Kotlinx {
