@@ -18,7 +18,7 @@ object Versions {
     const val KotlinLogging = "3.0.5"
     const val Moshi = "1.15.0"
     object Plugins {
-        const val OpenAPI = "5.2.1"
+        const val OpenAPI = "7.1.0"
     }
     const val Scarlet = "0.1.12"
     const val Kafka = "3.5.1"
