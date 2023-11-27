@@ -78,7 +78,7 @@ fun BlockResultsResponse.txEvents(blockDate: OffsetDateTime, txHash: (index: Int
 
 fun BlockResultsResponseResult.txEvents(blockDateTime: OffsetDateTime?, txHash: (Int) -> TxData?): List<TxEvent> =
     run {
-        txsResults?.flatMapIndexed { index: Int, tx: BlockResultsResponseResultTxsResults ->
+        txsResults?.flatMapIndexed { index: Int, tx: BlockResultsResponseResultTxsResultsInner ->
             tx.events
                 ?.map { blockResultResponseEvents ->
                     txHash(index).let { txData ->
@@ -95,7 +95,7 @@ fun BlockResultsResponseResult.txEvents(blockDateTime: OffsetDateTime?, txHash: 
     } ?: emptyList()
 
 fun BlockResultsResponseResult.blockEvents(blockDateTime: OffsetDateTime?): List<BlockEvent> = run {
-    beginBlockEvents?.map { e: BlockResultsResponseResultEvents ->
+    beginBlockEvents?.map { e: BlockResultsResponseResultTxsResultsInnerEventsInner ->
         BlockEvent(
             blockHeight = height,
             blockDateTime = blockDateTime,
@@ -107,7 +107,7 @@ fun BlockResultsResponseResult.blockEvents(blockDateTime: OffsetDateTime?): List
 
 fun BlockResultsResponseResult.txErroredEvents(blockDateTime: OffsetDateTime?, txHash: (Int) -> TxData?): List<TxError> =
     run {
-        txsResults?.mapIndexed { index: Int, tx: BlockResultsResponseResultTxsResults ->
+        txsResults?.mapIndexed { index: Int, tx: BlockResultsResponseResultTxsResultsInner ->
             if (tx.code?.toInt() != 0) {
                 txHash(index).let { txData ->
                     tx.toBlockError(
@@ -123,7 +123,7 @@ fun BlockResultsResponseResult.txErroredEvents(blockDateTime: OffsetDateTime?, t
         }?.filterNotNull()
     } ?: emptyList()
 
-fun BlockResultsResponseResultTxsResults.toBlockError(blockHeight: Long, blockDateTime: OffsetDateTime?, txHash: String?, fee: InnerCoin?): TxError =
+fun BlockResultsResponseResultTxsResultsInner.toBlockError(blockHeight: Long, blockDateTime: OffsetDateTime?, txHash: String?, fee: InnerCoin?): TxError =
     TxError(
         blockHeight = blockHeight,
         blockDateTime = blockDateTime,
@@ -134,7 +134,7 @@ fun BlockResultsResponseResultTxsResults.toBlockError(blockHeight: Long, blockDa
         denom = fee?.denom ?: "",
     )
 
-fun BlockResultsResponseResultEvents.toBlockEvent(blockHeight: Long, blockDateTime: OffsetDateTime?): BlockEvent =
+fun BlockResultsResponseResultTxsResultsInnerEventsInner.toBlockEvent(blockHeight: Long, blockDateTime: OffsetDateTime?): BlockEvent =
     BlockEvent(
         blockHeight = blockHeight,
         blockDateTime = blockDateTime,
@@ -142,7 +142,7 @@ fun BlockResultsResponseResultEvents.toBlockEvent(blockHeight: Long, blockDateTi
         attributes = this.attributes ?: emptyList(),
     )
 
-fun BlockResultsResponseResultEvents.toTxEvent(
+fun BlockResultsResponseResultTxsResultsInnerEventsInner.toTxEvent(
     blockHeight: Long,
     blockDateTime: OffsetDateTime?,
     txHash: String?,

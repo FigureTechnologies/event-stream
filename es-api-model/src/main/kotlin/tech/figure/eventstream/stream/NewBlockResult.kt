@@ -2,7 +2,7 @@ package tech.figure.eventstream.stream
 
 import com.squareup.moshi.JsonClass
 import tech.figure.eventstream.stream.models.Block
-import tech.figure.eventstream.stream.models.BlockResultsResponseResultEvents
+import tech.figure.eventstream.stream.models.BlockResultsResponseResultTxsResultsInnerEventsInner
 import tech.figure.eventstream.stream.models.ConsensusParamsBlock
 import tech.figure.eventstream.stream.models.ConsensusParamsEvidence
 import tech.figure.eventstream.stream.models.ConsensusParamsValidator
@@ -31,7 +31,7 @@ data class NewBlockEventResultData(
  */
 @JsonClass(generateAdapter = true)
 data class NewBlockEventResultBeginBlock(
-    val events: List<BlockResultsResponseResultEvents>,
+    val events: List<BlockResultsResponseResultTxsResultsInnerEventsInner>,
 )
 
 /**
@@ -54,5 +54,5 @@ data class ConsensusParamsUpdates(
 @JsonClass(generateAdapter = true)
 data class NewBlockEventResultEndBlock(
     val consensus_param_updates: ConsensusParamsBlock?,
-    val events: List<BlockResultsResponseResultEvents>,
+    val events: List<BlockResultsResponseResultTxsResultsInnerEventsInner>,
 )
