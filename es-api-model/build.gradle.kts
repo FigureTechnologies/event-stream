@@ -58,6 +58,7 @@ tasks.register<org.openapitools.generator.gradle.plugin.tasks.GenerateTask>("gen
     packageName.set("tech.figure.eventstream.stream")
     modelPackage.set("tech.figure.eventstream.stream.models")
     library.set("jvm-okhttp4")
+    inlineSchemaOptions.put("ARRAY_ITEM_SUFFIX", "")
     configOptions.set(
         mapOf(
             "artifactId" to "tendermint-api",
