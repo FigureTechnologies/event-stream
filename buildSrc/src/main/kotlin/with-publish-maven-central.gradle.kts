@@ -80,7 +80,7 @@ subprojects {
                 pom {
                     name.set("Provenance EventStream Implementation")
                     description.set("A collection of libraries to connect and stream blocks from a node")
-                    url.set("https://www.figure.tech/")
+                    url.set("https://www.figure.com/")
                     licenses {
                         license {
                             name.set("The Apache License, Version 2.0")
