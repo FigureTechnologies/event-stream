@@ -33,7 +33,7 @@ configure<io.github.gradlenexus.publishplugin.NexusPublishExtension> {
             snapshotRepositoryUrl.set(uri("https://s01.oss.sonatype.org/content/repositories/snapshots/"))
             username.set(findProject("ossrhUsername")?.toString() ?: System.getenv("OSSRH_USERNAME"))
             password.set(findProject("ossrhPassword")?.toString() ?: System.getenv("OSSRH_PASSWORD"))
-            stagingProfileId.set("858b6e4de4734a") // prevents querying for the staging profile id, performance optimization
+            stagingProfileId.set("83b915e7809a92") // prevents querying for the staging profile id, performance optimization
         }
     }
 }
@@ -55,14 +55,14 @@ subprojects {
     tasks.withType<KotlinCompile> {
         kotlinOptions {
             freeCompilerArgs = listOf("-Xjsr305=strict", "-Xopt-in=kotlin.RequiresOptIn")
-            jvmTarget = "11"
+            jvmTarget = "17"
         }
     }
 
 
     configure<JavaPluginExtension> {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
     }
 
     val artifactName = if (name.startsWith("es")) name else "es-$name"
@@ -80,7 +80,7 @@ subprojects {
                 pom {
                     name.set("Provenance EventStream Implementation")
                     description.set("A collection of libraries to connect and stream blocks from a node")
-                    url.set("https://www.figure.tech/")
+                    url.set("https://www.figure.com/")
                     licenses {
                         license {
                             name.set("The Apache License, Version 2.0")
