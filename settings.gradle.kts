@@ -15,7 +15,7 @@ gradle.rootProject {
     val libraryVersion =
         rootProject.property("libraryVersion") ?: error("Missing libraryVersion - check gradle.properties")
     allprojects {
-        group = "tech.figure.eventstream"
+        group = "com.figure.eventstream"
         version = libraryVersion
         description =
             "A library for receiving real-time and historical block, block event, and transaction event data from the Provenance block chain."
