@@ -6,7 +6,7 @@ object Versions {
     }
     const val Hoplite = "2.7.5"
     object JUnit {
-        const val Core = "5.10.0"
+        const val Core = "5.10.1"
         const val Pioneer = "2.2.0"
     }
 
