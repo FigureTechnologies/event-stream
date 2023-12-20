@@ -2,7 +2,7 @@ object Versions {
     const val BouncyCastle = "1.70"
     object ApacheCommons {
         const val Lang3 = "3.12.0"
-        const val Text = "1.10.0"
+        const val Text = "1.11.0"
     }
     const val Hoplite = "2.7.5"
     object JUnit {
