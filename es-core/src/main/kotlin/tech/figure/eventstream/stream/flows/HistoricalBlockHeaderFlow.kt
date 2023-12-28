@@ -54,6 +54,7 @@ fun historicalBlockHeaderFlow(
  * @param context The coroutine context to execute the async parallel fetches.
  * @return The [Flow] of [BlockMeta]
  */
+@OptIn(ExperimentalCoroutinesApi::class)
 internal fun historicalBlockMetaFlow(
     netAdapter: NetAdapter,
     from: Long = 1,
@@ -67,8 +68,16 @@ internal fun historicalBlockMetaFlow(
 
     val realTo = currentHeight ?: (to ?: currentHeight())
     require(from <= realTo) { "from:$from must be less than to:$realTo" }
-
-    emitAll((from..realTo).toList().toBlockMeta(netAdapter, concurrency, context))
+    // Max out efficiency of downstream processing by creating ranges that can be shoved through the fetcher properly
+    // that also leverage the concurrency
+    val heightRangeSize = concurrency.times(EventStream.TENDERMINT_MAX_QUERY_RANGE).toLong()
+    // Chunk up the ranges by the concurrency amount
+    (from..realTo step heightRangeSize)
+        // Convert to sequence to avoid holding too many values in memory
+        .asSequence()
+        .map { rangeStart -> rangeStart..(rangeStart + heightRangeSize - 1).coerceAtMost(realTo) }
+        .map { range -> range.toList() }
+        .forEach { heights -> emitAll(heights.toBlockMeta(netAdapter, concurrency, context)) }
 }
 
 /**
