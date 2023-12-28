@@ -70,12 +70,12 @@ internal fun historicalBlockMetaFlow(
     require(from <= realTo) { "from:$from must be less than to:$realTo" }
     // Max out efficiency of downstream processing by creating ranges that can be shoved through the fetcher properly
     // that also leverage the concurrency
-    val concurrencyLong = concurrency.times(EventStream.TENDERMINT_MAX_QUERY_RANGE).toLong()
+    val heightRangeSize = concurrency.times(EventStream.TENDERMINT_MAX_QUERY_RANGE).toLong()
     // Chunk up the ranges by the concurrency amount
-    (from..realTo step concurrencyLong)
+    (from..realTo step heightRangeSize)
         // Convert to sequence to avoid holding too many values in memory
         .asSequence()
-        .map { rangeStart -> rangeStart..(rangeStart + concurrencyLong - 1).coerceAtMost(realTo) }
+        .map { rangeStart -> rangeStart..(rangeStart + heightRangeSize - 1).coerceAtMost(realTo) }
         .map { range -> range.toList() }
         .forEach { heights -> emitAll(heights.toBlockMeta(netAdapter, concurrency, context)) }
 }
