@@ -5,11 +5,14 @@ import tech.figure.eventstream.stream.models.BlockResultsResponse
 import tech.figure.eventstream.stream.models.BlockchainResponse
 import tech.figure.eventstream.stream.clients.TendermintServiceClient
 import tech.figure.eventstream.stream.models.ABCIInfoResponse
+import tech.figure.eventstream.stream.models.GenesisResponse
 
 class MockTendermintServiceClient(mocker: ServiceMock) : TendermintServiceClient, ServiceMock by mocker {
 
     override suspend fun abciInfo() =
         respondWith<ABCIInfoResponse>("abciInfo")
+
+    override suspend fun genesis() = respondWith<GenesisResponse>("genesis")
 
     override suspend fun block(height: Long?) =
         respondWith<BlockResponse>("block", height)

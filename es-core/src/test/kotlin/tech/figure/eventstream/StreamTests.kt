@@ -32,6 +32,7 @@ import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.assertThrows
 import tech.figure.eventstream.mocks.MockEventStreamService
 import tech.figure.eventstream.stream.clients.TendermintServiceClient
+import tech.figure.eventstream.stream.models.GenesisResponse
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class StreamTests : TestBase() {
@@ -150,6 +151,27 @@ class StreamTests : TestBase() {
 
             dispatcherProvider.runBlockingTest {
                 assert(tm.abciInfo().result?.response?.lastBlockHeight == expectBlockHeight)
+            }
+        }
+
+        @OptIn(ExperimentalCoroutinesApi::class)
+        @Test
+        fun testGenesisResponse() {
+            val expectedInitialHeight = 10000L
+
+            val tm = ServiceMocker.Builder()
+                .doFor("genesis") {
+                    templates.readAs(
+                        GenesisResponse::class.java,
+                        "genesis/success.json",
+                        mapOf("initial_height" to expectedInitialHeight),
+                    )
+                }
+                .build(MockTendermintServiceClient::class.java)
+
+            dispatcherProvider.runBlockingTest {
+                val initialHeight = tm.genesis().result.genesis.initialHeight
+                assert(initialHeight == expectedInitialHeight) { "expected: $expectedInitialHeight received: $initialHeight" }
             }
         }
 
