@@ -23,6 +23,7 @@ import tech.figure.eventstream.utils.Template
 import io.reactivex.Flowable
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.asFlow
+import tech.figure.eventstream.stream.models.GenesisResponse
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.coroutines.CoroutineContext
 
@@ -88,6 +89,11 @@ fun mockBlockFetcher(template: Template, currentHeight: Long? = null): BlockFetc
             }
             val response = template.readAs(ABCIInfoResponse::class.java, "abci_info/success.json", vars)
             return response!!.result!!.response.lastBlockHeight!!
+        }
+
+        override suspend fun getInitialHeight(): Long {
+            val response = template.readAs(GenesisResponse::class.java, "genesis/success.json")
+            return response!!.result.genesis.initialHeight
         }
 
         override suspend fun getBlock(height: Long): BlockData {

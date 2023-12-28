@@ -68,6 +68,7 @@ open class BlockFetchException(m: String) : Exception(m)
 interface BlockFetcher {
     suspend fun getBlocksMeta(min: Long, max: Long): List<BlockMeta>?
     suspend fun getCurrentHeight(): Long?
+    suspend fun getInitialHeight(): Long
     suspend fun getBlock(height: Long): BlockData
     suspend fun getBlockResults(height: Long): BlockResultsResponse?
     suspend fun getBlocks(heights: List<Long>, concurrency: Int = DEFAULT_CONCURRENCY, context: CoroutineContext = EmptyCoroutineContext): Flow<BlockData>

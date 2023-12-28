@@ -29,6 +29,10 @@ class TendermintBlockFetcher(
             ?: throw BlockFetchException("failed to fetch current block height")
     }
 
+    override suspend fun getInitialHeight(): Long {
+        return tendermintServiceClient.genesis().result.genesis.initialHeight
+    }
+
     override suspend fun getBlock(height: Long): BlockData {
         log.trace("getBlock($height)")
         val block = tendermintServiceClient.block(height).result?.block

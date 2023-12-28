@@ -8,6 +8,7 @@ import tech.figure.eventstream.stream.models.ABCIInfoResponse
 import tech.figure.eventstream.stream.models.BlockResponse
 import tech.figure.eventstream.stream.models.BlockResultsResponse
 import tech.figure.eventstream.stream.models.BlockchainResponse
+import tech.figure.eventstream.stream.models.GenesisResponse
 
 /**
  * An OpenAPI generated client designed to interact with the Tendermint RPC API.
@@ -29,6 +30,8 @@ class TendermintServiceOpenApiClient(
     private val infoApi = InfoApi(rpcUrlBase)
 
     override suspend fun abciInfo(): ABCIInfoResponse = abciApi.abciInfo()
+
+    override suspend fun genesis(): GenesisResponse = infoApi.genesis()
 
     override suspend fun block(height: Long?): BlockResponse = infoApi.block(height)
 

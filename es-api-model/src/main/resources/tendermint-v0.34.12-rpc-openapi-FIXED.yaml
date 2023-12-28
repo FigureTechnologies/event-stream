@@ -1905,7 +1905,7 @@ components:
                 - "chain_id"
                 - "initial_height"
                 - "consensus_params"
-                - "validators"
+#                - "validators" # for some reason this schema has this as required, but it comes back as empty from the chain... maybe this is just out of date?
                 - "app_hash"
               properties:
                 genesis_time:
@@ -2938,11 +2938,19 @@ components:
         evidence:
           type: object
           required:
-            - "max_age"
+            - "max_age_num_blocks"
+            - "max_age_duration"
+            - "max_bytes"
           properties:
-            max_age:
+            max_age_num_blocks: # Manually updated these properties to reflect the current properties here in cosmos/tendermint
               type: string
               example: "100000"
+            max_age_duration:
+              type: string
+              example: "172800000000000"
+            max_bytes:
+              type: string
+              example: "1048576"
         validator:
           type: object
           required:
