@@ -68,6 +68,8 @@ internal fun historicalBlockMetaFlow(
 
     val realTo = currentHeight ?: (to ?: currentHeight())
     require(from <= realTo) { "from:$from must be less than to:$realTo" }
+    // Max out efficiency of downstream processing by creating ranges that can be shoved through the fetcher properly
+    // that also leverage the concurrency
     val concurrencyLong = concurrency.times(EventStream.TENDERMINT_MAX_QUERY_RANGE).toLong()
     // Chunk up the ranges by the concurrency amount
     (from..realTo step concurrencyLong)
