@@ -21,5 +21,5 @@ object Versions {
         const val OpenAPI = "7.1.0"
     }
     const val Scarlet = "0.1.12"
-    const val Kafka = "3.5.1"
+    const val Kafka = "3.7.0"
 }
