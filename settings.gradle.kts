@@ -35,7 +35,7 @@ include("es-grpc")
 include("es-kafka")
 
 plugins {
-    id("org.danilopianini.gradle-pre-commit-git-hooks") version "1.1.16"
+    id("org.danilopianini.gradle-pre-commit-git-hooks") version "1.1.18"
 }
 
 gitHooks {
